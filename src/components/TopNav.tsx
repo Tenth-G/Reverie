@@ -149,10 +149,23 @@ export default function TopNav() {
                 <IconClose width={13} height={13} />
               </button>
             </div>
-            {searching || searchResults.length > 0 ? (
+            {searching || searchResults.length > 0 || (searchKeyword && !loggedIn) ? (
               <div className="search-dropdown">
                 {searching ? (
                   <div className="loading-hint">搜索中…</div>
+                ) : !loggedIn ? (
+                  <div className="search-login-hint">
+                    <span>登录后即可搜索音乐</span>
+                    <button
+                      className="btn primary"
+                      onClick={() => {
+                        setSearchOpen(false)
+                        setShowLogin(true)
+                      }}
+                    >
+                      登录
+                    </button>
+                  </div>
                 ) : (
                   searchResults.slice(0, 12).map((song) => (
                     <div

@@ -347,6 +347,11 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       set({ searching: false, searchResults: [] })
       return
     }
+    if (!get().loggedIn) {
+      // not logged in: don't load/display any data
+      set({ searching: false, searchResults: [] })
+      return
+    }
     try {
       const results = await searchSongs(key, 30)
       set({ searchResults: results, searching: false })
