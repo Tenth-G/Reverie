@@ -2,7 +2,7 @@
   "name": "ncm-player",
   "productName": "Reverie",
   "version": "1.5.0",
-  "description": "白日梦 Reverie — 网易云音乐桌面播放器（顶部导航 · 悬浮播放栏 · 歌曲封面 + 歌词）",
+  "description": "Reverie — 网易云音乐桌面播放器（中文名：白日梦）",
   "type": "module",
   "main": "electron/main.cjs",
   "author": "Reverie",

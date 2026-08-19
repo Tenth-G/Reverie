@@ -32,7 +32,7 @@ function createWindow() {
     minHeight: 680,
     frame: false,
     backgroundColor: '#0a0a12',
-    title: '白日梦 Reverie',
+    title: 'Reverie',
     autoHideMenuBar: true,
     show: false,
     webPreferences: {
