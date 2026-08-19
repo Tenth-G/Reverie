@@ -548,7 +548,29 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   },
   logout: () => {
     clearCookie()
-    set({ loggedIn: false, profile: null, likedIds: [], userPlaylists: [], recommendSongs: [], fmSongs: [] })
+    // stop playback and clear the current session
+    const el = get().audioEl
+    if (el) {
+      el.pause()
+      el.removeAttribute('src')
+      el.load()
+    }
+    set({
+      loggedIn: false,
+      profile: null,
+      likedIds: [],
+      userPlaylists: [],
+      recommendSongs: [],
+      fmSongs: [],
+      currentSong: null,
+      currentUrl: null,
+      playing: false,
+      progress: 0,
+      duration: 0,
+      queue: [],
+      index: -1,
+      lyricLines: [],
+    })
     get().toast('已退出登录', 'info')
   },
   refreshLogin: async () => {

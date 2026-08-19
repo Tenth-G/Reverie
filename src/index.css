@@ -141,11 +141,16 @@ input {
   height: 100%;
 }
 .titlebar-name {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.12em;
   color: var(--text-dim);
   pointer-events: none;
+  line-height: 1;
 }
 .titlebar-controls {
   display: flex;
