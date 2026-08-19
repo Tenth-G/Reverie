@@ -12,16 +12,18 @@ export default function NowPlayingView() {
         <IconChevronDown width={20} height={20} />
       </button>
 
-      <div className="np-lyrics">
-        <LyricsPanel />
-      </div>
-
-      <div className="np-cover">
-        {currentSong?.picUrl ? (
-          <img src={currentSong.picUrl} alt="" />
-        ) : (
-          <div className="np-cover-ph">♪</div>
-        )}
+      {/* lyrics overlay ON the album cover */}
+      <div className="np-stage">
+        <div className="np-cover">
+          {currentSong?.picUrl ? (
+            <img src={currentSong.picUrl} alt="" />
+          ) : (
+            <div className="np-cover-ph">♪</div>
+          )}
+        </div>
+        <div className="np-lyrics">
+          <LyricsPanel />
+        </div>
       </div>
     </div>
   )
