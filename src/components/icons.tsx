@@ -232,6 +232,13 @@ export const IconChevronDown = (p: P) => (
     <path d="M6 9l6 6 6-6" />
   </svg>
 )
+export const IconRoam = (p: P) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M3 12h18" />
+    <path d="M12 3c2.6 2.6 4 5.7 4 9s-1.4 6.4-4 9c-2.6-2.6-4-5.7-4-9s1.4-6.4 4-9z" />
+  </svg>
+)
 export const IconExpand = (p: P) => (
   <svg {...base(p)}>
     <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />

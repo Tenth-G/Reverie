@@ -71,3 +71,29 @@ export function formatTime(ms: number): string {
   const pad = (n: number) => String(n).padStart(2, '0')
   return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`
 }
+
+/* ------------------------------------------------------------------ */
+/*  Lyric quote (for the home header)                                  */
+/* ------------------------------------------------------------------ */
+
+const METADATA_RE =
+  /作词|作曲|编曲|制作人|制作|录音|混音|母带|监制|和声|配唱|键盘|吉他|贝斯|鼓|弦乐|编写|编程|op\s*[:：]|sp\s*[:：]|企划|统筹|发行|封面|摄影|设计|文案|出品|版权|词曲|未经许可|纯音乐|间奏|伴奏|人声|录制|缩混|master|producer|arrang|compose|编曲人|词曲人/i
+
+/** Whether a lyric line is a real lyric (not metadata/credit/empty). */
+export function isLyricLine(text: string): boolean {
+  const t = text.trim()
+  if (!t) return false
+  if (t.length < 4) return false
+  if (METADATA_RE.test(t)) return false
+  return true
+}
+
+/** Pick a random meaningful lyric line from raw LRC. */
+export function pickRandomLyricLine(lrc: string): string | null {
+  const lines = lrc
+    .split(/\r?\n/)
+    .map((raw) => raw.replace(/\[[^\]]*\]/g, '').trim())
+    .filter((t) => isLyricLine(t) && t.length >= 6 && t.length <= 60)
+  if (!lines.length) return null
+  return lines[Math.floor(Math.random() * lines.length)]
+}

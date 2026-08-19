@@ -1,5 +1,4 @@
 import { usePlayerStore } from '../store/playerStore'
-import { formatTime } from '../utils/lyrics'
 import type { PlayMode } from '../api/types'
 import {
   IconHeart,
@@ -53,22 +52,36 @@ export default function PlayerBar() {
 
   return (
     <footer className="player-bar">
-      <div
-        className={`pb-cover ${playing ? 'spinning' : ''}`}
-        onClick={() => setPage('nowplaying')}
-        title="打开播放页"
-        style={{ cursor: 'pointer' }}
-      >
-        {currentSong ? (
-          <img src={currentSong.picUrl} alt="" />
-        ) : (
-          <div style={{ width: 52, height: 52, borderRadius: 10, background: 'var(--bg-3)' }} />
-        )}
+      {/* progress bar sits above the pill */}
+      <div className="pb-progress-top">
+        <input
+          className="slider pb-top-slider"
+          type="range"
+          min={0}
+          max={duration || 0}
+          value={progress}
+          style={{ ['--val' as never]: `${pct}%` }}
+          onChange={(e) => seek(Number(e.target.value))}
+        />
       </div>
 
-      <div className="pb-info">
-        <div className="t">{currentSong?.name ?? '未在播放'}</div>
-        <div className="a">{currentSong?.artists ?? '选择一首歌开始播放'}</div>
+      <div className="pb-left">
+        <div
+          className={`pb-cover ${playing ? 'spinning' : ''}`}
+          onClick={() => setPage('nowplaying')}
+          title="打开播放页"
+          style={{ cursor: 'pointer' }}
+        >
+          {currentSong ? (
+            <img src={currentSong.picUrl} alt="" />
+          ) : (
+            <div className="pb-cover-ph">♪</div>
+          )}
+        </div>
+        <div className="pb-info">
+          <div className="t">{currentSong?.name ?? '未在播放'}</div>
+          <div className="a">{currentSong?.artists ?? '选择一首歌开始播放'}</div>
+        </div>
       </div>
 
       <div className="pb-controls">
@@ -86,21 +99,7 @@ export default function PlayerBar() {
         </button>
       </div>
 
-      <div className="pb-progress">
-        <span className="time">{formatTime(progress)}</span>
-        <input
-          className="slider"
-          type="range"
-          min={0}
-          max={duration || 0}
-          value={progress}
-          style={{ ['--val' as never]: `${pct}%`, flex: 1 }}
-          onChange={(e) => seek(Number(e.target.value))}
-        />
-        <span className="time">{formatTime(duration)}</span>
-      </div>
-
-      <div className="pb-extra">
+      <div className="pb-right">
         <button
           className={`icon-btn ${liked ? 'active' : ''}`}
           onClick={toggleLike}

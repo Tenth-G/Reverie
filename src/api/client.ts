@@ -320,4 +320,35 @@ export async function getLikedIds(uid: number): Promise<number[]> {
   return res.ids ?? []
 }
 
+export interface VipInfo {
+  vipType: number
+  vipLevel: number
+  /** milliseconds epoch; 0 = not a member */
+  expireTime: number
+}
+
+export async function getVipInfo(uid: number): Promise<VipInfo> {
+  const res = await request<{ data?: Record<string, unknown> }>(
+    '/vip/info/v2',
+    { uid },
+    false,
+  )
+  const d = (res.data ?? {}) as Record<string, unknown>
+  return {
+    vipType: Number(d.vipType ?? d.redVipType ?? 0),
+    vipLevel: Number(d.redVipLevel ?? d.level ?? 0),
+    expireTime: Number(d.redVipExpireTime ?? d.expireTime ?? 0),
+  }
+}
+
+export async function getSongsByIds(ids: number[]): Promise<Song[]> {
+  if (!ids.length) return []
+  const res = await request<SongDetailResponse>('/song/detail', {
+    ids: ids.join(','),
+  })
+  return (res.songs ?? [])
+    .map((r) => normalizeSong(r))
+    .filter((s): s is Song => s !== null)
+}
+
 export { API_BASE }

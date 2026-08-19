@@ -8,9 +8,17 @@ function vipLabel(vipType?: number): string {
   return 'VIP 会员'
 }
 
+function remainingDays(expireTime?: number): string {
+  if (!expireTime || expireTime <= 0) return ''
+  const days = Math.ceil((expireTime - Date.now()) / 86400000)
+  if (days <= 0) return '已过期'
+  return `剩余 ${days} 天`
+}
+
 export default function UserMenu() {
   const [open, setOpen] = useState(false)
   const profile = usePlayerStore((s) => s.profile)
+  const vipInfo = usePlayerStore((s) => s.vipInfo)
   const logout = usePlayerStore((s) => s.logout)
   const setShowLogin = usePlayerStore((s) => s.setShowLogin)
   const ref = useRef<HTMLDivElement>(null)
@@ -25,15 +33,23 @@ export default function UserMenu() {
   }, [open])
 
   const switchAccount = () => {
-    // 切换账号：直接打开登录二维码，扫码成功后覆盖当前会话；取消则保持原账号
     setOpen(false)
     setShowLogin(true)
   }
 
+  const vipType = Number(vipInfo?.vipType ?? profile?.vipType ?? 0)
+  const isVip = vipType > 0
+  const days = remainingDays(vipInfo?.expireTime)
+
   return (
     <div className="user-menu" ref={ref}>
-      <button className="topnav-user" onClick={() => setOpen(!open)} title={profile?.nickname}>
-        <img src={profile?.avatarUrl} alt="" />
+      <button
+        className="topnav-user"
+        onClick={() => setOpen(!open)}
+        title={profile?.nickname}
+      >
+        <img className="user-avatar" src={profile?.avatarUrl} alt="" />
+        {isVip && <span className="user-badge">VIP</span>}
       </button>
       {open && (
         <div className="user-dropdown">
@@ -41,12 +57,16 @@ export default function UserMenu() {
             <img src={profile?.avatarUrl} alt="" />
             <div className="uh-info">
               <div className="nm">{profile?.nickname}</div>
-              <div className="vip">{vipLabel(profile?.vipType)}</div>
+              <div className="vip">{vipLabel(vipType)}</div>
             </div>
           </div>
           <div className="user-dropdown-row">
-            <span>会员信息</span>
-            <span>{vipLabel(profile?.vipType)}</span>
+            <span>会员类型</span>
+            <span>{vipLabel(vipType)}</span>
+          </div>
+          <div className="user-dropdown-row">
+            <span>会员状态</span>
+            <span>{isVip ? days || '生效中' : '普通用户'}</span>
           </div>
           <button className="user-dropdown-item" onClick={switchAccount}>
             切换账号

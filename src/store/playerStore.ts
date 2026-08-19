@@ -9,16 +9,19 @@ import {
   getPlaylistDetail,
   getHotPlaylists,
   getRecommendSongs,
+  getSongsByIds,
   getSongUrl,
   getTopSongs,
   getUserPlaylists,
+  getVipInfo,
   likeSong,
   loginStatus,
   searchSongs,
   setCookie,
 } from '../api/client'
 import type { LyricLine, PlaylistInfo, PlayMode, Song, UserProfile, View } from '../api/types'
-import { parseLyrics } from '../utils/lyrics'
+import type { VipInfo } from '../api/client'
+import { parseLyrics, pickRandomLyricLine } from '../utils/lyrics'
 
 export interface ToastMsg {
   id: number
@@ -65,6 +68,30 @@ function readThemePref(): ThemePreference {
   return v === 'light' || v === 'dark' || v === 'system' ? v : 'system'
 }
 
+interface RecentSongData {
+  id: number
+  name: string
+  artists: string
+  artistNames: string[]
+  album: string
+  albumId: number
+  picUrl: string
+  duration: number
+  fee: number
+  mvId?: number
+}
+
+function readRecentSongs(): Song[] {
+  try {
+    const raw = localStorage.getItem('reverie_recent')
+    if (!raw) return []
+    const arr = JSON.parse(raw) as RecentSongData[]
+    return Array.isArray(arr) ? arr : []
+  } catch {
+    return []
+  }
+}
+
 let toastSeq = 0
 
 interface PlayerState {
@@ -72,6 +99,10 @@ interface PlayerState {
   loggedIn: boolean
   profile: UserProfile | null
   likedIds: number[]
+  likedSongs: Song[]
+  vipInfo: VipInfo | null
+  recentSongs: Song[]
+  homeQuote: { text: string; source: string } | null
 
   // --- audio ---
   audioEl: HTMLAudioElement | null
@@ -151,6 +182,10 @@ interface PlayerState {
   fmDislike: () => Promise<void>
   toggleLike: () => Promise<void>
   loadLiked: () => Promise<void>
+  loadLikedSongs: () => Promise<void>
+  loadVipInfo: () => Promise<void>
+  trackRecent: (song: Song) => void
+  loadHomeQuote: () => Promise<void>
   applyLogin: (cookie: string) => Promise<boolean>
   logout: () => void
   refreshLogin: () => Promise<void>
@@ -182,6 +217,10 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   loggedIn: false,
   profile: null,
   likedIds: [],
+  likedSongs: [],
+  vipInfo: null,
+  recentSongs: readRecentSongs(),
+  homeQuote: null,
 
   // --- audio ---
   audioEl: null,
@@ -439,6 +478,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       duration: song.duration || 0,
     })
     loadLyricsFor(song, set)
+    get().trackRecent(song)
 
     const url = await resolveUrl(song)
     if (!url) {
@@ -508,6 +548,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
           ? [...likedIds, currentSong.id]
           : likedIds.filter((id) => id !== currentSong.id),
       })
+      get().loadLikedSongs()
       get().toast(next ? '已添加到我喜欢' : '已取消喜欢', 'success')
     } catch {
       get().toast('操作失败', 'error')
@@ -523,6 +564,54 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       /* ignore */
     }
   },
+  loadLikedSongs: async () => {
+    const { likedIds } = get()
+    if (!likedIds.length) {
+      set({ likedSongs: [] })
+      return
+    }
+    try {
+      const songs = await getSongsByIds(likedIds.slice(0, 200))
+      set({ likedSongs: songs })
+    } catch {
+      /* ignore */
+    }
+  },
+  loadVipInfo: async () => {
+    const uid = get().profile?.userId
+    if (!uid) return
+    try {
+      const info = await getVipInfo(uid)
+      set({ vipInfo: info })
+    } catch {
+      /* ignore */
+    }
+  },
+  trackRecent: (song) => {
+    const next = [song, ...get().recentSongs.filter((s) => s.id !== song.id)].slice(0, 50)
+    set({ recentSongs: next })
+    try {
+      localStorage.setItem('reverie_recent', JSON.stringify(next))
+    } catch {
+      /* ignore */
+    }
+  },
+  loadHomeQuote: async () => {
+    const pool = [186016, 347230, 509781655, 3414449762, 168160, 193535]
+    const id = pool[Math.floor(Math.random() * pool.length)]
+    try {
+      const songs = await getSongsByIds([id])
+      const song = songs[0]
+      if (!song) return
+      const { lrc } = await getLyric(id)
+      const line = pickRandomLyricLine(lrc)
+      if (line) {
+        set({ homeQuote: { text: line, source: `《${song.name}》· ${song.artists}` } })
+      }
+    } catch {
+      /* keep previous quote */
+    }
+  },
 
   // --- auth ---
   applyLogin: async (c) => {
@@ -534,6 +623,8 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
         set({ loggedIn: true, profile })
         get().toast(`欢迎，${profile.nickname}`, 'success')
         get().loadLiked()
+        get().loadLikedSongs()
+        get().loadVipInfo()
         if (!get().recommendSongs.length) {
           getRecommendSongs().then((songs) => set({ recommendSongs: songs })).catch(() => {})
         }
@@ -584,6 +675,8 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       if (profile && profile.userId > 0) {
         set({ loggedIn: true, profile })
         get().loadLiked()
+        get().loadLikedSongs()
+        get().loadVipInfo()
         if (!get().recommendSongs.length) {
           getRecommendSongs().then((songs) => set({ recommendSongs: songs })).catch(() => {})
         }

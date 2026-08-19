@@ -10,7 +10,7 @@ export default function FmPage() {
   return (
     <Page>
       <PageHeader
-        title="私人FM"
+        title="漫游"
         subtitle="无限播放你的专属电台"
         actions={
           <button className="btn" onClick={fmDislike} title="不喜欢当前歌曲">

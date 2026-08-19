@@ -10,6 +10,8 @@ import ChartPage from './components/ChartPage'
 import PlaylistPage from './components/PlaylistPage'
 import FmPage from './components/FmPage'
 import UserListPage from './components/UserListPage'
+import LikesPage from './components/LikesPage'
+import RecentPage from './components/RecentPage'
 import LoginModal from './components/LoginModal'
 import SettingsModal from './components/SettingsModal'
 import Toasts from './components/Toasts'
@@ -137,6 +139,10 @@ export default function App() {
         return <FmPage />
       case 'userlist':
         return <UserListPage />
+      case 'likes':
+        return <LikesPage />
+      case 'recent':
+        return <RecentPage />
       default:
         return <HomePage />
     }

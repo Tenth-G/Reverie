@@ -6,13 +6,15 @@ import type { ReactElement } from 'react'
 import UserMenu from './UserMenu'
 import {
   IconChart,
+  IconClock,
   IconClose,
+  IconHeart,
   IconHome,
   IconLogin,
   IconMonitor,
   IconMoon,
   IconMusic,
-  IconRadio,
+  IconRoam,
   IconSearch,
   IconSun,
 } from './icons'
@@ -27,8 +29,8 @@ interface NavItem {
 const NAV: NavItem[] = [
   { view: 'home', label: '首页', icon: <IconHome /> },
   { view: 'chart', label: '排行榜', icon: <IconChart /> },
-  { view: 'fm', label: '私人FM', icon: <IconRadio />, auth: true },
   { view: 'userlist', label: '我的歌单', icon: <IconMusic />, auth: true },
+  { view: 'fm', label: '漫游', icon: <IconRoam />, auth: true },
 ]
 
 const THEME_ORDER: ThemePreference[] = ['system', 'light', 'dark']
@@ -195,6 +197,28 @@ export default function TopNav() {
 
         <button className="topnav-icon-btn" onClick={cycleTheme} title={`主题：${THEME_LABEL[theme]}`}>
           {THEME_ICON[theme]}
+        </button>
+
+        <button
+          className="topnav-icon-btn"
+          onClick={() => {
+            setPage('browse')
+            setActiveView('likes')
+          }}
+          title="我的喜欢"
+        >
+          <IconHeart />
+        </button>
+
+        <button
+          className="topnav-icon-btn"
+          onClick={() => {
+            setPage('browse')
+            setActiveView('recent')
+          }}
+          title="最近播放"
+        >
+          <IconClock />
         </button>
 
         {loggedIn ? (
