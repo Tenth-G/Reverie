@@ -5,6 +5,7 @@ import type { ReactElement } from 'react'
 import {
   IconChart,
   IconHeart,
+  IconHome,
   IconList,
   IconLogin,
   IconLogout,
@@ -25,6 +26,7 @@ interface NavItem {
   auth?: boolean
 }
 
+const NAV_MAIN: NavItem[] = [{ view: 'home', label: '首页', icon: <IconHome /> }]
 const NAV_DISCOVER: NavItem[] = [
   { view: 'search', label: '搜索', icon: <IconSearch /> },
   { view: 'chart', label: '排行榜', icon: <IconChart /> },
@@ -56,6 +58,7 @@ export default function Sidebar() {
   const loadRecommend = usePlayerStore((s) => s.loadRecommend)
   const loadPersonalFm = usePlayerStore((s) => s.loadPersonalFm)
   const loadUserPlaylists = usePlayerStore((s) => s.loadUserPlaylists)
+  const loadHome = usePlayerStore((s) => s.loadHome)
 
   const handleNav = (view: View, auth?: boolean) => {
     if (auth && !loggedIn) {
@@ -64,6 +67,9 @@ export default function Sidebar() {
     }
     if (view === activeView) return
     switch (view) {
+      case 'home':
+        loadHome()
+        break
       case 'chart':
         loadTopSongs()
         break
@@ -106,6 +112,8 @@ export default function Sidebar() {
 
   return (
     <aside className="sidebar">
+      {renderNav(NAV_MAIN)}
+
       <div className="side-section">发现</div>
       {renderNav(NAV_DISCOVER)}
 

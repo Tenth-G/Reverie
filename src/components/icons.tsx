@@ -220,6 +220,13 @@ export const IconQueue = (p: P) => (
   </svg>
 )
 export const IconVolumeUp = IconVolume
+export const IconHome = (p: P) => (
+  <svg {...base(p)}>
+    <path d="M3 10.5L12 3l9 7.5" />
+    <path d="M5 9.5V21h14V9.5" />
+    <path d="M9 21v-6h6v6" />
+  </svg>
+)
 export const IconChevronDown = (p: P) => (
   <svg {...base(p)}>
     <path d="M6 9l6 6 6-6" />

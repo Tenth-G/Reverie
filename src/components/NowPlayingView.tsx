@@ -23,7 +23,7 @@ export default function NowPlayingView() {
           title="切换歌词模式"
         >
           <IconLyrics width={15} height={15} />
-          <span>{lyricsMode === 'immersive' ? '侧边歌词' : '沉浸歌词'}</span>
+          <span>{lyricsMode === 'immersive' ? '收起歌词' : '沉浸歌词'}</span>
         </button>
       </div>
     </div>

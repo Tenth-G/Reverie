@@ -2,48 +2,33 @@ import { useEffect, useRef } from 'react'
 import { usePlayerStore } from './store/playerStore'
 import TitleBar from './components/TitleBar'
 import Sidebar from './components/Sidebar'
-import Visualizer from './components/Visualizer'
-import LyricsPanel from './components/LyricsPanel'
 import PlayerBar from './components/PlayerBar'
 import NowPlayingView from './components/NowPlayingView'
-import SongList from './components/SongList'
-import PlaylistGrid from './components/PlaylistGrid'
-import QueuePanel from './components/QueuePanel'
+import HomePage from './components/HomePage'
+import SearchPage from './components/SearchPage'
+import ChartPage from './components/ChartPage'
+import PlaylistPage from './components/PlaylistPage'
+import RecommendPage from './components/RecommendPage'
+import FmPage from './components/FmPage'
+import UserListPage from './components/UserListPage'
+import QueuePage from './components/QueuePage'
 import LoginModal from './components/LoginModal'
 import SettingsModal from './components/SettingsModal'
 import Toasts from './components/Toasts'
-import { IconSearch, IconTrash } from './components/icons'
 
 export default function App() {
   const audioRef = useRef<HTMLAudioElement>(null)
 
   const currentUrl = usePlayerStore((s) => s.currentUrl)
   const playing = usePlayerStore((s) => s.playing)
-  const currentSong = usePlayerStore((s) => s.currentSong)
   const theme = usePlayerStore((s) => s.theme)
   const setAudioEl = usePlayerStore((s) => s.setAudioEl)
 
   const activeView = usePlayerStore((s) => s.activeView)
   const currentPage = usePlayerStore((s) => s.currentPage)
-  const searchKeyword = usePlayerStore((s) => s.searchKeyword)
-  const searching = usePlayerStore((s) => s.searching)
-  const searchResults = usePlayerStore((s) => s.searchResults)
-  const topSongs = usePlayerStore((s) => s.topSongs)
-  const topSongsLoading = usePlayerStore((s) => s.topSongsLoading)
-  const hotPlaylists = usePlayerStore((s) => s.hotPlaylists)
-  const hotPlaylistsLoading = usePlayerStore((s) => s.hotPlaylistsLoading)
-  const userPlaylists = usePlayerStore((s) => s.userPlaylists)
-  const playlistSongs = usePlayerStore((s) => s.playlistSongs)
-  const playlistName = usePlayerStore((s) => s.playlistName)
-  const recommendSongs = usePlayerStore((s) => s.recommendSongs)
-  const recommendLoading = usePlayerStore((s) => s.recommendLoading)
-  const fmSongs = usePlayerStore((s) => s.fmSongs)
 
-  const doSearch = usePlayerStore((s) => s.doSearch)
-  const openPlaylist = usePlayerStore((s) => s.openPlaylist)
-  const closePlaylist = usePlayerStore((s) => s.closePlaylist)
-  const fmDislike = usePlayerStore((s) => s.fmDislike)
   const refreshLogin = usePlayerStore((s) => s.refreshLogin)
+  const loadHome = usePlayerStore((s) => s.loadHome)
   const next = usePlayerStore((s) => s.next)
 
   // register audio element + analyser
@@ -51,10 +36,11 @@ export default function App() {
     if (audioRef.current) setAudioEl(audioRef.current)
   }, [setAudioEl])
 
-  // restore login session on startup
+  // restore login session + load home on startup
   useEffect(() => {
     refreshLogin()
-  }, [refreshLogin])
+    loadHome()
+  }, [refreshLogin, loadHome])
 
   // theme: follow system / light / dark
   useEffect(() => {
@@ -106,9 +92,7 @@ export default function App() {
     if (currentUrl) {
       a.src = currentUrl
       a.load()
-      a.play().catch(() => {
-        /* autoplay already allowed in Electron; ignore rejections */
-      })
+      a.play().catch(() => {})
     } else {
       a.pause()
       a.removeAttribute('src')
@@ -132,7 +116,6 @@ export default function App() {
       audioRef.current?.play().catch(() => {})
       return
     }
-    // personal FM auto-advances and refills (detected by queue identity)
     if (queue.length > 0 && queue === fmSongs) {
       st.fmNext()
       return
@@ -144,111 +127,26 @@ export default function App() {
     next()
   }
 
-  const renderListPanel = () => {
+  const renderPage = () => {
     switch (activeView) {
+      case 'home':
+        return <HomePage />
       case 'search':
-        return (
-          <div className="list-panel">
-            <div className="search-box">
-              <input
-                autoFocus
-                placeholder="搜索歌曲 / 歌手 / 专辑…"
-                value={searchKeyword}
-                onChange={(e) => {
-                  usePlayerStore.setState({ searchKeyword: e.target.value })
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') doSearch(e.currentTarget.value)
-                }}
-              />
-              <button className="btn primary" onClick={() => doSearch(searchKeyword)}>
-                <IconSearch width={15} height={15} />
-              </button>
-            </div>
-            {searching ? (
-              <div className="loading-hint">搜索中…</div>
-            ) : (
-              <div style={{ flex: 1, position: 'relative' }}>
-                <SongList
-                  songs={searchResults}
-                  emptyText={
-                    searchKeyword
-                      ? '没有找到相关歌曲'
-                      : '输入关键词搜索，回车或点击搜索按钮'
-                  }
-                />
-              </div>
-            )}
-          </div>
-        )
+        return <SearchPage />
       case 'chart':
-        return (
-          <SongList
-            songs={topSongs}
-            title="排行榜 · 飙升榜"
-            countLabel={topSongsLoading ? '加载中…' : `${topSongs.length} 首`}
-            emptyText={topSongsLoading ? '加载中…' : '暂无排行数据'}
-          />
-        )
+        return <ChartPage />
       case 'playlist':
-        if (playlistSongs.length || playlistName) {
-          return (
-            <div className="list-panel">
-              <div className="list-header">
-                <button className="btn" onClick={closePlaylist}>
-                  ← 返回
-                </button>
-                <h3>{playlistName}</h3>
-                <span className="count">{playlistSongs.length} 首</span>
-              </div>
-              <div style={{ flex: 1, position: 'relative' }}>
-                <SongList songs={playlistSongs} />
-              </div>
-            </div>
-          )
-        }
-        return (
-          <PlaylistGrid
-            playlists={hotPlaylists}
-            onOpen={openPlaylist}
-            emptyText={hotPlaylistsLoading ? '加载中…' : '暂无歌单'}
-          />
-        )
+        return <PlaylistPage />
       case 'recommend':
-        return (
-          <SongList
-            songs={recommendSongs}
-            title="每日推荐"
-            countLabel={recommendLoading ? '加载中…' : `${recommendSongs.length} 首`}
-            emptyText={recommendLoading ? '加载中…' : '登录后查看每日推荐'}
-          />
-        )
+        return <RecommendPage />
       case 'fm':
-        return (
-          <div className="list-panel">
-            <div className="list-header">
-              <h3>私人FM</h3>
-              <button className="btn" onClick={fmDislike} title="不喜欢当前歌曲">
-                <IconTrash width={14} height={14} /> 不喜欢
-              </button>
-            </div>
-            <div style={{ flex: 1, position: 'relative' }}>
-              <SongList songs={fmSongs} emptyText="登录后开启私人FM" />
-            </div>
-          </div>
-        )
+        return <FmPage />
       case 'userlist':
-        return (
-          <PlaylistGrid
-            playlists={userPlaylists}
-            onOpen={openPlaylist}
-            emptyText="登录后查看「我创建 / 收藏的歌单」"
-          />
-        )
+        return <UserListPage />
       case 'queue':
-        return <QueuePanel />
+        return <QueuePage />
       default:
-        return null
+        return <HomePage />
     }
   }
 
@@ -260,15 +158,7 @@ export default function App() {
       ) : (
         <div className="app-body">
           <Sidebar />
-          <div className="main">
-            <Visualizer />
-            <LyricsPanel />
-            <div className="stage-title">
-              <div className="song">{currentSong?.name ?? 'NCM Player'}</div>
-              <div className="artist">{currentSong?.artists ?? '扫码登录，畅享高品质音乐'}</div>
-            </div>
-            {renderListPanel()}
-          </div>
+          <main className="page-content">{renderPage()}</main>
         </div>
       )}
       <PlayerBar />

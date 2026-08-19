@@ -1,7 +1,7 @@
 {
   "name": "ncm-player",
   "productName": "NCM Player",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "网易云音乐桌面播放器 — 扫码登录 · 3D 可视化 · 歌词特效",
   "type": "module",
   "main": "electron/main.cjs",

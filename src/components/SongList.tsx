@@ -23,13 +23,11 @@ export default function SongList({
   const playSong = usePlayerStore((s) => s.playSong)
 
   return (
-    <div className="list-panel">
+    <>
       {title && (
         <div className="list-header">
           <h3>{title}</h3>
-          <span className="count">
-            {countLabel ?? `${songs.length} 首`}
-          </span>
+          <span className="count">{countLabel ?? `${songs.length} 首`}</span>
         </div>
       )}
       <div className="song-list">
@@ -42,7 +40,6 @@ export default function SongList({
               <div
                 key={`${song.id}-${i}`}
                 className={`song-item ${isCur ? 'playing' : ''}`}
-                onDoubleClick={() => playSong(song, songs)}
                 onClick={() => playSong(song, songs)}
               >
                 <span className="idx">{isCur ? <IconPlay width={13} height={13} /> : i + 1}</span>
@@ -54,7 +51,7 @@ export default function SongList({
                       style={{
                         width: 40,
                         height: 40,
-                        borderRadius: 7,
+                        borderRadius: 9,
                         background: 'var(--bg-3)',
                         flex: 'none',
                         display: 'flex',
@@ -82,6 +79,6 @@ export default function SongList({
           })
         )}
       </div>
-    </div>
+    </>
   )
 }

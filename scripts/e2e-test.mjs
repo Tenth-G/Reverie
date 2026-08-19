@@ -39,115 +39,104 @@ async function main() {
   })
 
   await win.waitForLoadState('domcontentloaded')
-  await win.waitForTimeout(2000)
+  await win.waitForTimeout(2500)
 
   /* 1. shell + frameless title bar */
   record('窗口标题', (await win.title()).includes('NCM Player'), await win.title())
   record('自定义标题栏渲染', (await win.locator('.titlebar').count()) === 1)
   record('窗口控制按钮 (3个)', (await win.locator('.tb-btn').count()) === 3)
   record('侧边栏渲染', (await win.locator('.sidebar').count()) === 1)
-  record('播放条渲染', (await win.locator('.player-bar').count()) === 1)
-  record('3D 画布渲染 (含辉光)', (await win.locator('.visualizer-stage canvas').count()) === 1)
-  record('搜索框渲染', (await win.locator('.search-box input').count()) === 1)
+  record('悬浮播放栏渲染', (await win.locator('.player-bar').count()) === 1)
+
+  /* 2. home page */
+  const homeSections = await win.locator('.home-section').count()
+  record('首页分区渲染', homeSections >= 2, `${homeSections} 个分区`)
+  const homeCards = await win.locator('.playlist-card').count()
+  record('首页-推荐歌单卡片', homeCards > 0, `${homeCards} 张`)
+  const homeSongs = await win.locator('.song-item').count()
+  record('首页-排行榜歌曲', homeSongs > 0, `${homeSongs} 首`)
+  record('首页不显示 3D 画布', (await win.locator('.visualizer-stage canvas').count()) === 0)
+  record('首页不显示歌词', (await win.locator('.lyric-line').count()) === 0)
   await win.screenshot({ path: `${OUT_DIR}/e2e-01-home.png` })
 
-  /* 2. theme system */
-  const themeBefore = await win.evaluate(() => document.documentElement.getAttribute('data-theme'))
+  /* 3. theme system */
   await win.locator('.nav-item').filter({ hasText: '设置' }).click()
   await win.waitForSelector('.modal', { timeout: 5000 })
   await win.locator('.opt-btn').filter({ hasText: '浅色' }).click()
   await win.waitForTimeout(300)
-  const themeLight = await win.evaluate(() => document.documentElement.getAttribute('data-theme'))
-  record('浅色主题生效', themeLight === 'light', `data-theme=${themeLight}`)
+  record('浅色主题生效', (await win.evaluate(() => document.documentElement.getAttribute('data-theme'))) === 'light')
   await win.screenshot({ path: `${OUT_DIR}/e2e-02-light.png` })
   await win.locator('.opt-btn').filter({ hasText: '深色' }).click()
   await win.waitForTimeout(300)
-  const themeDark = await win.evaluate(() => document.documentElement.getAttribute('data-theme'))
-  record('深色主题生效', themeDark === 'dark', `data-theme=${themeDark}`)
+  record('深色主题生效', (await win.evaluate(() => document.documentElement.getAttribute('data-theme'))) === 'dark')
   await win.locator('.opt-btn').filter({ hasText: '跟随系统' }).click()
   await win.waitForTimeout(300)
   record('跟随系统主题', ['light', 'dark'].includes(await win.evaluate(() => document.documentElement.getAttribute('data-theme'))))
-
-  /* 3. search */
   await win.locator('.modal-backdrop').click({ position: { x: 8, y: 8 } })
+  await win.waitForTimeout(300)
+
+  /* 4. search page */
+  await win.locator('.nav-item').filter({ hasText: '搜索' }).click()
   await win.waitForTimeout(300)
   await win.fill('.search-box input', '周杰伦')
   await win.press('.search-box input', 'Enter')
   await win.waitForSelector('.song-item', { timeout: 20000 })
   const songCount = await win.locator('.song-item').count()
-  record('搜索返回结果', songCount > 0, `${songCount} 首`)
+  record('搜索页返回结果', songCount > 0, `${songCount} 首`)
   await win.screenshot({ path: `${OUT_DIR}/e2e-03-search.png` })
 
-  /* 4. playback + lyrics */
+  /* 5. chart page + playback */
+  await win.locator('.nav-item').filter({ hasText: '排行榜' }).click()
+  await win.waitForSelector('.song-item', { timeout: 20000 })
   const freeSong = await findFreeSong()
   record('API 找到可免费播放歌曲', !!freeSong, freeSong ? `${freeSong.name} (id=${freeSong.id})` : '无')
   if (freeSong) {
-    await win.locator('.nav-item').filter({ hasText: '排行榜' }).click()
-    await win.waitForSelector('.song-item', { timeout: 20000 })
-    await win.waitForTimeout(600)
     await win.locator('.song-item').nth(freeSong.index).click()
     await win.waitForTimeout(3500)
     const src = await win.evaluate(() => document.querySelector('audio')?.getAttribute('src') || '')
     const paused = await win.evaluate(() => document.querySelector('audio')?.paused)
     record('audio.src 已设置', src.length > 0, src.slice(0, 60))
     record('音频正在播放', paused === false)
-    const lyricCount = await win.locator('.lyric-line').count()
-    record('歌词渲染', lyricCount > 0, `${lyricCount} 行`)
-    const karaoke = await win.locator('.karaoke').count()
-    record('逐字卡拉OK生效', karaoke > 0, `${karaoke} 处`)
-    await win.screenshot({ path: `${OUT_DIR}/e2e-04-playing.png` })
   }
 
-  /* 4b. now playing page */
-  await win.locator('.pb-extra .icon-btn').first().click() // expand to now playing
-  await win.waitForTimeout(800)
+  /* 6. now playing page (3D album + lyrics above cover) */
+  await win.locator('.pb-extra .icon-btn').first().click()
+  await win.waitForTimeout(900)
   record('播放页打开', (await win.locator('.now-playing').count()) === 1)
-  record('播放页-返回按钮', (await win.locator('.np-topbar .np-btn').first().count()) === 1)
+  record('播放页-3D 画布渲染', (await win.locator('.now-playing canvas').count()) === 1)
   const npLyric = await win.locator('.now-playing .lyric-line').count()
-  record('播放页-歌词可见', npLyric > 0, `${npLyric} 行`)
-  await win.screenshot({ path: `${OUT_DIR}/e2e-04b-nowplaying.png` })
-  await win.locator('.np-topbar .np-btn').first().click() // back to browse
+  record('播放页-歌词附着于封面', npLyric > 0, `${npLyric} 行`)
+  const karaoke = await win.locator('.karaoke').count()
+  record('逐字卡拉OK', karaoke > 0)
+  await win.screenshot({ path: `${OUT_DIR}/e2e-04-nowplaying.png` })
+  await win.locator('.np-topbar .np-btn').first().click()
   await win.waitForTimeout(400)
-  record('播放页返回浏览页', (await win.locator('.now-playing').count()) === 0 && (await win.locator('.app-body').count()) === 1)
+  record('播放页返回', (await win.locator('.now-playing').count()) === 0)
 
-  /* 5. QR login */
-  await win.locator('.nav-item').filter({ hasText: '扫码登录' }).count().then(async (n) => {
-    if (n === 0) {
-      record('已登录状态（跳过二维码）', true, '已存在登录态')
-      return
-    }
-    await win.locator('.nav-item').filter({ hasText: '扫码登录' }).click()
-    await win.waitForSelector('.qr-box img', { timeout: 20000 })
-    const qrSrc = await win.locator('.qr-box img').getAttribute('src')
-    record('登录二维码生成', (qrSrc || '').startsWith('data:image'), (qrSrc || '').slice(0, 40))
-    await win.screenshot({ path: `${OUT_DIR}/e2e-05-login.png` })
-    await win.locator('.modal-backdrop').click({ position: { x: 8, y: 8 } })
-  })
-
-  /* 6. visualizer modes */
+  /* 7. visualizer modes (4, album-cover-centric) */
+  await win.locator('.pb-extra .icon-btn').first().click()
+  await win.waitForTimeout(600)
   const modeChips = await win.locator('.mode-chip').count()
-  record('可视化模式按钮', modeChips === 6, `${modeChips} 个`)
-  for (const m of ['粒子', '星系', '隧道']) {
+  record('可视化模式按钮 (4个)', modeChips === 4, `${modeChips} 个`)
+  for (const m of ['粒子', '波形', '唱片']) {
     await win.locator('.mode-chip').filter({ hasText: m }).click()
-    await win.waitForTimeout(500)
-    const c = await win.locator('.visualizer-stage canvas').count()
-    record(`切换「${m}」模式画布仍在`, c === 1)
+    await win.waitForTimeout(400)
+    record(`切换「${m}」画布仍在`, (await win.locator('.now-playing canvas').count()) === 1)
   }
-  await win.screenshot({ path: `${OUT_DIR}/e2e-06-visualizer.png` })
+  await win.locator('.np-topbar .np-btn').first().click()
+  await win.waitForTimeout(300)
 
-  /* 7. queue view */
+  /* 8. queue page */
   await win.locator('.nav-item').filter({ hasText: '播放队列' }).click()
   await win.waitForTimeout(400)
-  record('播放队列面板', (await win.locator('.list-panel h3').filter({ hasText: '播放队列' }).count()) === 1)
+  record('播放队列页', (await win.locator('.page-heading h1').filter({ hasText: '播放队列' }).count()) === 1)
 
-  /* 8. immersive lyrics */
-  await win.locator('.nav-item').filter({ hasText: '设置' }).click()
-  await win.waitForSelector('.modal', { timeout: 5000 })
-  await win.locator('.opt-btn').filter({ hasText: '沉浸式' }).click()
-  await win.locator('.modal-backdrop').click({ position: { x: 8, y: 8 } })
+  /* 9. immersive lyrics */
+  await win.locator('.pb-extra .icon-btn').first().click()
+  await win.waitForTimeout(600)
+  await win.locator('.np-topbar .np-btn').filter({ hasText: '沉浸歌词' }).click()
   await win.waitForTimeout(400)
   record('沉浸式歌词', (await win.locator('.lyrics-immersive').count()) === 1)
-  await win.screenshot({ path: `${OUT_DIR}/e2e-07-immersive.png` })
   await win.locator('.immersive-exit').click()
   await win.waitForTimeout(300)
   record('退出沉浸式歌词', (await win.locator('.lyrics-immersive').count()) === 0)

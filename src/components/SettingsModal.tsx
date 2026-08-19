@@ -12,12 +12,10 @@ const THEMES = [
 ]
 
 const VIS_MODES = [
-  { id: 'spectrum', name: '频谱环' },
-  { id: 'particles', name: '粒子球' },
-  { id: 'wave', name: '波形' },
   { id: 'disc', name: '黑胶唱片' },
-  { id: 'galaxy', name: '星系' },
-  { id: 'tunnel', name: '隧道' },
+  { id: 'spectrum', name: '频谱环' },
+  { id: 'particles', name: '粒子' },
+  { id: 'wave', name: '波形' },
 ]
 
 const APP_THEMES: Array<{ id: ThemePreference; name: string }> = [
@@ -143,7 +141,7 @@ export default function SettingsModal() {
 
         <div className="setting-row" style={{ borderBottom: 'none', paddingBottom: 0 }}>
           <div style={{ color: 'var(--text-faint)', fontSize: 11, lineHeight: 1.6 }}>
-            NCM Player v1.2.0 · Electron {window.ncm?.versions.electron ?? '—'}
+            NCM Player v1.3.0 · Electron {window.ncm?.versions.electron ?? '—'}
             <br />
             数据来源：NeteaseCloudMusicApi (GitHub)
             <br />

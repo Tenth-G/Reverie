@@ -114,6 +114,7 @@ interface PlayerState {
   setShowSettings: (v: boolean) => void
   setActiveView: (v: View) => void
   setPage: (p: 'browse' | 'nowplaying') => void
+  loadHome: () => Promise<void>
   doSearch: (kw: string) => Promise<void>
   loadTopSongs: () => Promise<void>
   loadHotPlaylists: () => Promise<void>
@@ -186,7 +187,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   theme: readThemePref(),
 
   // --- ui / data ---
-  activeView: 'search',
+  activeView: 'home',
   currentPage: 'browse',
   searchKeyword: '',
   searchResults: [],
@@ -317,6 +318,23 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   setShowSettings: (v) => set({ showSettings: v }),
   setActiveView: (v) => set({ activeView: v }),
   setPage: (p) => set({ currentPage: p }),
+
+  // --- home dashboard ---
+  loadHome: async () => {
+    set({ activeView: 'home' })
+    if (!get().hotPlaylists.length) {
+      set({ hotPlaylistsLoading: true })
+      getHotPlaylists(12).then((lists) => set({ hotPlaylists: lists, hotPlaylistsLoading: false })).catch(() => set({ hotPlaylistsLoading: false }))
+    }
+    if (!get().topSongs.length) {
+      set({ topSongsLoading: true })
+      getTopSongs(0, 10).then((songs) => set({ topSongs: songs, topSongsLoading: false })).catch(() => set({ topSongsLoading: false }))
+    }
+    if (get().loggedIn && !get().recommendSongs.length) {
+      set({ recommendLoading: true })
+      getRecommendSongs().then((songs) => set({ recommendSongs: songs, recommendLoading: false })).catch(() => set({ recommendLoading: false }))
+    }
+  },
 
   // --- discovery ---
   doSearch: async (kw) => {

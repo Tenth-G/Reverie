@@ -37,7 +37,7 @@ export default function LyricsPanel() {
     return lyricsMode === 'immersive' ? (
       <div className="lyrics-immersive">{empty}</div>
     ) : (
-      <div className="stage-lyrics">{empty}</div>
+      <div className="lyrics-overlay">{empty}</div>
     )
   }
 
@@ -79,7 +79,7 @@ export default function LyricsPanel() {
       {content}
     </div>
   ) : (
-    <div className={`stage-lyrics theme-${lyricTheme}`}>{content}</div>
+    <div className={`lyrics-overlay theme-${lyricTheme}`}>{content}</div>
   )
 }
 

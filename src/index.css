@@ -187,7 +187,7 @@ input {
   align-items: center;
   gap: 11px;
   padding: 10px 12px;
-  border-radius: 10px;
+  border-radius: 12px;
   color: var(--text-dim);
   font-size: 14px;
   transition: all 0.16s ease;
@@ -280,7 +280,7 @@ input {
 
 .stage-overlay {
   position: absolute;
-  bottom: 16px;
+  top: 16px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -328,6 +328,77 @@ input {
   margin-top: 3px;
 }
 
+/* ============================ Pages ============================ */
+.page-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.page {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.page-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 32px 130px;
+}
+.page-header {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  padding: 22px 32px 10px;
+}
+.page-heading h1 {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+.page-heading p {
+  color: var(--text-dim);
+  font-size: 13px;
+  margin-top: 5px;
+}
+.page-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.home-section {
+  margin-bottom: 34px;
+}
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 18px 0 12px;
+}
+.section-title h2 {
+  font-size: 18px;
+  font-weight: 700;
+}
+.link-btn {
+  color: var(--text-dim);
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: color 0.15s ease;
+}
+.link-btn:hover {
+  color: var(--accent-2);
+}
+
+.page-search {
+  margin: 4px 0 16px;
+  border: none;
+  padding: 0;
+}
+
 /* ============================ Lists / panels ============================ */
 .list-panel {
   position: absolute;
@@ -343,11 +414,12 @@ input {
   z-index: 6;
 }
 .list-header {
-  padding: 16px 16px 12px;
+  padding: 10px 4px;
   border-bottom: 1px solid var(--border);
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-bottom: 10px;
 }
 .list-header h3 {
   font-size: 16px;
@@ -373,8 +445,8 @@ input {
   flex: 1;
   background: var(--bg-3);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 9px 13px;
+  border-radius: 12px;
+  padding: 10px 14px;
   font-size: 13px;
   outline: none;
   transition: border-color 0.15s ease, background 0.15s ease;
@@ -384,16 +456,16 @@ input {
 }
 
 .song-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px 8px 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 .song-item {
   display: flex;
   align-items: center;
   gap: 11px;
   padding: 8px;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   transition: background 0.13s ease;
 }
@@ -479,10 +551,8 @@ input {
 
 .playlist-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
-  gap: 14px;
-  padding: 16px;
-  overflow-y: auto;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 20px;
 }
 .playlist-card {
   cursor: pointer;
@@ -495,10 +565,10 @@ input {
 .playlist-card img {
   width: 100%;
   aspect-ratio: 1;
-  border-radius: 12px;
+  border-radius: 16px;
   object-fit: cover;
   background: var(--bg-3);
-  box-shadow: 0 4px 16px var(--shadow);
+  box-shadow: 0 6px 20px var(--shadow);
 }
 .playlist-card .n {
   font-size: 12px;
@@ -521,18 +591,23 @@ input {
   padding: 32px;
 }
 
-/* ============================ Player bar ============================ */
+/* ============================ Player bar (floating pill) ============================ */
 .player-bar {
-  height: 88px;
-  flex: none;
-  border-top: 1px solid var(--border);
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(1060px, calc(100% - 48px));
+  border-radius: 30px;
+  border: 1px solid var(--border);
   background: var(--glass-strong);
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(24px);
+  box-shadow: 0 18px 50px var(--shadow);
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 0 20px;
-  z-index: 10;
+  padding: 10px 20px;
+  z-index: 60;
 }
 .pb-cover {
   position: relative;
@@ -741,19 +816,25 @@ input {
   color: var(--accent-2);
 }
 
-/* stage lyrics overlay */
-.stage-lyrics {
+/* lyrics attached above the album cover */
+.lyrics-overlay {
   position: absolute;
-  left: 20px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 320px;
-  max-height: 72%;
-  z-index: 4;
+  top: 5%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(760px, 74%);
+  max-height: 46%;
+  z-index: 8;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   pointer-events: auto;
+  text-align: center;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 82%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 82%, transparent);
+}
+.lyrics-overlay .lyric-line {
+  text-align: center;
 }
 
 /* ============================ Now playing page ============================ */
@@ -844,7 +925,7 @@ input {
 .modal {
   background: var(--bg-2);
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 20px;
   padding: 26px;
   width: 400px;
   max-width: 92vw;
@@ -938,7 +1019,7 @@ input {
   justify-content: center;
   gap: 6px;
   padding: 9px 16px;
-  border-radius: 9px;
+  border-radius: 12px;
   background: var(--bg-3);
   border: 1px solid var(--border);
   font-size: 13px;

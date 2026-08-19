@@ -5,14 +5,12 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { usePlayerStore } from '../store/playerStore'
 
-const MODES = ['spectrum', 'particles', 'wave', 'disc', 'galaxy', 'tunnel'] as const
+const MODES = ['disc', 'spectrum', 'particles', 'wave'] as const
 const MODE_LABEL: Record<string, string> = {
+  disc: '唱片',
   spectrum: '频谱',
   particles: '粒子',
   wave: '波形',
-  disc: '唱片',
-  galaxy: '星系',
-  tunnel: '隧道',
 }
 
 const BG = 0x0a0a12
@@ -64,19 +62,19 @@ export default function Visualizer() {
     container.appendChild(renderer.domElement)
 
     const scene = new THREE.Scene()
-    scene.fog = new THREE.FogExp2(BG, 0.035)
+    scene.fog = new THREE.FogExp2(BG, 0.03)
 
     const camera = new THREE.PerspectiveCamera(
-      55,
+      50,
       container.clientWidth / container.clientHeight,
       0.1,
-      200,
+      100,
     )
-    camera.position.set(0, 1.2, 7.2)
+    camera.position.set(0, 0.6, 7.6)
     camera.lookAt(0, 0, 0)
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.55))
-    const dir = new THREE.DirectionalLight(0xffffff, 1.8)
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6))
+    const dir = new THREE.DirectionalLight(0xffffff, 2)
     dir.position.set(4, 6, 5)
     scene.add(dir)
     const rim = new THREE.PointLight(0xec4141, 70, 30)
@@ -89,42 +87,41 @@ export default function Visualizer() {
     const world = new THREE.Group()
     scene.add(world)
 
-    /* ---------------- vinyl disc ---------------- */
+    /* ---------------- album disc (the main 3D element) ---------------- */
     const disc = new THREE.Group()
     const vinylMat = new THREE.MeshStandardMaterial({ color: 0x111118, roughness: 0.35, metalness: 0.3 })
-    const vinyl = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.0, 0.1, 96), vinylMat)
+    const vinyl = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 0.12, 96), vinylMat)
     disc.add(vinyl)
     const grooveMat = new THREE.MeshStandardMaterial({ color: 0x1c1c28, roughness: 0.2, metalness: 0.4 })
     for (let i = 0; i < 4; i++) {
-      const g = new THREE.Mesh(new THREE.RingGeometry(0.6 + i * 0.32, 0.66 + i * 0.32, 96), grooveMat)
+      const g = new THREE.Mesh(new THREE.RingGeometry(0.75 + i * 0.4, 0.82 + i * 0.4, 96), grooveMat)
       g.rotation.x = -Math.PI / 2
-      g.position.y = 0.051
+      g.position.y = 0.061
       disc.add(g)
     }
     const coverTex = makeFallbackTexture()
     const coverMat = new THREE.MeshStandardMaterial({ map: coverTex, roughness: 0.4, metalness: 0.1 })
-    const cover = new THREE.Mesh(new THREE.CircleGeometry(1.55, 96), coverMat)
+    const cover = new THREE.Mesh(new THREE.CircleGeometry(1.9, 96), coverMat)
     cover.rotation.x = -Math.PI / 2
-    cover.position.y = 0.052
+    cover.position.y = 0.062
     disc.add(cover)
     const label = new THREE.Mesh(
-      new THREE.CircleGeometry(0.3, 48),
+      new THREE.CircleGeometry(0.36, 48),
       new THREE.MeshStandardMaterial({ color: 0xec4141, roughness: 0.4, emissive: 0xec4141, emissiveIntensity: 0.4 }),
     )
     label.rotation.x = -Math.PI / 2
-    label.position.y = 0.054
+    label.position.y = 0.064
     disc.add(label)
-    // glowing ring around disc
     const glowRing = new THREE.Mesh(
-      new THREE.RingGeometry(2.15, 2.3, 96),
+      new THREE.RingGeometry(2.55, 2.72, 96),
       new THREE.MeshBasicMaterial({ color: 0xec4141, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false }),
     )
     glowRing.rotation.x = -Math.PI / 2
-    glowRing.position.y = 0.03
+    glowRing.position.y = 0.04
     disc.add(glowRing)
     world.add(disc)
 
-    /* ---------------- spectrum bars ---------------- */
+    /* ---------------- spectrum ring (accent around disc) ---------------- */
     const spectrum = new THREE.Group()
     const BAR_COUNT = 72
     const bars: THREE.Mesh[] = []
@@ -134,7 +131,7 @@ export default function Visualizer() {
       const m = new THREE.MeshBasicMaterial({ color: new THREE.Color() })
       const mesh = new THREE.Mesh(barGeo, m)
       const a = (i / BAR_COUNT) * Math.PI * 2
-      const r = 2.7
+      const r = 3.1
       mesh.position.set(Math.cos(a) * r, 0, Math.sin(a) * r)
       mesh.rotation.y = -a
       bars.push(mesh)
@@ -143,13 +140,13 @@ export default function Visualizer() {
     }
     world.add(spectrum)
 
-    /* ---------------- particle sphere ---------------- */
-    const PARTICLE_COUNT = 1800
+    /* ---------------- particle halo ---------------- */
+    const PARTICLE_COUNT = 1400
     const pGeo = new THREE.BufferGeometry()
     const pPos = new Float32Array(PARTICLE_COUNT * 3)
     const pBase = new Float32Array(PARTICLE_COUNT * 3)
     for (let i = 0; i < PARTICLE_COUNT; i++) {
-      const r = 1.7 + Math.random() * 2.5
+      const r = 2.2 + Math.random() * 2.8
       const theta = Math.random() * Math.PI * 2
       const phi = Math.acos(2 * Math.random() - 1)
       pBase[i * 3] = r * Math.sin(phi) * Math.cos(theta)
@@ -185,100 +182,25 @@ export default function Visualizer() {
     const waveRing = new THREE.Points(wGeo, wMat)
     world.add(waveRing)
 
-    /* ---------------- galaxy ---------------- */
-    const GALAXY_COUNT = 3200
-    const gGeo = new THREE.BufferGeometry()
-    const gPos = new Float32Array(GALAXY_COUNT * 3)
-    const gColors = new Float32Array(GALAXY_COUNT * 3)
-    const cInner = new THREE.Color(0xffd166)
-    const cMid = new THREE.Color(0xec4141)
-    const cOuter = new THREE.Color(0x22d3ee)
-    const tmpC = new THREE.Color()
-    for (let i = 0; i < GALAXY_COUNT; i++) {
-      const arms = 4
-      const arm = Math.floor(Math.random() * arms)
-      const r = Math.pow(Math.random(), 0.7) * 6
-      const spinAngle = r * 0.9
-      const spread = (Math.random() - 0.5) * (0.35 + r * 0.09)
-      const angle = arm * ((Math.PI * 2) / arms) + spinAngle + spread
-      const x = Math.cos(angle) * r
-      const z = Math.sin(angle) * r
-      const y = (Math.random() - 0.5) * (0.6 - r * 0.06)
-      gPos[i * 3] = x
-      gPos[i * 3 + 1] = y
-      gPos[i * 3 + 2] = z
-      tmpC.copy(cInner).lerp(cMid, Math.min(r / 2.5, 1)).lerp(cOuter, Math.max(0, (r - 2.5) / 4))
-      gColors[i * 3] = tmpC.r
-      gColors[i * 3 + 1] = tmpC.g
-      gColors[i * 3 + 2] = tmpC.b
-    }
-    gGeo.setAttribute('position', new THREE.BufferAttribute(gPos, 3))
-    gGeo.setAttribute('color', new THREE.BufferAttribute(gColors, 3))
-    const gMat = new THREE.PointsMaterial({
-      size: 0.05,
-      vertexColors: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      transparent: true,
-    })
-    const galaxy = new THREE.Points(gGeo, gMat)
-    galaxy.rotation.x = 0.5
-    world.add(galaxy)
-
-    /* ---------------- tunnel ---------------- */
-    const TUNNEL_COUNT = 2400
-    const tGeo = new THREE.BufferGeometry()
-    const tPos = new Float32Array(TUNNEL_COUNT * 3)
-    const tBase = new Float32Array(TUNNEL_COUNT * 3)
-    const tColors = new Float32Array(TUNNEL_COUNT * 3)
-    for (let i = 0; i < TUNNEL_COUNT; i++) {
-      const z = (Math.random() * 30) - 24
-      const a = Math.random() * Math.PI * 2
-      const r = 2.5 + Math.random() * 3
-      tBase[i * 3] = Math.cos(a) * r
-      tBase[i * 3 + 1] = Math.sin(a) * r
-      tBase[i * 3 + 2] = z
-      tPos[i * 3] = tBase[i * 3]
-      tPos[i * 3 + 1] = tBase[i * 3 + 1]
-      tPos[i * 3 + 2] = tBase[i * 3 + 2]
-      tmpC.setHSL(0.55 + Math.random() * 0.45, 0.9, 0.6)
-      tColors[i * 3] = tmpC.r
-      tColors[i * 3 + 1] = tmpC.g
-      tColors[i * 3 + 2] = tmpC.b
-    }
-    tGeo.setAttribute('position', new THREE.BufferAttribute(tPos, 3))
-    tGeo.setAttribute('color', new THREE.BufferAttribute(tColors, 3))
-    const tMat = new THREE.PointsMaterial({
-      size: 0.06,
-      vertexColors: true,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      transparent: true,
-    })
-    const tunnel = new THREE.Points(tGeo, tMat)
-    world.add(tunnel)
-
-    /* ---------------- bloom post-processing ---------------- */
+    /* ---------------- bloom ---------------- */
     const composer = new EffectComposer(renderer)
     composer.addPass(new RenderPass(scene, camera))
     const bloomPass = new UnrealBloomPass(
       new THREE.Vector2(container.clientWidth, container.clientHeight),
-      0.9,
+      0.85,
       0.5,
       0.18,
     )
     composer.addPass(bloomPass)
 
-    /* ---------------- analyser data ---------------- */
     const freqData = new Uint8Array(256)
     const timeData = new Uint8Array(512)
     const getAnalyser = () => usePlayerStore.getState().analyser
 
-    /* ---------------- cover texture update ---------------- */
     const textureLoader = new THREE.TextureLoader()
     textureLoader.crossOrigin = 'anonymous'
     let lastCoverId = -1
-    const unsub = usePlayerStore.subscribe((state, prev) => {
+    const unsub = usePlayerStore.subscribe((state) => {
       const song = state.currentSong
       if (song && song.id !== lastCoverId && song.picUrl) {
         lastCoverId = song.id
@@ -327,10 +249,6 @@ export default function Visualizer() {
       spectrum.visible = mode === 'spectrum'
       particles.visible = mode === 'particles'
       waveRing.visible = mode === 'wave'
-      galaxy.visible = mode === 'galaxy'
-      tunnel.visible = mode === 'tunnel'
-      disc.visible = mode !== 'galaxy' && mode !== 'tunnel'
-      world.visible = true
     }
 
     let t = 0
@@ -360,26 +278,28 @@ export default function Visualizer() {
       const pulse = analyser ? energy : 0.12 + 0.08 * Math.sin(t * 2.2)
       const mode = modeRef.current
 
-      disc.rotation.y += 0.006 + pulse * 0.02
+      // the album disc is always spinning — it is the main element
+      disc.rotation.y += 0.008 + pulse * 0.02
+      disc.rotation.x = Math.sin(t * 0.35) * 0.06
       world.rotation.y += 0.0015
-      world.rotation.z = Math.sin(t * 0.4) * 0.04
+      world.rotation.z = Math.sin(t * 0.4) * 0.03
 
       if (mode === 'spectrum') {
         for (let i = 0; i < BAR_COUNT; i++) {
           const idx = Math.floor((i / BAR_COUNT) * 160)
           const v = analyser ? freqData[idx] / 255 : 0.3 + 0.3 * Math.sin(t * 3 + i * 0.4)
-          const h = 0.15 + v * 2.7
+          const h = 0.15 + v * 2.4
           bars[i].scale.y = h / 0.3
           barMats[i].color.copy(colorA).lerp(colorB, i / BAR_COUNT).multiplyScalar(0.6 + v * 0.8)
         }
       } else if (mode === 'particles') {
         const pos = pGeo.getAttribute('position') as THREE.BufferAttribute
-        const scale = 0.75 + bass * 1.2
+        const scale = 0.85 + bass * 0.9
         for (let i = 0; i < PARTICLE_COUNT; i++) {
           pos.setXYZ(
             i,
-            pBase[i * 3] * scale + Math.sin(t * 2 + i) * 0.06,
-            pBase[i * 3 + 1] * scale + Math.cos(t * 1.7 + i) * 0.06,
+            pBase[i * 3] * scale + Math.sin(t * 2 + i) * 0.05,
+            pBase[i * 3 + 1] * scale + Math.cos(t * 1.7 + i) * 0.05,
             pBase[i * 3 + 2] * scale,
           )
         }
@@ -387,48 +307,21 @@ export default function Visualizer() {
         pMat.color.setHSL(0.55 + treble * 0.4, 0.9, 0.6)
       } else if (mode === 'wave') {
         const pos = wGeo.getAttribute('position') as THREE.BufferAttribute
-        const baseR = 2.7
+        const baseR = 3.1
         for (let i = 0; i < WAVE_COUNT; i++) {
           const a = (i / WAVE_COUNT) * Math.PI * 2
           const s = analyser ? (timeData[Math.floor((i / WAVE_COUNT) * 512)] - 128) / 128 : 0.2
-          const r = baseR + s * 1.3 + pulse * 0.3
+          const r = baseR + s * 1.2 + pulse * 0.3
           pos.setXYZ(i, Math.cos(a) * r, Math.sin(a) * r, 0)
         }
         pos.needsUpdate = true
-      } else if (mode === 'galaxy') {
-        galaxy.rotation.y += 0.004 + bass * 0.05
-        galaxy.rotation.z += 0.0006
-        gMat.size = 0.04 + bass * 0.06
-      } else if (mode === 'tunnel') {
-        const pos = tGeo.getAttribute('position') as THREE.BufferAttribute
-        const speed = 0.08 + bass * 0.5
-        for (let i = 0; i < TUNNEL_COUNT; i++) {
-          let z = tBase[i * 3 + 2] + speed
-          if (z > 6) z -= 30
-          tBase[i * 3 + 2] = z
-          const wobble = 0.3 * Math.sin(t * 2 + i * 0.01)
-          pos.setXYZ(i, tBase[i * 3] + wobble, tBase[i * 3 + 1], z)
-        }
-        pos.needsUpdate = true
-        tMat.size = 0.05 + bass * 0.06
       }
 
-      // camera orbit
-      if (mode === 'galaxy') {
-        camera.position.set(Math.sin(t * 0.2) * 8, 1.5, Math.cos(t * 0.2) * 8)
-        camera.lookAt(0, 0, 0)
-      } else if (mode === 'tunnel') {
-        camera.position.set(0, 0, 8)
-        camera.lookAt(0, 0, -20)
-        camera.rotation.z = Math.sin(t * 0.3) * 0.05
-      } else {
-        camera.position.set(Math.sin(t * 0.15) * 2.2, 1.2, 7.2 + Math.cos(t * 0.15) * 0.35)
-        camera.lookAt(0, 0, 0)
-      }
+      // gentle orbit keeps the cover centered
+      camera.position.set(Math.sin(t * 0.14) * 1.8, 0.6, 7.6 + Math.cos(t * 0.14) * 0.3)
+      camera.lookAt(0, 0, 0)
 
-      // bloom reacts subtly to audio
-      bloomPass.strength = 0.75 + pulse * 0.9
-
+      bloomPass.strength = 0.7 + pulse * 0.8
       applyMode()
       composer.render()
     }
