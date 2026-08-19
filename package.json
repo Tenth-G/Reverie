@@ -5,7 +5,9 @@
   "description": "Reverie — 网易云音乐桌面播放器（中文名：白日梦）",
   "type": "module",
   "main": "electron/main.cjs",
-  "author": "Reverie",
+  "author": {
+    "name": ""
+  },
   "license": "MIT",
   "private": true,
   "scripts": {
@@ -16,8 +18,8 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "start": "npm run build && electron .",
-    "dist": "npm run build && electron-builder",
-    "dist:win": "npm run build && electron-builder --win",
+    "dist": "npm run build && electron-builder && node scripts/clear-company.cjs",
+    "dist:win": "npm run build && electron-builder --win && node scripts/clear-company.cjs",
     "test:api": "node scripts/test-api.cjs",
     "test:e2e": "node scripts/e2e-test.mjs"
   },
