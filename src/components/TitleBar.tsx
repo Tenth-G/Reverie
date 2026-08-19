@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
-import { IconClose, IconMaximize, IconMinimize, IconRestore } from './icons'
+import { usePlayerStore } from '../store/playerStore'
+import { IconClose, IconMaximize, IconMinimize, IconRestore, IconSettings } from './icons'
 
 export default function TitleBar() {
   const [maximized, setMaximized] = useState(false)
+  const setShowSettings = usePlayerStore((s) => s.setShowSettings)
 
   useEffect(() => {
     if (!window.ncm) return
@@ -18,6 +20,9 @@ export default function TitleBar() {
       <div className="titlebar-drag" />
       <div className="titlebar-name">Reverie</div>
       <div className="titlebar-controls">
+        <button className="tb-btn" onClick={() => setShowSettings(true)} title="设置">
+          <IconSettings width={15} height={15} />
+        </button>
         <button className="tb-btn" onClick={() => window.ncm?.minimize()} title="最小化">
           <IconMinimize width={15} height={15} />
         </button>

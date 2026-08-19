@@ -14,7 +14,6 @@ import {
   IconMusic,
   IconRadio,
   IconSearch,
-  IconSettings,
   IconSun,
 } from './icons'
 
@@ -51,7 +50,6 @@ export default function TopNav() {
   const setSearchOpen = usePlayerStore((s) => s.setSearchOpen)
   const doSearch = usePlayerStore((s) => s.doSearch)
   const setShowLogin = usePlayerStore((s) => s.setShowLogin)
-  const setShowSettings = usePlayerStore((s) => s.setShowSettings)
   const loadTopSongs = usePlayerStore((s) => s.loadTopSongs)
   const loadPersonalFm = usePlayerStore((s) => s.loadPersonalFm)
   const loadUserPlaylists = usePlayerStore((s) => s.loadUserPlaylists)
@@ -155,16 +153,7 @@ export default function TopNav() {
                   <div className="loading-hint">搜索中…</div>
                 ) : !loggedIn ? (
                   <div className="search-login-hint">
-                    <span>登录后即可搜索音乐</span>
-                    <button
-                      className="btn primary"
-                      onClick={() => {
-                        setSearchOpen(false)
-                        setShowLogin(true)
-                      }}
-                    >
-                      登录
-                    </button>
+                    <span>登录后即可搜索音乐，请点击右上角「登录」</span>
                   </div>
                 ) : (
                   searchResults.slice(0, 12).map((song) => (
@@ -206,10 +195,6 @@ export default function TopNav() {
 
         <button className="topnav-icon-btn" onClick={cycleTheme} title={`主题：${THEME_LABEL[theme]}`}>
           {THEME_ICON[theme]}
-        </button>
-
-        <button className="topnav-icon-btn" onClick={() => setShowSettings(true)} title="设置">
-          <IconSettings />
         </button>
 
         {loggedIn ? (

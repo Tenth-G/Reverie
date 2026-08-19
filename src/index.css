@@ -313,11 +313,12 @@ input {
 }
 @keyframes capsule-in {
   from {
-    width: 34px;
-    opacity: 0.4;
+    opacity: 0;
+    transform: translateX(16px);
   }
   to {
     opacity: 1;
+    transform: translateX(0);
   }
 }
 
@@ -733,6 +734,10 @@ input {
   font-size: 13px;
   max-width: 340px;
   line-height: 1.7;
+}
+.login-empty .hint-strong {
+  color: var(--accent-2);
+  font-weight: 600;
 }
 
 /* ============================ Lists / panels ============================ */

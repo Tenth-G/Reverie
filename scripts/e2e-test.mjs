@@ -42,7 +42,7 @@ async function main() {
   record('窗口标题为 Reverie', (await win.title()) === 'Reverie', await win.title())
   record('自定义标题栏渲染', (await win.locator('.titlebar').count()) === 1)
   record('标题栏居中显示 Reverie', (await win.locator('.titlebar-name').textContent()) === 'Reverie')
-  record('窗口控制按钮 (3个)', (await win.locator('.tb-btn').count()) === 3)
+  record('窗口控制按钮 (4个: 设置/最小化/最大化/关闭)', (await win.locator('.tb-btn').count()) === 4)
   record('顶部导航栏渲染', (await win.locator('.topnav').count()) === 1)
   record('左侧导航已移除', (await win.locator('.sidebar').count()) === 0)
   record('悬浮播放栏渲染', (await win.locator('.player-bar').count()) === 1)
