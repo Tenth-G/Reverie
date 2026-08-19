@@ -1006,6 +1006,10 @@ input {
 .pb-cover {
   position: relative;
   flex: none;
+  transition: transform 0.15s ease;
+}
+.pb-cover:hover {
+  transform: scale(1.07);
 }
 .pb-cover img {
   width: 56px;
@@ -1242,9 +1246,14 @@ input {
 }
 .np-back {
   position: absolute;
-  top: 14px;
+  top: 16px;
   left: 16px;
   z-index: 5;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  justify-content: center;
 }
 .np-btn {
   display: flex;

@@ -9,8 +9,7 @@ export default function NowPlayingView() {
   return (
     <div className="now-playing">
       <button className="np-btn np-back" onClick={() => setPage('browse')} title="返回">
-        <IconChevronDown width={18} height={18} />
-        <span>返回</span>
+        <IconChevronDown width={20} height={20} />
       </button>
 
       <div className="np-lyrics">

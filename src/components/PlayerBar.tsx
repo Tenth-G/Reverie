@@ -2,7 +2,6 @@ import { usePlayerStore } from '../store/playerStore'
 import { formatTime } from '../utils/lyrics'
 import type { PlayMode } from '../api/types'
 import {
-  IconExpand,
   IconHeart,
   IconLoop,
   IconMute,
@@ -109,9 +108,6 @@ export default function PlayerBar() {
           style={liked ? { color: '#ec4141' } : undefined}
         >
           <IconHeart />
-        </button>
-        <button className="icon-btn" onClick={() => setPage('nowplaying')} title="打开播放页">
-          <IconExpand />
         </button>
         <div className="vol-wrap">
           <button className="icon-btn" onClick={toggleMute} title="静音">

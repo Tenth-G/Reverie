@@ -99,16 +99,17 @@ async function main() {
   record('未登录无头像下拉', (await win.locator('.user-menu').count()) === 0)
 
   /* 7. now-playing structure (no song -> placeholder + empty lyrics) */
-  await win.locator('button[title="打开播放页"]').click()
+  await win.locator('.pb-cover').click()
   await win.waitForTimeout(500)
   record('播放页打开', (await win.locator('.now-playing').count()) === 1)
   record('播放页隐藏顶部导航', (await win.locator('.topnav').count()) === 0)
+  record('播放页隐藏标题栏', (await win.locator('.titlebar').count()) === 0)
   record('播放页封面容器存在', (await win.locator('.np-cover').count()) === 1)
   record('播放页歌词容器存在', (await win.locator('.np-lyrics').count()) === 1)
   await win.screenshot({ path: `${OUT_DIR}/e2e-04-nowplaying.png` })
   await win.locator('.np-back').click()
   await win.waitForTimeout(300)
-  record('播放页返回', (await win.locator('.now-playing').count()) === 0)
+  record('播放页返回', (await win.locator('.now-playing').count()) === 0 && (await win.locator('.titlebar').count()) === 1)
 
   record('无渲染进程错误', rendererErrors.length === 0, rendererErrors.slice(0, 3).join(' || ') || 'clean')
 

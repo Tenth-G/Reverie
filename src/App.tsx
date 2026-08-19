@@ -144,7 +144,7 @@ export default function App() {
 
   return (
     <div className="app">
-      <TitleBar />
+      {currentPage !== 'nowplaying' && <TitleBar />}
       {currentPage !== 'nowplaying' && <TopNav />}
       {currentPage === 'nowplaying' ? (
         <NowPlayingView />
