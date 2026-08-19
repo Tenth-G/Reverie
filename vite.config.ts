@@ -9,6 +9,8 @@ export default defineConfig({
     outDir: 'dist',
     target: 'chrome128',
     chunkSizeWarningLimit: 1500,
+    // Don't wipe the output dir: a stray electron-builder artifact may lock it.
+    emptyOutDir: false,
   },
   server: {
     port: 5173,
