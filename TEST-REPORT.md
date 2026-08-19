@@ -1,4 +1,4 @@
-# Reverie 测试报告（v1.5.0）
+# Reverie 测试报告（v1.0.0）
 
 > 测试时间：2026-08-20（自动化执行）
 > 测试环境：Windows 10.0.26200 · Node.js v24.19.0 · Electron 43.4.1 · Chromium（Electron 内置）
@@ -85,8 +85,8 @@ Playwright 驱动真实 Electron 应用，26 项全部通过：
 
 | 文件 | 说明 |
 |------|------|
-| `Reverie-Setup-1.5.0-x64.exe` | NSIS 安装包 |
-| `Reverie-Portable-1.5.0-x64.exe` | 免安装便携版 |
+| `Reverie-Setup-1.0.0-x64.exe` | NSIS 安装包 |
+| `Reverie-Portable-1.0.0-x64.exe` | 免安装便携版 |
 
 ---
 

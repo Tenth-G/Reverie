@@ -108,7 +108,7 @@ export default function SettingsModal() {
 
         <div className="setting-row" style={{ borderBottom: 'none', paddingBottom: 0 }}>
           <div style={{ color: 'var(--text-faint)', fontSize: 11, lineHeight: 1.7 }}>
-            Reverie v1.5.0 · Electron {window.ncm?.versions.electron ?? '—'}
+            Reverie v1.0.0 · Electron {window.ncm?.versions.electron ?? '—'}
             <br />
             数据来源：NeteaseCloudMusicApi (GitHub)
             <br />

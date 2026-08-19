@@ -60,8 +60,8 @@ npm start        # 构建后启动
 npm run dist     # 生成安装包 + 便携版，输出到 release/
 ```
 
-- `release/Reverie-Setup-1.5.0-x64.exe` —— NSIS 安装包。
-- `release/Reverie-Portable-1.5.0-x64.exe` —— 免安装便携版，双击即用。
+- `release/Reverie-Setup-1.0.0-x64.exe` —— NSIS 安装包。
+- `release/Reverie-Portable-1.0.0-x64.exe` —— 免安装便携版，双击即用。
 
 ---
 
