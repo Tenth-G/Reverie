@@ -2,7 +2,7 @@
   "name": "ncm-player",
   "productName": "Reverie",
   "version": "1.5.0",
-  "description": "Reverie — 网易云音乐桌面播放器",
+  "description": "Reverie — 一款音乐播放器, 版本1.0.0",
   "type": "module",
   "main": "electron/main.cjs",
   "author": {
