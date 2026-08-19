@@ -14,8 +14,8 @@ import {
   IconMonitor,
   IconMoon,
   IconMusic,
-  IconRoam,
   IconSearch,
+  IconShuffle,
   IconSun,
 } from './icons'
 
@@ -30,7 +30,7 @@ const NAV: NavItem[] = [
   { view: 'home', label: '首页', icon: <IconHome /> },
   { view: 'chart', label: '排行榜', icon: <IconChart /> },
   { view: 'userlist', label: '我的歌单', icon: <IconMusic />, auth: true },
-  { view: 'fm', label: '漫游', icon: <IconRoam />, auth: true },
+  { view: 'fm', label: '漫游', icon: <IconShuffle />, auth: true },
 ]
 
 const THEME_ORDER: ThemePreference[] = ['system', 'light', 'dark']

@@ -205,7 +205,7 @@ input {
   display: flex;
   align-items: center;
   gap: 4px;
-  flex: 1;
+  flex: none;
   min-width: 0;
 }
 .topnav-item {
@@ -232,6 +232,7 @@ input {
   display: flex;
   align-items: center;
   gap: 6px;
+  margin-left: auto;
 }
 .topnav-icon-btn {
   width: 36px;
@@ -1093,20 +1094,20 @@ input {
   padding: 12px 20px;
   z-index: 60;
 }
-/* progress bar sits on top of the pill */
+/* progress bar at the top inside the pill */
 .pb-progress-top {
   position: absolute;
-  top: -5px;
-  left: 18px;
-  right: 18px;
+  top: 0;
+  left: 14px;
+  right: 14px;
   height: 6px;
   display: flex;
   align-items: center;
 }
 .pb-top-slider {
   width: 100%;
-  height: 5px;
-  border-radius: 3px;
+  height: 4px;
+  border-radius: 2px;
   margin: 0;
 }
 .pb-left {

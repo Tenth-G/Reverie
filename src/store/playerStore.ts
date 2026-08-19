@@ -5,7 +5,6 @@ import {
   getCookie,
   getLikedIds,
   getLyric,
-  getPersonalFm,
   getPlaylistDetail,
   getHotPlaylists,
   getRecommendSongs,
@@ -411,6 +410,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     }
   },
   loadPersonalFm: async () => {
+    // 漫游：随机播放歌曲
     if (!get().loggedIn) {
       get().toast('请先登录', 'info')
       set({ showLogin: true })
@@ -418,12 +418,13 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     }
     set({ activeView: 'fm' })
     try {
-      const songs = await getPersonalFm()
-      set({ fmSongs: songs })
-      if (songs.length) get().playSong(songs[0], songs)
-      else get().toast('私人FM暂时没有内容', 'info')
+      const songs = await getTopSongs(0, 60)
+      const shuffled = [...songs].sort(() => Math.random() - 0.5)
+      set({ fmSongs: shuffled, playMode: 'shuffle' })
+      if (shuffled.length) get().playSong(shuffled[0], shuffled)
+      else get().toast('暂无内容', 'info')
     } catch {
-      get().toast('加载私人FM失败', 'error')
+      get().toast('加载随机歌曲失败', 'error')
     }
   },
   loadUserPlaylists: async () => {
@@ -500,6 +501,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     await get().playSong(song, queue)
   },
   fmNext: async () => {
+    // 漫游：播完一批后换一批新的随机歌曲
     const { queue, index } = get()
     const nextIdx = index + 1
     if (nextIdx < queue.length) {
@@ -507,15 +509,12 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       return
     }
     try {
-      const more = await getPersonalFm()
-      if (more.length) {
-        set({ fmSongs: more })
-        await get().playSong(more[0], more)
-      } else {
-        get().toast('暂时没有更多推荐了', 'info')
-      }
+      const songs = await getTopSongs(0, 60)
+      const shuffled = [...songs].sort(() => Math.random() - 0.5)
+      set({ fmSongs: shuffled })
+      await get().playSong(shuffled[0], shuffled)
     } catch {
-      get().toast('加载下一首失败', 'error')
+      get().toast('加载下一批失败', 'error')
     }
   },
   fmDislike: async () => {
