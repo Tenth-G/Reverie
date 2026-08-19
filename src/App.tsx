@@ -4,6 +4,7 @@ import TitleBar from './components/TitleBar'
 import TopNav from './components/TopNav'
 import PlayerBar from './components/PlayerBar'
 import NowPlayingView from './components/NowPlayingView'
+import LoginGate from './components/LoginGate'
 import HomePage from './components/HomePage'
 import ChartPage from './components/ChartPage'
 import PlaylistPage from './components/PlaylistPage'
@@ -148,7 +149,9 @@ export default function App() {
       {currentPage === 'nowplaying' ? (
         <NowPlayingView />
       ) : (
-        <main className="page-content">{renderPage()}</main>
+        <main className="page-content">
+          <LoginGate>{renderPage()}</LoginGate>
+        </main>
       )}
       <PlayerBar />
       <LoginModal />

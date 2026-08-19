@@ -58,6 +58,13 @@ async function main() {
   record('登录按钮仅显示"登录"二字', (loginText || '').trim() === '登录' && loginSvg === 0, `text="${loginText}" icon=${loginSvg}`)
   await win.screenshot({ path: `${OUT_DIR}/e2e-01-home-notlogged.png` })
 
+  /* 2b. not-logged-in chart should show no data */
+  await win.locator('.topnav-item').filter({ hasText: '排行榜' }).click()
+  await win.waitForTimeout(500)
+  record('未登录排行榜无数据', (await win.locator('.login-empty').count()) === 1 && (await win.locator('.song-item').count()) === 0)
+  await win.locator('.topnav-item').filter({ hasText: '首页' }).click()
+  await win.waitForTimeout(300)
+
   /* 3. theme */
   await win.locator('button[title="设置"]').click()
   await win.waitForSelector('.modal', { timeout: 5000 })
@@ -87,13 +94,16 @@ async function main() {
   await win.locator('.search-close').click()
   await win.waitForTimeout(300)
 
-  /* 5. chart + playback (works without login for free songs) */
-  await win.locator('.topnav-item').filter({ hasText: '排行榜' }).click()
-  await win.waitForSelector('.song-item', { timeout: 20000 })
+  /* 5. playback via search dropdown (free song plays without login) */
   const freeSong = await findFreeSong()
   record('API 找到可免费播放歌曲', !!freeSong, freeSong ? `${freeSong.name} (id=${freeSong.id})` : '无')
   if (freeSong) {
-    await win.locator('.song-item').nth(freeSong.index).click()
+    await win.locator('button[title="搜索"]').click()
+    await win.waitForTimeout(300)
+    await win.fill('.search-capsule input', freeSong.name)
+    await win.press('.search-capsule input', 'Enter')
+    await win.waitForSelector('.search-dropdown-item', { timeout: 20000 })
+    await win.locator('.search-dropdown-item').first().click()
     await win.waitForTimeout(3500)
     const src = await win.evaluate(() => document.querySelector('audio')?.getAttribute('src') || '')
     const paused = await win.evaluate(() => document.querySelector('audio')?.paused)
