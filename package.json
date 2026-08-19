@@ -1,11 +1,11 @@
 {
   "name": "ncm-player",
-  "productName": "NCM Player",
+  "productName": "YunLyu",
   "version": "1.4.0",
-  "description": "网易云音乐桌面播放器 — 扫码登录 · 3D 可视化 · 歌词特效",
+  "description": "云律 YunLyu — 网易云音乐桌面播放器（顶部导航 · 悬浮播放栏 · 3D 封面 · 歌词特效）",
   "type": "module",
   "main": "electron/main.cjs",
-  "author": "NCM Player",
+  "author": "YunLyu",
   "license": "MIT",
   "private": true,
   "scripts": {
@@ -44,8 +44,8 @@
     "zustand": "^5.0.0"
   },
   "build": {
-    "appId": "com.ncm.player",
-    "productName": "NCM Player",
+    "appId": "com.yunlyu.player",
+    "productName": "YunLyu",
     "directories": {
       "output": "release"
     },
@@ -66,7 +66,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "NCM Player",
+      "shortcutName": "YunLyu",
       "artifactName": "${productName}-Setup-${version}-${arch}.${ext}"
     },
     "portable": {

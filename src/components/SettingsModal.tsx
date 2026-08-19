@@ -152,7 +152,7 @@ export default function SettingsModal() {
 
         <div className="setting-row" style={{ borderBottom: 'none', paddingBottom: 0 }}>
           <div style={{ color: 'var(--text-faint)', fontSize: 11, lineHeight: 1.6 }}>
-            NCM Player v1.4.0 · Electron {window.ncm?.versions.electron ?? '—'}
+            云律 YunLyu v1.4.0 · Electron {window.ncm?.versions.electron ?? '—'}
             <br />
             数据来源：NeteaseCloudMusicApi (GitHub)
             <br />

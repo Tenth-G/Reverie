@@ -110,7 +110,7 @@ export default function TopNav() {
     <nav className="topnav">
       <div className="topnav-brand">
         <span className="dot" />
-        NCM Player
+        云律
       </div>
 
       <div className="topnav-items">

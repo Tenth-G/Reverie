@@ -1,4 +1,4 @@
-# NCM Player — 网易云音乐桌面播放器
+# 云律 YunLyu — 网易云音乐桌面播放器
 
 一个基于 **Electron + React + Three.js** 的网易云音乐桌面客户端：无边框窗口、圆润悬浮播放栏、分页面布局、以专辑封面为核心的 3D 舞台与歌词。
 
@@ -61,8 +61,8 @@ npm start        # 构建后启动
 npm run dist     # 生成安装包 + 便携版，输出到 release/
 ```
 
-- `release/NCM Player-Setup-1.4.0-x64.exe` —— NSIS 安装包。
-- `release/NCM Player-Portable-1.4.0-x64.exe` —— 免安装便携版，双击即用。
+- `release/YunLyu-Setup-1.4.0-x64.exe` —— NSIS 安装包。
+- `release/YunLyu-Portable-1.4.0-x64.exe` —— 免安装便携版，双击即用。
 
 ---
 

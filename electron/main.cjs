@@ -32,7 +32,7 @@ function createWindow() {
     minHeight: 680,
     frame: false,
     backgroundColor: '#0a0a12',
-    title: 'NCM Player',
+    title: '云律 YunLyu',
     autoHideMenuBar: true,
     show: false,
     webPreferences: {

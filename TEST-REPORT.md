@@ -1,4 +1,4 @@
-# NCM Player 测试报告（v1.4.0）
+# 云律 YunLyu 测试报告（v1.4.0）
 
 > 测试时间：2026-08-20（自动化执行）
 > 测试环境：Windows 10.0.26200 · Node.js v24.19.0 · Electron 43.4.1 · Chromium（Electron 内置）
@@ -80,8 +80,8 @@ Playwright 驱动真实 Electron 应用，34 项全部通过：
 
 | 文件 | 说明 |
 |------|------|
-| `NCM Player-Setup-1.4.0-x64.exe` | NSIS 安装包 |
-| `NCM Player-Portable-1.4.0-x64.exe` | 免安装便携版 |
+| `YunLyu-Setup-1.4.0-x64.exe` | NSIS 安装包 |
+| `YunLyu-Portable-1.4.0-x64.exe` | 免安装便携版 |
 
 打包后的便携版已通过启动冒烟测试（退出码 0，截图正常）。
 
