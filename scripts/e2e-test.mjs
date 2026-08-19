@@ -11,6 +11,15 @@ function record(name, pass, detail = '') {
   console.log(`${pass ? 'PASS' : 'FAIL'} | ${name}${detail ? '  ->  ' + detail : ''}`)
 }
 
+async function logoutIfNeeded(win) {
+  if ((await win.locator('.user-menu').count()) > 0) {
+    await win.locator('.topnav-user').click()
+    await win.waitForSelector('.user-dropdown', { timeout: 5000 })
+    await win.locator('.user-dropdown-item.danger').click()
+    await win.waitForTimeout(600)
+  }
+}
+
 async function main() {
   mkdirSync(OUT_DIR, { recursive: true })
 
@@ -25,6 +34,9 @@ async function main() {
 
   await win.waitForLoadState('domcontentloaded')
   await win.waitForTimeout(2500)
+
+  // establish a known logged-out state
+  await logoutIfNeeded(win)
 
   /* 1. shell */
   record('窗口标题为 Reverie', (await win.title()) === 'Reverie', await win.title())
@@ -85,6 +97,19 @@ async function main() {
   await win.waitForTimeout(300)
 
   record('未登录无头像下拉', (await win.locator('.user-menu').count()) === 0)
+
+  /* 7. now-playing structure (no song -> placeholder + empty lyrics) */
+  await win.locator('button[title="打开播放页"]').click()
+  await win.waitForTimeout(500)
+  record('播放页打开', (await win.locator('.now-playing').count()) === 1)
+  record('播放页隐藏顶部导航', (await win.locator('.topnav').count()) === 0)
+  record('播放页封面容器存在', (await win.locator('.np-cover').count()) === 1)
+  record('播放页歌词容器存在', (await win.locator('.np-lyrics').count()) === 1)
+  await win.screenshot({ path: `${OUT_DIR}/e2e-04-nowplaying.png` })
+  await win.locator('.np-back').click()
+  await win.waitForTimeout(300)
+  record('播放页返回', (await win.locator('.now-playing').count()) === 0)
+
   record('无渲染进程错误', rendererErrors.length === 0, rendererErrors.slice(0, 3).join(' || ') || 'clean')
 
   const passed = results.filter((r) => r.pass).length
