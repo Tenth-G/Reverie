@@ -3,14 +3,13 @@ import { formatTime } from '../utils/lyrics'
 import type { PlayMode } from '../api/types'
 import {
   IconExpand,
+  IconHeart,
   IconLoop,
-  IconLyrics,
   IconMute,
   IconNext,
   IconPause,
   IconPlay,
   IconPrev,
-  IconQueue,
   IconRepeatOne,
   IconShuffle,
   IconVolume,
@@ -38,7 +37,8 @@ export default function PlayerBar() {
   const volume = usePlayerStore((s) => s.volume)
   const muted = usePlayerStore((s) => s.muted)
   const playMode = usePlayerStore((s) => s.playMode)
-  const showLyrics = usePlayerStore((s) => s.showLyrics)
+  const likedIds = usePlayerStore((s) => s.likedIds)
+
   const togglePlay = usePlayerStore((s) => s.togglePlay)
   const next = usePlayerStore((s) => s.next)
   const prev = usePlayerStore((s) => s.prev)
@@ -46,11 +46,11 @@ export default function PlayerBar() {
   const setVolume = usePlayerStore((s) => s.setVolume)
   const toggleMute = usePlayerStore((s) => s.toggleMute)
   const cyclePlayMode = usePlayerStore((s) => s.cyclePlayMode)
-  const setShowLyrics = usePlayerStore((s) => s.setShowLyrics)
-  const setActiveView = usePlayerStore((s) => s.setActiveView)
   const setPage = usePlayerStore((s) => s.setPage)
+  const toggleLike = usePlayerStore((s) => s.toggleLike)
 
   const pct = duration > 0 ? Math.min(100, (progress / duration) * 100) : 0
+  const liked = currentSong ? likedIds.includes(currentSong.id) : false
 
   return (
     <footer className="player-bar">
@@ -63,7 +63,7 @@ export default function PlayerBar() {
         {currentSong ? (
           <img src={currentSong.picUrl} alt="" />
         ) : (
-          <div style={{ width: 56, height: 56, borderRadius: 9, background: 'var(--bg-3)' }} />
+          <div style={{ width: 52, height: 52, borderRadius: 10, background: 'var(--bg-3)' }} />
         )}
       </div>
 
@@ -102,25 +102,16 @@ export default function PlayerBar() {
       </div>
 
       <div className="pb-extra">
+        <button
+          className={`icon-btn ${liked ? 'active' : ''}`}
+          onClick={toggleLike}
+          title={liked ? '取消喜欢' : '喜欢'}
+          style={liked ? { color: '#ec4141' } : undefined}
+        >
+          <IconHeart />
+        </button>
         <button className="icon-btn" onClick={() => setPage('nowplaying')} title="打开播放页">
           <IconExpand />
-        </button>
-        <button
-          className={`icon-btn ${showLyrics ? 'active' : ''}`}
-          onClick={() => setShowLyrics(!showLyrics)}
-          title={showLyrics ? '隐藏歌词' : '显示歌词'}
-        >
-          <IconLyrics />
-        </button>
-        <button
-          className="icon-btn"
-          onClick={() => {
-            setPage('browse')
-            setActiveView('queue')
-          }}
-          title="播放队列"
-        >
-          <IconQueue />
         </button>
         <div className="vol-wrap">
           <button className="icon-btn" onClick={toggleMute} title="静音">

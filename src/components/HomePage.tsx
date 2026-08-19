@@ -5,48 +5,43 @@ import SongList from './SongList'
 import SongCards from './SongCards'
 
 export default function HomePage() {
+  const loggedIn = usePlayerStore((s) => s.loggedIn)
   const hotPlaylists = usePlayerStore((s) => s.hotPlaylists)
   const topSongs = usePlayerStore((s) => s.topSongs)
   const recommendSongs = usePlayerStore((s) => s.recommendSongs)
-  const loggedIn = usePlayerStore((s) => s.loggedIn)
   const openPlaylist = usePlayerStore((s) => s.openPlaylist)
-  const loadHotPlaylists = usePlayerStore((s) => s.loadHotPlaylists)
   const loadTopSongs = usePlayerStore((s) => s.loadTopSongs)
-  const loadRecommend = usePlayerStore((s) => s.loadRecommend)
   const setShowLogin = usePlayerStore((s) => s.setShowLogin)
+
+  if (!loggedIn) {
+    return (
+      <Page>
+        <div className="login-empty">
+          <div className="login-empty-icon">♪</div>
+          <h2>登录后开启音乐之旅</h2>
+          <p>扫码登录网易云音乐，畅享每日推荐、私人FM、我的歌单</p>
+          <button className="btn primary" onClick={() => setShowLogin(true)}>
+            登录
+          </button>
+        </div>
+      </Page>
+    )
+  }
 
   return (
     <Page>
       <PageHeader title="首页" subtitle="发现好音乐" />
 
-      {/* 每日推荐 — 置顶，卡片形式 */}
       <section className="home-section">
         <div className="section-title">
           <h2>每日推荐</h2>
-          {loggedIn ? (
-            <button className="link-btn" onClick={loadRecommend}>
-              更多 →
-            </button>
-          ) : (
-            <button className="link-btn" onClick={() => setShowLogin(true)}>
-              登录后开启
-            </button>
-          )}
         </div>
-        {loggedIn ? (
-          <SongCards songs={recommendSongs.slice(0, 10)} />
-        ) : (
-          <div className="empty">登录后可查看为你定制的每日推荐</div>
-        )}
+        <SongCards songs={recommendSongs.slice(0, 12)} />
       </section>
 
-      {/* 推荐歌单 */}
       <section className="home-section">
         <div className="section-title">
           <h2>推荐歌单</h2>
-          <button className="link-btn" onClick={loadHotPlaylists}>
-            更多 →
-          </button>
         </div>
         <PlaylistGrid
           playlists={hotPlaylists.slice(0, 10)}
@@ -55,7 +50,6 @@ export default function HomePage() {
         />
       </section>
 
-      {/* 排行榜 */}
       <section className="home-section">
         <div className="section-title">
           <h2>排行榜 · 飙升榜</h2>

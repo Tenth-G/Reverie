@@ -16,6 +16,8 @@ export default function TitleBar() {
   return (
     <header className="titlebar">
       <div className="titlebar-drag" />
+      <div className="titlebar-name">Reverie</div>
+      <div className="titlebar-drag" />
       <div className="titlebar-controls">
         <button className="tb-btn" onClick={() => window.ncm?.minimize()} title="最小化">
           <IconMinimize width={15} height={15} />

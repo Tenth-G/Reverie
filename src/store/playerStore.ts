@@ -3,6 +3,7 @@ import {
   clearCookie,
   fmTrash,
   getCookie,
+  getLikedIds,
   getLyric,
   getPersonalFm,
   getPlaylistDetail,
@@ -11,6 +12,7 @@ import {
   getSongUrl,
   getTopSongs,
   getUserPlaylists,
+  likeSong,
   loginStatus,
   searchSongs,
   setCookie,
@@ -25,15 +27,42 @@ export interface ToastMsg {
 }
 
 export type ThemePreference = 'system' | 'light' | 'dark'
-export type LyricsMode = 'overlay' | 'immersive'
+
+/* ------------------------- persistence helpers ------------------------- */
+function readNum(key: string, def: number): number {
+  try {
+    const v = Number(localStorage.getItem(key))
+    return Number.isFinite(v) ? v : def
+  } catch {
+    return def
+  }
+}
+function readBool(key: string, def: boolean): boolean {
+  try {
+    const v = localStorage.getItem(key)
+    return v === null ? def : v === '1'
+  } catch {
+    return def
+  }
+}
+function readStr(key: string, def: string): string {
+  try {
+    return localStorage.getItem(key) ?? def
+  } catch {
+    return def
+  }
+}
+function write(key: string, v: string) {
+  try {
+    localStorage.setItem(key, v)
+  } catch {
+    /* ignore */
+  }
+}
 
 function readThemePref(): ThemePreference {
-  try {
-    const v = localStorage.getItem('ncm_theme') as ThemePreference | null
-    return v === 'light' || v === 'dark' || v === 'system' ? v : 'system'
-  } catch {
-    return 'system'
-  }
+  const v = readStr('reverie_theme', 'system') as ThemePreference
+  return v === 'light' || v === 'dark' || v === 'system' ? v : 'system'
 }
 
 let toastSeq = 0
@@ -42,10 +71,10 @@ interface PlayerState {
   // --- auth ---
   loggedIn: boolean
   profile: UserProfile | null
+  likedIds: number[]
 
   // --- audio ---
   audioEl: HTMLAudioElement | null
-  analyser: AnalyserNode | null
   currentSong: Song | null
   currentUrl: string | null
   loadingUrl: boolean
@@ -63,11 +92,11 @@ interface PlayerState {
   // --- lyrics ---
   lyricLines: LyricLine[]
   showTranslation: boolean
-  lyricsMode: LyricsMode
-  showLyrics: boolean
 
   // --- appearance ---
   theme: ThemePreference
+  lyricTheme: string
+  lyricFontSize: number
 
   // --- ui / data ---
   activeView: View
@@ -84,13 +113,9 @@ interface PlayerState {
   playlistSongs: Song[]
   playlistName: string
   recommendSongs: Song[]
-  recommendLoading: boolean
   fmSongs: Song[]
   showLogin: boolean
   showSettings: boolean
-  lyricTheme: string
-  lyricFontSize: number
-  visualizerMode: string
   toasts: ToastMsg[]
 
   // --- actions ---
@@ -105,12 +130,9 @@ interface PlayerState {
   toggleMute: () => void
   cyclePlayMode: () => void
   setShowTranslation: (v: boolean) => void
-  setLyricsMode: (m: LyricsMode) => void
-  setShowLyrics: (v: boolean) => void
   setTheme: (t: ThemePreference) => void
   setLyricTheme: (t: string) => void
   setLyricFontSize: (s: number) => void
-  setVisualizerMode: (m: string) => void
   setShowLogin: (v: boolean) => void
   setShowSettings: (v: boolean) => void
   setActiveView: (v: View) => void
@@ -119,18 +141,16 @@ interface PlayerState {
   loadHome: () => Promise<void>
   doSearch: (kw: string) => Promise<void>
   loadTopSongs: () => Promise<void>
-  loadHotPlaylists: () => Promise<void>
-  loadRecommend: () => Promise<void>
   loadPersonalFm: () => Promise<void>
   loadUserPlaylists: () => Promise<void>
   openPlaylist: (id: number, name: string) => Promise<void>
   closePlaylist: () => void
   playSong: (song: Song, queue?: Song[]) => Promise<void>
   playQueueAt: (i: number) => Promise<void>
-  removeFromQueue: (i: number) => void
-  clearQueue: () => void
   fmNext: () => Promise<void>
   fmDislike: () => Promise<void>
+  toggleLike: () => Promise<void>
+  loadLiked: () => Promise<void>
   applyLogin: (cookie: string) => Promise<boolean>
   logout: () => void
   refreshLogin: () => Promise<void>
@@ -161,19 +181,19 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   // --- auth ---
   loggedIn: false,
   profile: null,
+  likedIds: [],
 
   // --- audio ---
   audioEl: null,
-  analyser: null,
   currentSong: null,
   currentUrl: null,
   loadingUrl: false,
   playing: false,
   progress: 0,
   duration: 0,
-  volume: 0.9,
+  volume: readNum('reverie_volume', 0.9),
   muted: false,
-  playMode: 'sequence',
+  playMode: (readStr('reverie_playmode', 'sequence') as PlayMode) || 'sequence',
 
   // --- queue ---
   queue: [],
@@ -181,12 +201,12 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
 
   // --- lyrics ---
   lyricLines: [],
-  showTranslation: true,
-  lyricsMode: 'overlay',
-  showLyrics: true,
+  showTranslation: readBool('reverie_translation', true),
 
   // --- appearance ---
   theme: readThemePref(),
+  lyricTheme: readStr('reverie_lyrictheme', 'neon'),
+  lyricFontSize: readNum('reverie_lyricfont', 22),
 
   // --- ui / data ---
   activeView: 'home',
@@ -203,13 +223,9 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   playlistSongs: [],
   playlistName: '',
   recommendSongs: [],
-  recommendLoading: false,
   fmSongs: [],
   showLogin: false,
   showSettings: false,
-  lyricTheme: 'neon',
-  lyricFontSize: 22,
-  visualizerMode: 'spectrum',
   toasts: [],
 
   // --- toast ---
@@ -220,30 +236,10 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   },
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 
-  // --- audio element wiring ---
   setAudioEl: (el) => {
     if (!el) return
-    const prev = get().audioEl
-    if (prev === el) return
+    if (get().audioEl === el) return
     set({ audioEl: el })
-    if (!get().analyser) {
-      try {
-        const Ctx =
-          window.AudioContext ||
-          (window as unknown as { webkitAudioContext: typeof AudioContext })
-            .webkitAudioContext
-        const ctx = new Ctx()
-        const src = ctx.createMediaElementSource(el)
-        const analyser = ctx.createAnalyser()
-        analyser.fftSize = 512
-        analyser.smoothingTimeConstant = 0.82
-        src.connect(analyser)
-        analyser.connect(ctx.destination)
-        set({ analyser })
-      } catch (e) {
-        console.warn('[audio] analyser init failed', e)
-      }
-    }
   },
 
   // --- playback ---
@@ -272,7 +268,6 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   prev: () => {
     const { queue, index, progress } = get()
     if (!queue.length) return
-    // restart current song if we're past 3s, otherwise go to previous
     if (progress > 3000) {
       get().seek(0)
       return
@@ -291,6 +286,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     const el = get().audioEl
     set({ volume: vol, muted: vol === 0 })
     if (el) el.volume = vol
+    write('reverie_volume', String(vol))
   },
   toggleMute: () => {
     const { muted, volume, audioEl } = get()
@@ -301,22 +297,26 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   cyclePlayMode: () => {
     const order: PlayMode[] = ['sequence', 'loop', 'one', 'shuffle']
     const cur = get().playMode
-    set({ playMode: order[(order.indexOf(cur) + 1) % order.length] })
+    const next = order[(order.indexOf(cur) + 1) % order.length]
+    set({ playMode: next })
+    write('reverie_playmode', next)
   },
-  setShowTranslation: (v) => set({ showTranslation: v }),
-  setLyricsMode: (m) => set({ lyricsMode: m }),
-  setShowLyrics: (v) => set({ showLyrics: v }),
+  setShowTranslation: (v) => {
+    set({ showTranslation: v })
+    write('reverie_translation', v ? '1' : '0')
+  },
   setTheme: (t) => {
     set({ theme: t })
-    try {
-      localStorage.setItem('ncm_theme', t)
-    } catch {
-      /* ignore */
-    }
+    write('reverie_theme', t)
   },
-  setLyricTheme: (t) => set({ lyricTheme: t }),
-  setLyricFontSize: (s) => set({ lyricFontSize: s }),
-  setVisualizerMode: (m) => set({ visualizerMode: m }),
+  setLyricTheme: (t) => {
+    set({ lyricTheme: t })
+    write('reverie_lyrictheme', t)
+  },
+  setLyricFontSize: (s) => {
+    set({ lyricFontSize: s })
+    write('reverie_lyricfont', String(s))
+  },
   setShowLogin: (v) => set({ showLogin: v }),
   setShowSettings: (v) => set({ showSettings: v }),
   setActiveView: (v) => set({ activeView: v }),
@@ -335,8 +335,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       getTopSongs(0, 10).then((songs) => set({ topSongs: songs, topSongsLoading: false })).catch(() => set({ topSongsLoading: false }))
     }
     if (get().loggedIn && !get().recommendSongs.length) {
-      set({ recommendLoading: true })
-      getRecommendSongs().then((songs) => set({ recommendSongs: songs, recommendLoading: false })).catch(() => set({ recommendLoading: false }))
+      getRecommendSongs().then((songs) => set({ recommendSongs: songs })).catch(() => {})
     }
   },
 
@@ -349,10 +348,10 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       return
     }
     try {
-      const results = await searchSongs(key, 50)
+      const results = await searchSongs(key, 30)
       set({ searchResults: results, searching: false })
       if (!results.length) get().toast('没有找到相关歌曲', 'info')
-    } catch (e) {
+    } catch {
       set({ searching: false })
       get().toast('搜索失败，请检查网络', 'error')
     }
@@ -367,35 +366,9 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       get().toast('加载排行榜失败', 'error')
     }
   },
-  loadHotPlaylists: async () => {
-    set({ activeView: 'playlist', hotPlaylistsLoading: true, playlistSongs: [], playlistName: '' })
-    try {
-      const lists = await getHotPlaylists(30)
-      set({ hotPlaylists: lists, hotPlaylistsLoading: false })
-    } catch {
-      set({ hotPlaylistsLoading: false })
-      get().toast('加载歌单失败', 'error')
-    }
-  },
-  loadRecommend: async () => {
-    if (!get().loggedIn) {
-      get().toast('请先扫码登录', 'info')
-      set({ showLogin: true })
-      return
-    }
-    set({ activeView: 'recommend', recommendLoading: true })
-    try {
-      const songs = await getRecommendSongs()
-      set({ recommendSongs: songs, recommendLoading: false })
-      if (!songs.length) get().toast('今日推荐暂时为空', 'info')
-    } catch {
-      set({ recommendLoading: false })
-      get().toast('加载推荐失败', 'error')
-    }
-  },
   loadPersonalFm: async () => {
     if (!get().loggedIn) {
-      get().toast('请先扫码登录', 'info')
+      get().toast('请先登录', 'info')
       set({ showLogin: true })
       return
     }
@@ -412,7 +385,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   loadUserPlaylists: async () => {
     const uid = get().profile?.userId
     if (!uid) {
-      get().toast('请先扫码登录', 'info')
+      get().toast('请先登录', 'info')
       set({ showLogin: true })
       return
     }
@@ -437,6 +410,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   },
   closePlaylist: () => {
     set({ playlistSongs: [], playlistName: '' })
+    set({ activeView: 'home' })
   },
 
   // --- core play ---
@@ -480,17 +454,6 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     if (!song) return
     await get().playSong(song, queue)
   },
-  removeFromQueue: (i) => {
-    const { queue, index } = get()
-    if (i < 0 || i >= queue.length) return
-    const next = queue.slice()
-    next.splice(i, 1)
-    let ni = index
-    if (i < index) ni = index - 1
-    else if (i === index) ni = Math.min(index, next.length - 1)
-    set({ queue: next, index: next.length ? ni : -1 })
-  },
-  clearQueue: () => set({ queue: [], index: -1 }),
   fmNext: async () => {
     const { queue, index } = get()
     const nextIdx = index + 1
@@ -522,6 +485,40 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     await get().fmNext()
   },
 
+  // --- like / red heart ---
+  toggleLike: async () => {
+    const { currentSong, likedIds, loggedIn } = get()
+    if (!currentSong) return
+    if (!loggedIn) {
+      get().toast('请先登录', 'info')
+      set({ showLogin: true })
+      return
+    }
+    const liked = likedIds.includes(currentSong.id)
+    const next = !liked
+    try {
+      await likeSong(currentSong.id, next)
+      set({
+        likedIds: next
+          ? [...likedIds, currentSong.id]
+          : likedIds.filter((id) => id !== currentSong.id),
+      })
+      get().toast(next ? '已添加到我喜欢' : '已取消喜欢', 'success')
+    } catch {
+      get().toast('操作失败', 'error')
+    }
+  },
+  loadLiked: async () => {
+    const uid = get().profile?.userId
+    if (!uid) return
+    try {
+      const ids = await getLikedIds(uid)
+      set({ likedIds: ids })
+    } catch {
+      /* ignore */
+    }
+  },
+
   // --- auth ---
   applyLogin: async (c) => {
     if (!c) return false
@@ -531,6 +528,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       if (profile && profile.userId > 0) {
         set({ loggedIn: true, profile })
         get().toast(`欢迎，${profile.nickname}`, 'success')
+        get().loadLiked()
         if (!get().recommendSongs.length) {
           getRecommendSongs().then((songs) => set({ recommendSongs: songs })).catch(() => {})
         }
@@ -545,7 +543,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   },
   logout: () => {
     clearCookie()
-    set({ loggedIn: false, profile: null, userPlaylists: [], recommendSongs: [], fmSongs: [] })
+    set({ loggedIn: false, profile: null, likedIds: [], userPlaylists: [], recommendSongs: [], fmSongs: [] })
     get().toast('已退出登录', 'info')
   },
   refreshLogin: async () => {
@@ -558,7 +556,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       const profile = await loginStatus()
       if (profile && profile.userId > 0) {
         set({ loggedIn: true, profile })
-        // preload personalized recommendations for the home page
+        get().loadLiked()
         if (!get().recommendSongs.length) {
           getRecommendSongs().then((songs) => set({ recommendSongs: songs })).catch(() => {})
         }

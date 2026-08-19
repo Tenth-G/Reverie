@@ -41,26 +41,22 @@ async function main() {
   await win.waitForLoadState('domcontentloaded')
   await win.waitForTimeout(2500)
 
-  /* 1. shell + top nav (no sidebar) */
-  record('窗口标题', (await win.title()).includes('NCM Player'), await win.title())
+  /* 1. shell + title bar + top nav */
+  record('窗口标题含 Reverie', (await win.title()).includes('Reverie'), await win.title())
   record('自定义标题栏渲染', (await win.locator('.titlebar').count()) === 1)
+  record('标题栏居中显示 Reverie', (await win.locator('.titlebar-name').textContent()) === 'Reverie')
   record('窗口控制按钮 (3个)', (await win.locator('.tb-btn').count()) === 3)
   record('顶部导航栏渲染', (await win.locator('.topnav').count()) === 1)
   record('左侧导航已移除', (await win.locator('.sidebar').count()) === 0)
   record('悬浮播放栏渲染', (await win.locator('.player-bar').count()) === 1)
 
-  /* 2. home page */
-  const homeSections = await win.locator('.home-section').count()
-  record('首页分区渲染', homeSections >= 2, `${homeSections} 个分区`)
-  const firstSectionTitle = await win.locator('.home-section .section-title h2').first().textContent()
-  record('首页-每日推荐置顶', (firstSectionTitle || '').includes('每日推荐'), firstSectionTitle || '')
-  const recCards = await win.locator('.song-card').count()
-  record('首页-每日推荐卡片', recCards > 0, `${recCards} 张`)
-  const homeCards = await win.locator('.playlist-card').count()
-  record('首页-推荐歌单卡片', homeCards > 0, `${homeCards} 张`)
-  record('首页不显示 3D 画布', (await win.locator('.visualizer-stage canvas').count()) === 0)
-  record('首页不显示歌词', (await win.locator('.lyric-line').count()) === 0)
-  await win.screenshot({ path: `${OUT_DIR}/e2e-01-home.png` })
+  /* 2. not-logged-in home */
+  record('未登录首页不显示数据', (await win.locator('.login-empty').count()) === 1)
+  record('未登录首页无分区', (await win.locator('.home-section').count()) === 0)
+  const loginText = await win.locator('.topnav-login').textContent()
+  const loginSvg = await win.locator('.topnav-login svg').count()
+  record('登录按钮仅显示"登录"二字', (loginText || '').trim() === '登录' && loginSvg === 0, `text="${loginText}" icon=${loginSvg}`)
+  await win.screenshot({ path: `${OUT_DIR}/e2e-01-home-notlogged.png` })
 
   /* 3. theme */
   await win.locator('button[title="设置"]').click()
@@ -76,22 +72,22 @@ async function main() {
   await win.locator('.modal-backdrop').click({ position: { x: 8, y: 8 } })
   await win.waitForTimeout(300)
 
-  /* 4. search via top-right capsule */
+  /* 4. search dropdown (not a page) */
   await win.locator('button[title="搜索"]').click()
   await win.waitForTimeout(300)
   record('搜索胶囊展开', (await win.locator('.search-capsule input').count()) === 1)
   await win.fill('.search-capsule input', '周杰伦')
   await win.press('.search-capsule input', 'Enter')
-  await win.waitForSelector('.song-item', { timeout: 20000 })
-  const songCount = await win.locator('.song-item').count()
-  record('搜索结果展示', songCount > 0, `${songCount} 首`)
-  await win.screenshot({ path: `${OUT_DIR}/e2e-02-search.png` })
-  // close search
+  await win.waitForSelector('.search-dropdown-item', { timeout: 20000 })
+  const ddCount = await win.locator('.search-dropdown-item').count()
+  record('搜索下拉结果', ddCount > 0, `${ddCount} 条`)
+  const pageStillHome = await win.locator('.page-heading h1').count() === 0
+  record('搜索不跳转页面（无独立搜索页）', pageStillHome)
+  await win.screenshot({ path: `${OUT_DIR}/e2e-02-search-dropdown.png` })
   await win.locator('.search-close').click()
   await win.waitForTimeout(300)
-  record('关闭搜索返回首页', (await win.locator('.search-capsule input').count()) === 0)
 
-  /* 5. chart + playback */
+  /* 5. chart + playback (works without login for free songs) */
   await win.locator('.topnav-item').filter({ hasText: '排行榜' }).click()
   await win.waitForSelector('.song-item', { timeout: 20000 })
   const freeSong = await findFreeSong()
@@ -105,52 +101,22 @@ async function main() {
     record('音频正在播放', paused === false)
   }
 
-  /* 6. now playing (cover faces screen + lyrics above) */
-  await win.locator('.pb-extra .icon-btn').first().click()
-  await win.waitForTimeout(900)
-  record('播放页打开', (await win.locator('.now-playing').count()) === 1)
-  record('播放页-3D 画布渲染', (await win.locator('.now-playing canvas').count()) === 1)
+  /* 6. now playing (full page, 2D cover + lyrics, no 3D) */
+  await win.locator('button[title="打开播放页"]').click()
+  await win.waitForTimeout(700)
+  record('播放页打开（整页）', (await win.locator('.now-playing').count()) === 1)
+  record('播放页隐藏顶部导航', (await win.locator('.topnav').count()) === 0)
+  record('播放页封面图片显示', (await win.locator('.np-cover img').count()) === 1)
   const npLyric = await win.locator('.now-playing .lyric-line').count()
-  record('播放页-歌词附着于封面', npLyric > 0, `${npLyric} 行`)
-  const karaoke = await win.locator('.karaoke').count()
-  record('逐字卡拉OK', karaoke > 0)
-  const lyricsScrollbar = await win.evaluate(() => {
-    const el = document.querySelector('.lyrics-scroll')
-    return el ? getComputedStyle(el).overflowY : ''
-  })
-  record('歌词滚动容器存在', lyricsScrollbar === 'auto', `overflowY=${lyricsScrollbar}`)
+  record('播放页歌词在封面上方', npLyric > 0, `${npLyric} 行`)
+  record('无 3D 画布', (await win.locator('canvas').count()) === 0)
   await win.screenshot({ path: `${OUT_DIR}/e2e-03-nowplaying.png` })
-  await win.locator('.np-topbar .np-btn').first().click()
+  await win.locator('.np-back').click()
   await win.waitForTimeout(400)
-  record('播放页返回', (await win.locator('.now-playing').count()) === 0)
+  record('播放页返回', (await win.locator('.now-playing').count()) === 0 && (await win.locator('.topnav').count()) === 1)
 
-  /* 7. visualizer modes (4, cover-centric) */
-  await win.locator('.pb-extra .icon-btn').first().click()
-  await win.waitForTimeout(600)
-  const modeChips = await win.locator('.mode-chip').count()
-  record('可视化模式按钮 (4个)', modeChips === 4, `${modeChips} 个`)
-  for (const m of ['粒子', '波形', '封面']) {
-    await win.locator('.mode-chip').filter({ hasText: m }).click()
-    await win.waitForTimeout(400)
-    record(`切换「${m}」画布仍在`, (await win.locator('.now-playing canvas').count()) === 1)
-  }
-  await win.locator('.np-topbar .np-btn').first().click()
-  await win.waitForTimeout(300)
-
-  /* 8. queue */
-  await win.locator('.topnav-item').filter({ hasText: '播放队列' }).click()
-  await win.waitForTimeout(400)
-  record('播放队列页', (await win.locator('.page-heading h1').filter({ hasText: '播放队列' }).count()) === 1)
-
-  /* 9. immersive lyrics */
-  await win.locator('.pb-extra .icon-btn').first().click()
-  await win.waitForTimeout(600)
-  await win.locator('.np-topbar .np-btn').filter({ hasText: '沉浸歌词' }).click()
-  await win.waitForTimeout(400)
-  record('沉浸式歌词', (await win.locator('.lyrics-immersive').count()) === 1)
-  await win.locator('.immersive-exit').click()
-  await win.waitForTimeout(300)
-  record('退出沉浸式歌词', (await win.locator('.lyrics-immersive').count()) === 0)
+  /* 7. user menu (not logged in -> no avatar, only 登录) */
+  record('未登录无头像下拉', (await win.locator('.user-menu').count()) === 0)
 
   record('无渲染进程错误', rendererErrors.length === 0, rendererErrors.slice(0, 3).join(' || ') || 'clean')
 

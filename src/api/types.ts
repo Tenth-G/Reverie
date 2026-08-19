@@ -43,14 +43,7 @@ export interface QrCreateResult {
 
 export type PlayMode = 'sequence' | 'loop' | 'one' | 'shuffle'
 
-export type View =
-  | 'home'
-  | 'chart'
-  | 'playlist'
-  | 'recommend'
-  | 'fm'
-  | 'userlist'
-  | 'queue'
+export type View = 'home' | 'chart' | 'fm' | 'userlist' | 'playlist'
 
 export interface SearchResponse {
   result?: { songs?: unknown[]; songCount?: number }

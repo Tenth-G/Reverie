@@ -15,6 +15,7 @@
   --green: #22c55e;
   --glass: rgba(15, 15, 26, 0.82);
   --glass-strong: rgba(15, 15, 26, 0.94);
+  --glass-player: rgba(16, 16, 30, 0.55);
   --hover: #1e1e30;
   --scrollbar: #33334a;
   --scrollbar-hover: #45456a;
@@ -41,6 +42,7 @@
   --green: #16a34a;
   --glass: rgba(255, 255, 255, 0.82);
   --glass-strong: rgba(255, 255, 255, 0.94);
+  --glass-player: rgba(255, 255, 255, 0.5);
   --hover: #eceef5;
   --scrollbar: #c9cede;
   --scrollbar-hover: #b3b9cd;
@@ -138,6 +140,13 @@ input {
   flex: 1;
   height: 100%;
 }
+.titlebar-name {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  pointer-events: none;
+}
 .titlebar-controls {
   display: flex;
   height: 100%;
@@ -165,6 +174,7 @@ input {
 /* ============================ Top navigation ============================ */
 .topnav {
   flex: none;
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -249,14 +259,17 @@ input {
   object-fit: cover;
 }
 .topnav-login {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
+  justify-content: center;
+  padding: 7px 16px;
   border-radius: 999px;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: var(--text-on-accent);
   font-size: 13px;
+}
+.search-wrap {
+  position: relative;
 }
 .search-capsule {
   display: flex;
@@ -301,6 +314,140 @@ input {
   to {
     opacity: 1;
   }
+}
+
+/* search dropdown */
+.search-dropdown {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  width: 360px;
+  max-height: 480px;
+  overflow-y: auto;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px var(--shadow);
+  padding: 6px;
+  z-index: 70;
+  animation: toast-in 0.18s ease;
+}
+.search-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.13s ease;
+}
+.search-dropdown-item:hover {
+  background: var(--hover);
+}
+.search-dropdown-item img {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex: none;
+  background: var(--bg-3);
+}
+.search-dropdown-item .song-ph {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: var(--bg-3);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+}
+.search-dropdown-item .meta {
+  flex: 1;
+  min-width: 0;
+}
+.search-dropdown-item .t {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.search-dropdown-item .a {
+  font-size: 11px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* user menu dropdown */
+.user-menu {
+  position: relative;
+}
+.user-dropdown {
+  position: absolute;
+  top: 42px;
+  right: 0;
+  width: 240px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px var(--shadow);
+  padding: 8px;
+  z-index: 70;
+  animation: toast-in 0.16s ease;
+}
+.user-dropdown-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+.user-dropdown-head img {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.uh-info .nm {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.uh-info .vip {
+  font-size: 11px;
+  color: #e6a23c;
+  margin-top: 2px;
+}
+.user-dropdown-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.user-dropdown-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 10px;
+  border-radius: 9px;
+  font-size: 13px;
+  color: var(--text);
+  transition: background 0.13s ease;
+}
+.user-dropdown-item:hover {
+  background: var(--hover);
+}
+.user-dropdown-item.danger {
+  color: #ff6b6b;
 }
 
 /* ============================ Sidebar ============================ */
@@ -538,6 +685,39 @@ input {
   margin: 4px 0 16px;
   border: none;
   padding: 0;
+}
+
+/* not-logged-in home state */
+.login-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+  padding: 40px;
+}
+.login-empty-icon {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff;
+  font-size: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 12px 36px var(--accent-glow);
+}
+.login-empty h2 {
+  font-size: 22px;
+}
+.login-empty p {
+  color: var(--text-dim);
+  font-size: 13px;
+  max-width: 340px;
+  line-height: 1.7;
 }
 
 /* ============================ Lists / panels ============================ */
@@ -799,8 +979,8 @@ input {
   width: min(1060px, calc(100% - 48px));
   border-radius: 30px;
   border: 1px solid var(--border);
-  background: var(--glass-strong);
-  backdrop-filter: blur(24px);
+  background: var(--glass-player);
+  backdrop-filter: blur(32px) saturate(1.4);
   box-shadow: 0 18px 50px var(--shadow);
   display: flex;
   align-items: center;
@@ -1019,24 +1199,18 @@ input {
   color: var(--accent-2);
 }
 
-/* lyrics attached above the album cover */
-.lyrics-overlay {
-  position: absolute;
-  top: 5%;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(760px, 74%);
-  max-height: 46%;
-  z-index: 8;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  pointer-events: auto;
-  text-align: center;
-  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 82%, transparent);
-  mask-image: linear-gradient(to bottom, transparent, #000 16%, #000 82%, transparent);
+/* lyrics panel (centered, no scrollbar) */
+.lyrics-panel {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
-.lyrics-overlay .lyric-line {
+.lyrics-panel .lyrics-scroll {
+  height: 100%;
+  text-align: center;
+  padding: 24px 12px;
+}
+.lyrics-panel .lyric-line {
   text-align: center;
 }
 
@@ -1046,18 +1220,15 @@ input {
   position: relative;
   min-height: 0;
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 40px 26px;
 }
-.now-playing .visualizer-stage {
+.np-back {
   position: absolute;
-  inset: 0;
-}
-.np-topbar {
-  position: absolute;
-  top: 12px;
-  left: 14px;
-  display: flex;
-  gap: 8px;
-  z-index: 12;
+  top: 14px;
+  left: 16px;
+  z-index: 5;
 }
 .np-btn {
   display: flex;
@@ -1076,42 +1247,40 @@ input {
   color: var(--text);
   border-color: var(--text-faint);
 }
-
-/* immersive full-screen lyrics */
-.lyrics-immersive {
-  position: absolute;
-  inset: 0;
-  z-index: 8;
+.np-lyrics {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: 820px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--glass);
-  backdrop-filter: blur(28px);
+  overflow: hidden;
 }
-.lyrics-immersive .lyrics-scroll {
-  width: 76%;
-  max-width: 900px;
-  height: 82%;
-  text-align: center;
-  pointer-events: auto;
+.np-cover {
+  margin-top: 20px;
+  width: 280px;
+  height: 280px;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 26px 60px var(--shadow);
+  flex: none;
 }
-.lyrics-immersive .lyric-line {
-  text-align: center;
-  padding: 14px 20px;
+.np-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
-.lyrics-immersive .lyric-line.dim {
-  opacity: 0.35;
-}
-.lyrics-immersive .lyric-line.current .l {
-  transform: scale(1.08);
-  transform-origin: center center;
-}
-.immersive-exit {
-  position: absolute;
-  top: 16px;
-  right: 20px;
-  background: var(--glass);
-  border: 1px solid var(--border);
+.np-cover-ph {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-3);
+  color: var(--text-faint);
+  font-size: 64px;
 }
 
 /* ============================ Modal ============================ */

@@ -307,4 +307,17 @@ export async function loginStatus(): Promise<UserProfile | null> {
   }
 }
 
+/* ------------------------------------------------------------------ */
+/*  Like / red heart                                                   */
+/* ------------------------------------------------------------------ */
+
+export async function likeSong(id: number, like: boolean): Promise<void> {
+  await request('/like', { id, like: like ? 'true' : 'false' }, false)
+}
+
+export async function getLikedIds(uid: number): Promise<number[]> {
+  const res = await request<{ ids?: number[] }>('/likelist', { uid }, false)
+  return res.ids ?? []
+}
+
 export { API_BASE }

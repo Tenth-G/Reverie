@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react'
 import type { LyricLine } from '../api/types'
 import { usePlayerStore } from '../store/playerStore'
-import { IconClose } from './icons'
 
 export default function LyricsPanel() {
   const lyricLines = usePlayerStore((s) => s.lyricLines)
@@ -9,10 +8,7 @@ export default function LyricsPanel() {
   const showTranslation = usePlayerStore((s) => s.showTranslation)
   const lyricTheme = usePlayerStore((s) => s.lyricTheme)
   const lyricFontSize = usePlayerStore((s) => s.lyricFontSize)
-  const lyricsMode = usePlayerStore((s) => s.lyricsMode)
-  const showLyrics = usePlayerStore((s) => s.showLyrics)
   const seek = usePlayerStore((s) => s.seek)
-  const setLyricsMode = usePlayerStore((s) => s.setLyricsMode)
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const active = findActiveIndex(lyricLines, progress)
@@ -30,56 +26,34 @@ export default function LyricsPanel() {
     }
   }, [active])
 
-  if (!showLyrics) return null
-
   if (!lyricLines.length) {
-    const empty = <div className="empty" style={{ padding: 0 }}>暂无歌词</div>
-    return lyricsMode === 'immersive' ? (
-      <div className="lyrics-immersive">{empty}</div>
-    ) : (
-      <div className="lyrics-overlay">{empty}</div>
-    )
+    return <div className="empty">暂无歌词</div>
   }
 
   const sungFrac = computeSungFraction(lyricLines, active, progress)
 
-  const content = (
-    <div className="lyrics-scroll" ref={scrollRef}>
-      {lyricLines.map((line, i) => {
-        const isCur = i === active
-        return (
-          <div
-            key={i}
-            data-line={i}
-            className={`lyric-line ${isCur ? 'current' : 'dim'}`}
-            style={{ fontSize: lyricFontSize }}
-            onClick={() => seek(line.time)}
-          >
-            <div className="l">
-              {isCur && line.text ? renderKaraoke(line.text, sungFrac) : line.text || '…'}
+  return (
+    <div className={`lyrics-panel theme-${lyricTheme}`}>
+      <div className="lyrics-scroll" ref={scrollRef}>
+        {lyricLines.map((line, i) => {
+          const isCur = i === active
+          return (
+            <div
+              key={i}
+              data-line={i}
+              className={`lyric-line ${isCur ? 'current' : 'dim'}`}
+              style={{ fontSize: lyricFontSize }}
+              onClick={() => seek(line.time)}
+            >
+              <div className="l">
+                {isCur && line.text ? renderKaraoke(line.text, sungFrac) : line.text || '…'}
+              </div>
+              {showTranslation && line.translation && <div className="tr">{line.translation}</div>}
             </div>
-            {showTranslation && line.translation && (
-              <div className="tr">{line.translation}</div>
-            )}
-          </div>
-        )
-      })}
+          )
+        })}
+      </div>
     </div>
-  )
-
-  return lyricsMode === 'immersive' ? (
-    <div className={`lyrics-immersive theme-${lyricTheme}`}>
-      <button
-        className="icon-btn immersive-exit"
-        onClick={() => setLyricsMode('overlay')}
-        title="退出沉浸式歌词"
-      >
-        <IconClose />
-      </button>
-      {content}
-    </div>
-  ) : (
-    <div className={`lyrics-overlay theme-${lyricTheme}`}>{content}</div>
   )
 }
 

@@ -3,17 +3,15 @@ import { usePlayerStore } from '../store/playerStore'
 import type { ThemePreference } from '../store/playerStore'
 import type { View } from '../api/types'
 import type { ReactElement } from 'react'
+import UserMenu from './UserMenu'
 import {
   IconChart,
   IconClose,
-  IconHeart,
   IconHome,
-  IconList,
   IconLogin,
   IconMonitor,
   IconMoon,
   IconMusic,
-  IconQueue,
   IconRadio,
   IconSearch,
   IconSettings,
@@ -30,11 +28,8 @@ interface NavItem {
 const NAV: NavItem[] = [
   { view: 'home', label: '首页', icon: <IconHome /> },
   { view: 'chart', label: '排行榜', icon: <IconChart /> },
-  { view: 'playlist', label: '推荐歌单', icon: <IconList /> },
-  { view: 'recommend', label: '每日推荐', icon: <IconHeart />, auth: true },
   { view: 'fm', label: '私人FM', icon: <IconRadio />, auth: true },
   { view: 'userlist', label: '我的歌单', icon: <IconMusic />, auth: true },
-  { view: 'queue', label: '播放队列', icon: <IconQueue /> },
 ]
 
 const THEME_ORDER: ThemePreference[] = ['system', 'light', 'dark']
@@ -44,10 +39,11 @@ const THEME_LABEL = { system: '跟随系统', light: '浅色', dark: '深色' }
 export default function TopNav() {
   const activeView = usePlayerStore((s) => s.activeView)
   const loggedIn = usePlayerStore((s) => s.loggedIn)
-  const profile = usePlayerStore((s) => s.profile)
   const theme = usePlayerStore((s) => s.theme)
   const searchOpen = usePlayerStore((s) => s.searchOpen)
   const searchKeyword = usePlayerStore((s) => s.searchKeyword)
+  const searching = usePlayerStore((s) => s.searching)
+  const searchResults = usePlayerStore((s) => s.searchResults)
 
   const setActiveView = usePlayerStore((s) => s.setActiveView)
   const setPage = usePlayerStore((s) => s.setPage)
@@ -57,17 +53,27 @@ export default function TopNav() {
   const setShowLogin = usePlayerStore((s) => s.setShowLogin)
   const setShowSettings = usePlayerStore((s) => s.setShowSettings)
   const loadTopSongs = usePlayerStore((s) => s.loadTopSongs)
-  const loadHotPlaylists = usePlayerStore((s) => s.loadHotPlaylists)
-  const loadRecommend = usePlayerStore((s) => s.loadRecommend)
   const loadPersonalFm = usePlayerStore((s) => s.loadPersonalFm)
   const loadUserPlaylists = usePlayerStore((s) => s.loadUserPlaylists)
   const loadHome = usePlayerStore((s) => s.loadHome)
+  const playSong = usePlayerStore((s) => s.playSong)
 
   const searchRef = useRef<HTMLInputElement>(null)
+  const navRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     if (searchOpen) searchRef.current?.focus()
   }, [searchOpen])
+
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) {
+        setSearchOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [setSearchOpen])
 
   const handleNav = (view: View, auth?: boolean) => {
     if (auth && !loggedIn) {
@@ -83,12 +89,6 @@ export default function TopNav() {
         break
       case 'chart':
         loadTopSongs()
-        break
-      case 'playlist':
-        loadHotPlaylists()
-        break
-      case 'recommend':
-        loadRecommend()
         break
       case 'fm':
         loadPersonalFm()
@@ -107,12 +107,7 @@ export default function TopNav() {
   }
 
   return (
-    <nav className="topnav">
-      <div className="topnav-brand">
-        <span className="dot" />
-        云律
-      </div>
-
+    <nav className="topnav" ref={navRef}>
       <div className="topnav-items">
         {NAV.map((item) => (
           <button
@@ -128,27 +123,60 @@ export default function TopNav() {
 
       <div className="topnav-actions">
         {searchOpen ? (
-          <div className="search-capsule">
-            <IconSearch width={15} height={15} />
-            <input
-              ref={searchRef}
-              placeholder="搜索歌曲 / 歌手 / 专辑…"
-              value={searchKeyword}
-              onChange={(e) => usePlayerStore.setState({ searchKeyword: e.target.value })}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') doSearch(e.currentTarget.value)
-                if (e.key === 'Escape') {
+          <div className="search-wrap">
+            <div className="search-capsule">
+              <IconSearch width={15} height={15} />
+              <input
+                ref={searchRef}
+                placeholder="搜索歌曲 / 歌手 / 专辑…"
+                value={searchKeyword}
+                onChange={(e) => usePlayerStore.setState({ searchKeyword: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') doSearch(e.currentTarget.value)
+                  if (e.key === 'Escape') {
+                    setSearchOpen(false)
+                    usePlayerStore.setState({ searchKeyword: '', searchResults: [] })
+                  }
+                }}
+              />
+              <button
+                className="search-close"
+                onClick={() => {
                   setSearchOpen(false)
                   usePlayerStore.setState({ searchKeyword: '', searchResults: [] })
-                }
-              }}
-            />
-            <button className="search-close" onClick={() => {
-              setSearchOpen(false)
-              usePlayerStore.setState({ searchKeyword: '', searchResults: [] })
-            }}>
-              <IconClose width={13} height={13} />
-            </button>
+                }}
+              >
+                <IconClose width={13} height={13} />
+              </button>
+            </div>
+            {searching || searchResults.length > 0 ? (
+              <div className="search-dropdown">
+                {searching ? (
+                  <div className="loading-hint">搜索中…</div>
+                ) : (
+                  searchResults.slice(0, 12).map((song) => (
+                    <div
+                      key={song.id}
+                      className="search-dropdown-item"
+                      onClick={() => {
+                        playSong(song, searchResults)
+                        setSearchOpen(false)
+                      }}
+                    >
+                      {song.picUrl ? (
+                        <img src={song.picUrl} alt="" />
+                      ) : (
+                        <span className="song-ph">♪</span>
+                      )}
+                      <div className="meta">
+                        <div className="t">{song.name}</div>
+                        <div className="a">{song.artists}</div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            ) : null}
           </div>
         ) : (
           <button
@@ -171,13 +199,11 @@ export default function TopNav() {
           <IconSettings />
         </button>
 
-        {loggedIn && profile ? (
-          <button className="topnav-user" onClick={() => setShowSettings(true)} title={profile.nickname}>
-            <img src={profile.avatarUrl} alt="" />
-          </button>
+        {loggedIn ? (
+          <UserMenu />
         ) : (
           <button className="topnav-login" onClick={() => setShowLogin(true)}>
-            <IconLogin width={14} height={14} /> 登录
+            登录
           </button>
         )}
       </div>

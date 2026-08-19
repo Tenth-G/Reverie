@@ -32,7 +32,7 @@ function createWindow() {
     minHeight: 680,
     frame: false,
     backgroundColor: '#0a0a12',
-    title: '云律 YunLyu',
+    title: '白日梦 Reverie',
     autoHideMenuBar: true,
     show: false,
     webPreferences: {

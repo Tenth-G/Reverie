@@ -5,13 +5,10 @@ import TopNav from './components/TopNav'
 import PlayerBar from './components/PlayerBar'
 import NowPlayingView from './components/NowPlayingView'
 import HomePage from './components/HomePage'
-import SearchResults from './components/SearchResults'
 import ChartPage from './components/ChartPage'
 import PlaylistPage from './components/PlaylistPage'
-import RecommendPage from './components/RecommendPage'
 import FmPage from './components/FmPage'
 import UserListPage from './components/UserListPage'
-import QueuePage from './components/QueuePage'
 import LoginModal from './components/LoginModal'
 import SettingsModal from './components/SettingsModal'
 import Toasts from './components/Toasts'
@@ -26,13 +23,12 @@ export default function App() {
 
   const activeView = usePlayerStore((s) => s.activeView)
   const currentPage = usePlayerStore((s) => s.currentPage)
-  const searchOpen = usePlayerStore((s) => s.searchOpen)
 
   const refreshLogin = usePlayerStore((s) => s.refreshLogin)
   const loadHome = usePlayerStore((s) => s.loadHome)
   const next = usePlayerStore((s) => s.next)
 
-  // register audio element + analyser
+  // register audio element
   useEffect(() => {
     if (audioRef.current) setAudioEl(audioRef.current)
   }, [setAudioEl])
@@ -136,14 +132,10 @@ export default function App() {
         return <ChartPage />
       case 'playlist':
         return <PlaylistPage />
-      case 'recommend':
-        return <RecommendPage />
       case 'fm':
         return <FmPage />
       case 'userlist':
         return <UserListPage />
-      case 'queue':
-        return <QueuePage />
       default:
         return <HomePage />
     }
@@ -152,13 +144,11 @@ export default function App() {
   return (
     <div className="app">
       <TitleBar />
-      <TopNav />
+      {currentPage !== 'nowplaying' && <TopNav />}
       {currentPage === 'nowplaying' ? (
         <NowPlayingView />
       ) : (
-        <main className="page-content">
-          {searchOpen ? <SearchResults /> : renderPage()}
-        </main>
+        <main className="page-content">{renderPage()}</main>
       )}
       <PlayerBar />
       <LoginModal />

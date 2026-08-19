@@ -11,13 +11,6 @@ const THEMES = [
   { id: 'rose', name: '玫瑰', color: '#fb7185' },
 ]
 
-const VIS_MODES = [
-  { id: 'disc', name: '黑胶唱片' },
-  { id: 'spectrum', name: '频谱环' },
-  { id: 'particles', name: '粒子' },
-  { id: 'wave', name: '波形' },
-]
-
 const APP_THEMES: Array<{ id: ThemePreference; name: string }> = [
   { id: 'system', name: '跟随系统' },
   { id: 'light', name: '浅色' },
@@ -35,10 +28,6 @@ export default function SettingsModal() {
   const setLyricFontSize = usePlayerStore((s) => s.setLyricFontSize)
   const showTranslation = usePlayerStore((s) => s.showTranslation)
   const setShowTranslation = usePlayerStore((s) => s.setShowTranslation)
-  const lyricsMode = usePlayerStore((s) => s.lyricsMode)
-  const setLyricsMode = usePlayerStore((s) => s.setLyricsMode)
-  const visualizerMode = usePlayerStore((s) => s.visualizerMode)
-  const setVisualizerMode = usePlayerStore((s) => s.setVisualizerMode)
   const loggedIn = usePlayerStore((s) => s.loggedIn)
   const logout = usePlayerStore((s) => s.logout)
 
@@ -67,24 +56,6 @@ export default function SettingsModal() {
                 {t.name}
               </button>
             ))}
-          </div>
-        </div>
-
-        <div className="setting-row">
-          <label>歌词模式</label>
-          <div className="opt-group">
-            <button
-              className={`opt-btn ${lyricsMode === 'overlay' ? 'active' : ''}`}
-              onClick={() => setLyricsMode('overlay')}
-            >
-              侧边
-            </button>
-            <button
-              className={`opt-btn ${lyricsMode === 'immersive' ? 'active' : ''}`}
-              onClick={() => setLyricsMode('immersive')}
-            >
-              沉浸式
-            </button>
           </div>
         </div>
 
@@ -126,21 +97,6 @@ export default function SettingsModal() {
           </button>
         </div>
 
-        <div className="setting-row">
-          <label>3D 可视化模式</label>
-          <div className="opt-group">
-            {VIS_MODES.map((m) => (
-              <button
-                key={m.id}
-                className={`opt-btn ${visualizerMode === m.id ? 'active' : ''}`}
-                onClick={() => setVisualizerMode(m.id)}
-              >
-                {m.name}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {loggedIn && (
           <div className="setting-row">
             <label>账号</label>
@@ -152,11 +108,9 @@ export default function SettingsModal() {
 
         <div className="setting-row" style={{ borderBottom: 'none', paddingBottom: 0 }}>
           <div style={{ color: 'var(--text-faint)', fontSize: 11, lineHeight: 1.6 }}>
-            云律 YunLyu v1.4.0 · Electron {window.ncm?.versions.electron ?? '—'}
+            白日梦 Reverie v1.5.0 · Electron {window.ncm?.versions.electron ?? '—'}
             <br />
             数据来源：NeteaseCloudMusicApi (GitHub)
-            <br />
-            快捷键：空格 播放/暂停 · ←→ 快退/快进 · ↑↓ 音量
           </div>
         </div>
       </div>

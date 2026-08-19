@@ -1,11 +1,11 @@
 {
   "name": "ncm-player",
-  "productName": "YunLyu",
-  "version": "1.4.0",
-  "description": "云律 YunLyu — 网易云音乐桌面播放器（顶部导航 · 悬浮播放栏 · 3D 封面 · 歌词特效）",
+  "productName": "Reverie",
+  "version": "1.5.0",
+  "description": "白日梦 Reverie — 网易云音乐桌面播放器（顶部导航 · 悬浮播放栏 · 歌曲封面 + 歌词）",
   "type": "module",
   "main": "electron/main.cjs",
-  "author": "YunLyu",
+  "author": "Reverie",
   "license": "MIT",
   "private": true,
   "scripts": {
@@ -44,8 +44,8 @@
     "zustand": "^5.0.0"
   },
   "build": {
-    "appId": "com.yunlyu.player",
-    "productName": "YunLyu",
+    "appId": "com.reverie.player",
+    "productName": "Reverie",
     "directories": {
       "output": "release"
     },
@@ -66,7 +66,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "YunLyu",
+      "shortcutName": "Reverie",
       "artifactName": "${productName}-Setup-${version}-${arch}.${ext}"
     },
     "portable": {

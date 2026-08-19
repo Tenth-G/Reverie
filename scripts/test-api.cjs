@@ -92,6 +92,12 @@ async function main() {
   const fm = await req('/personal_fm?timestamp=' + Date.now())
   record('私人FM /personal_fm', fm.body?.code === 200 || Array.isArray(fm.body?.data), `code=${fm.body?.code} data=${(fm.body?.data?.length ?? 0)} 首`)
 
+  /* 11. like endpoints (need login, should still respond) */
+  const like = await req('/like?id=186016&like=true&timestamp=' + Date.now())
+  record('红心 /like', typeof like.body?.code === 'number', `code=${like.body?.code}${like.body?.code === 301 ? '(需登录)' : ''}`)
+  const likelist = await req('/likelist?uid=1&timestamp=' + Date.now())
+  record('喜欢列表 /likelist', typeof likelist.body?.code === 'number' || Array.isArray(likelist.body?.ids), `code=${likelist.body?.code}${Array.isArray(likelist.body?.ids) ? ' ids=' + likelist.body.ids.length : ''}`)
+
   /* summary */
   const passed = results.filter((r) => r.pass).length
   const failed = results.filter((r) => !r.pass)
