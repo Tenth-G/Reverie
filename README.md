@@ -115,4 +115,4 @@ npm run test:e2e     # 端到端 UI 测试（30 项，需先 npm run build）
 
 ## ⚠️ 免责声明
 
-本项目仅供学习交流，音乐版权归网易云音乐及相关权利人所有。请勿用于商业用途。
+本播放器（Reverie）仅用于**学习交流**，**不隶属于**网易云音乐或任何平台，**不提供任何违法或侵权内容**。所有音乐版权归相关权利人所有，接口数据来自开源项目 [NeteaseCloudMusicApi](https://github.com/Binaryify/NeteaseCloudMusicApi)，请勿用于商业用途。
