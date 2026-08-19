@@ -1,0 +1,76 @@
+{
+  "name": "ncm-player",
+  "productName": "NCM Player",
+  "version": "1.2.0",
+  "description": "网易云音乐桌面播放器 — 扫码登录 · 3D 可视化 · 歌词特效",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "author": "NCM Player",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "postinstall": "node node_modules/electron/install.js",
+    "dev": "concurrently -k -s first \"npm:dev:vite\" \"npm:dev:electron\"",
+    "dev:vite": "vite",
+    "dev:electron": "wait-on tcp:127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "start": "npm run build && electron .",
+    "dist": "npm run build && electron-builder",
+    "dist:win": "npm run build && electron-builder --win",
+    "test:api": "node scripts/test-api.cjs",
+    "test:e2e": "node scripts/e2e-test.mjs"
+  },
+  "dependencies": {
+    "NeteaseCloudMusicApi": "^4.32.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.185.0",
+    "@vitejs/plugin-react": "^6.0.0",
+    "concurrently": "^10.0.0",
+    "cross-env": "^10.0.0",
+    "electron": "^43.0.0",
+    "electron-builder": "^26.0.0",
+    "playwright-core": "^1.62.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "three": "^0.185.0",
+    "typescript": "^5.6.0",
+    "vite": "^8.0.0",
+    "wait-on": "^9.0.0",
+    "zustand": "^5.0.0"
+  },
+  "build": {
+    "appId": "com.ncm.player",
+    "productName": "NCM Player",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "NCM Player",
+      "artifactName": "${productName}-Setup-${version}-${arch}.${ext}"
+    },
+    "portable": {
+      "artifactName": "${productName}-Portable-${version}-${arch}.${ext}"
+    }
+  }
+}

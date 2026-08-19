@@ -1,0 +1,9 @@
+node_modules/
+dist/
+release/
+test-results/
+*.log
+.DS_Store
+.npm-cache/
+.electron-cache/
+.electron-builder-cache/
