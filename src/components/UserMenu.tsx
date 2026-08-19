@@ -25,7 +25,7 @@ export default function UserMenu() {
   }, [open])
 
   const switchAccount = () => {
-    logout()
+    // 切换账号：直接打开登录二维码，扫码成功后覆盖当前会话；取消则保持原账号
     setOpen(false)
     setShowLogin(true)
   }
