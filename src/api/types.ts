@@ -45,7 +45,6 @@ export type PlayMode = 'sequence' | 'loop' | 'one' | 'shuffle'
 
 export type View =
   | 'home'
-  | 'search'
   | 'chart'
   | 'playlist'
   | 'recommend'

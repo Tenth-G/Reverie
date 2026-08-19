@@ -162,6 +162,147 @@ input {
   color: #fff;
 }
 
+/* ============================ Top navigation ============================ */
+.topnav {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--glass);
+  backdrop-filter: blur(16px);
+  z-index: 40;
+}
+.topnav-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  padding-right: 8px;
+}
+.topnav-brand .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+.topnav-items {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+.topnav-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border-radius: 999px;
+  color: var(--text-dim);
+  font-size: 13.5px;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.topnav-item:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.topnav-item.active {
+  background: linear-gradient(135deg, rgba(236, 65, 65, 0.22), rgba(255, 95, 109, 0.08));
+  color: var(--text);
+  font-weight: 600;
+}
+.topnav-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.topnav-icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+  transition: all 0.15s ease;
+}
+.topnav-icon-btn:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+.topnav-user {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--border);
+}
+.topnav-user img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.topnav-login {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: var(--text-on-accent);
+  font-size: 13px;
+}
+.search-capsule {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 6px 0 14px;
+  height: 36px;
+  border-radius: 999px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  animation: capsule-in 0.2s ease;
+}
+.search-capsule svg {
+  color: var(--text-faint);
+  flex: none;
+}
+.search-capsule input {
+  width: 220px;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 13px;
+}
+.search-close {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+}
+.search-close:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+@keyframes capsule-in {
+  from {
+    width: 34px;
+    opacity: 0.4;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* ============================ Sidebar ============================ */
 .sidebar {
   width: 208px;
@@ -591,6 +732,64 @@ input {
   padding: 32px;
 }
 
+/* song cards (horizontal) */
+.song-cards {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 150px;
+  gap: 16px;
+  overflow-x: auto;
+  padding: 4px 2px 12px;
+  scrollbar-width: none;
+}
+.song-cards::-webkit-scrollbar {
+  display: none;
+}
+.song-card {
+  cursor: pointer;
+  border-radius: 14px;
+  transition: transform 0.15s ease;
+}
+.song-card:hover {
+  transform: translateY(-3px);
+}
+.song-card img {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 14px;
+  object-fit: cover;
+  background: var(--bg-3);
+  box-shadow: 0 6px 18px var(--shadow);
+}
+.song-card-ph {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 14px;
+  background: var(--bg-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-faint);
+  font-size: 28px;
+}
+.song-card .n {
+  font-size: 12.5px;
+  margin-top: 7px;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.song-card .a {
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ============================ Player bar (floating pill) ============================ */
 .player-bar {
   position: fixed;
@@ -743,6 +942,10 @@ input {
   overflow-y: auto;
   padding: 24px 16px;
   scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+.lyrics-scroll::-webkit-scrollbar {
+  display: none;
 }
 .lyric-line {
   padding: 9px 10px;

@@ -39,6 +39,8 @@ export default function SettingsModal() {
   const setLyricsMode = usePlayerStore((s) => s.setLyricsMode)
   const visualizerMode = usePlayerStore((s) => s.visualizerMode)
   const setVisualizerMode = usePlayerStore((s) => s.setVisualizerMode)
+  const loggedIn = usePlayerStore((s) => s.loggedIn)
+  const logout = usePlayerStore((s) => s.logout)
 
   if (!showSettings) return null
 
@@ -139,9 +141,18 @@ export default function SettingsModal() {
           </div>
         </div>
 
+        {loggedIn && (
+          <div className="setting-row">
+            <label>账号</label>
+            <button className="btn danger" onClick={logout}>
+              退出登录
+            </button>
+          </div>
+        )}
+
         <div className="setting-row" style={{ borderBottom: 'none', paddingBottom: 0 }}>
           <div style={{ color: 'var(--text-faint)', fontSize: 11, lineHeight: 1.6 }}>
-            NCM Player v1.3.0 · Electron {window.ncm?.versions.electron ?? '—'}
+            NCM Player v1.4.0 · Electron {window.ncm?.versions.electron ?? '—'}
             <br />
             数据来源：NeteaseCloudMusicApi (GitHub)
             <br />

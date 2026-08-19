@@ -7,7 +7,7 @@ import { usePlayerStore } from '../store/playerStore'
 
 const MODES = ['disc', 'spectrum', 'particles', 'wave'] as const
 const MODE_LABEL: Record<string, string> = {
-  disc: '唱片',
+  disc: '封面',
   spectrum: '频谱',
   particles: '粒子',
   wave: '波形',
@@ -40,6 +40,22 @@ function makeFallbackTexture(): THREE.Texture {
   return tex
 }
 
+function roundedRectShape(w: number, h: number, r: number): THREE.Shape {
+  const shape = new THREE.Shape()
+  const x = -w / 2
+  const y = -h / 2
+  shape.moveTo(x, y + r)
+  shape.lineTo(x, y + h - r)
+  shape.quadraticCurveTo(x, y + h, x + r, y + h)
+  shape.lineTo(x + w - r, y + h)
+  shape.quadraticCurveTo(x + w, y + h, x + w, y + h - r)
+  shape.lineTo(x + w, y + r)
+  shape.quadraticCurveTo(x + w, y, x + w - r, y)
+  shape.lineTo(x + r, y)
+  shape.quadraticCurveTo(x, y, x, y + r)
+  return shape
+}
+
 export default function Visualizer() {
   const containerRef = useRef<HTMLDivElement>(null)
   const visualizerMode = usePlayerStore((s) => s.visualizerMode)
@@ -62,7 +78,7 @@ export default function Visualizer() {
     container.appendChild(renderer.domElement)
 
     const scene = new THREE.Scene()
-    scene.fog = new THREE.FogExp2(BG, 0.03)
+    scene.fog = new THREE.FogExp2(BG, 0.028)
 
     const camera = new THREE.PerspectiveCamera(
       50,
@@ -70,12 +86,12 @@ export default function Visualizer() {
       0.1,
       100,
     )
-    camera.position.set(0, 0.6, 7.6)
+    camera.position.set(0, 0, 7.6)
     camera.lookAt(0, 0, 0)
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.6))
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7))
     const dir = new THREE.DirectionalLight(0xffffff, 2)
-    dir.position.set(4, 6, 5)
+    dir.position.set(3, 4, 5)
     scene.add(dir)
     const rim = new THREE.PointLight(0xec4141, 70, 30)
     rim.position.set(-4, -1, -3)
@@ -87,41 +103,37 @@ export default function Visualizer() {
     const world = new THREE.Group()
     scene.add(world)
 
-    /* ---------------- album disc (the main 3D element) ---------------- */
-    const disc = new THREE.Group()
-    const vinylMat = new THREE.MeshStandardMaterial({ color: 0x111118, roughness: 0.35, metalness: 0.3 })
-    const vinyl = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.4, 0.12, 96), vinylMat)
-    disc.add(vinyl)
-    const grooveMat = new THREE.MeshStandardMaterial({ color: 0x1c1c28, roughness: 0.2, metalness: 0.4 })
-    for (let i = 0; i < 4; i++) {
-      const g = new THREE.Mesh(new THREE.RingGeometry(0.75 + i * 0.4, 0.82 + i * 0.4, 96), grooveMat)
-      g.rotation.x = -Math.PI / 2
-      g.position.y = 0.061
-      disc.add(g)
-    }
-    const coverTex = makeFallbackTexture()
-    const coverMat = new THREE.MeshStandardMaterial({ map: coverTex, roughness: 0.4, metalness: 0.1 })
-    const cover = new THREE.Mesh(new THREE.CircleGeometry(1.9, 96), coverMat)
-    cover.rotation.x = -Math.PI / 2
-    cover.position.y = 0.062
-    disc.add(cover)
-    const label = new THREE.Mesh(
-      new THREE.CircleGeometry(0.36, 48),
-      new THREE.MeshStandardMaterial({ color: 0xec4141, roughness: 0.4, emissive: 0xec4141, emissiveIntensity: 0.4 }),
-    )
-    label.rotation.x = -Math.PI / 2
-    label.position.y = 0.064
-    disc.add(label)
-    const glowRing = new THREE.Mesh(
-      new THREE.RingGeometry(2.55, 2.72, 96),
-      new THREE.MeshBasicMaterial({ color: 0xec4141, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false }),
-    )
-    glowRing.rotation.x = -Math.PI / 2
-    glowRing.position.y = 0.04
-    disc.add(glowRing)
-    world.add(disc)
+    /* ---------------- album cover (faces the screen) ---------------- */
+    const coverGroup = new THREE.Group()
 
-    /* ---------------- spectrum ring (accent around disc) ---------------- */
+    // glow backplate
+    const backMat = new THREE.MeshBasicMaterial({
+      color: 0xec4141,
+      transparent: true,
+      opacity: 0.45,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    })
+    const back = new THREE.Mesh(new THREE.ShapeGeometry(roundedRectShape(3.9, 3.9, 0.34)), backMat)
+    back.position.z = -0.06
+    coverGroup.add(back)
+
+    // the album cover itself, facing +Z (straight at the screen)
+    const coverTex = makeFallbackTexture()
+    const coverMat = new THREE.MeshStandardMaterial({ map: coverTex, roughness: 0.35, metalness: 0.1 })
+    const cover = new THREE.Mesh(new THREE.ShapeGeometry(roundedRectShape(3.4, 3.4, 0.28)), coverMat)
+    cover.position.z = 0.02
+    coverGroup.add(cover)
+
+    // thin emissive frame
+    const frameMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.25 })
+    const frame = new THREE.Mesh(new THREE.ShapeGeometry(roundedRectShape(3.5, 3.5, 0.3)), frameMat)
+    frame.position.z = 0.03
+    coverGroup.add(frame)
+
+    world.add(coverGroup)
+
+    /* ---------------- spectrum ring (accent around cover) ---------------- */
     const spectrum = new THREE.Group()
     const BAR_COUNT = 72
     const bars: THREE.Mesh[] = []
@@ -131,9 +143,8 @@ export default function Visualizer() {
       const m = new THREE.MeshBasicMaterial({ color: new THREE.Color() })
       const mesh = new THREE.Mesh(barGeo, m)
       const a = (i / BAR_COUNT) * Math.PI * 2
-      const r = 3.1
-      mesh.position.set(Math.cos(a) * r, 0, Math.sin(a) * r)
-      mesh.rotation.y = -a
+      const r = 3.0
+      mesh.position.set(Math.cos(a) * r, Math.sin(a) * r, 0)
       bars.push(mesh)
       barMats.push(m)
       spectrum.add(mesh)
@@ -146,12 +157,12 @@ export default function Visualizer() {
     const pPos = new Float32Array(PARTICLE_COUNT * 3)
     const pBase = new Float32Array(PARTICLE_COUNT * 3)
     for (let i = 0; i < PARTICLE_COUNT; i++) {
-      const r = 2.2 + Math.random() * 2.8
+      const r = 2.4 + Math.random() * 2.8
       const theta = Math.random() * Math.PI * 2
-      const phi = Math.acos(2 * Math.random() - 1)
-      pBase[i * 3] = r * Math.sin(phi) * Math.cos(theta)
-      pBase[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta)
-      pBase[i * 3 + 2] = r * Math.cos(phi)
+      const z = (Math.random() - 0.5) * 3
+      pBase[i * 3] = r * Math.cos(theta)
+      pBase[i * 3 + 1] = r * Math.sin(theta)
+      pBase[i * 3 + 2] = z
       pPos[i * 3] = pBase[i * 3]
       pPos[i * 3 + 1] = pBase[i * 3 + 1]
       pPos[i * 3 + 2] = pBase[i * 3 + 2]
@@ -159,7 +170,7 @@ export default function Visualizer() {
     pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3))
     const pMat = new THREE.PointsMaterial({
       color: 0xffffff,
-      size: 0.04,
+      size: 0.045,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       transparent: true,
@@ -278,17 +289,21 @@ export default function Visualizer() {
       const pulse = analyser ? energy : 0.12 + 0.08 * Math.sin(t * 2.2)
       const mode = modeRef.current
 
-      // the album disc is always spinning — it is the main element
-      disc.rotation.y += 0.008 + pulse * 0.02
-      disc.rotation.x = Math.sin(t * 0.35) * 0.06
-      world.rotation.y += 0.0015
-      world.rotation.z = Math.sin(t * 0.4) * 0.03
+      // the cover faces the screen and gently sways / floats
+      coverGroup.rotation.y = Math.sin(t * 0.4) * 0.12
+      coverGroup.rotation.x = Math.sin(t * 0.3) * 0.04
+      coverGroup.position.y = Math.sin(t * 0.7) * 0.16
+      const coverPulse = 1 + pulse * 0.05
+      coverGroup.scale.setScalar(coverPulse)
+      backMat.opacity = 0.35 + pulse * 0.5
+
+      world.rotation.z = Math.sin(t * 0.4) * 0.02
 
       if (mode === 'spectrum') {
         for (let i = 0; i < BAR_COUNT; i++) {
           const idx = Math.floor((i / BAR_COUNT) * 160)
           const v = analyser ? freqData[idx] / 255 : 0.3 + 0.3 * Math.sin(t * 3 + i * 0.4)
-          const h = 0.15 + v * 2.4
+          const h = 0.15 + v * 2.0
           bars[i].scale.y = h / 0.3
           barMats[i].color.copy(colorA).lerp(colorB, i / BAR_COUNT).multiplyScalar(0.6 + v * 0.8)
         }
@@ -300,25 +315,25 @@ export default function Visualizer() {
             i,
             pBase[i * 3] * scale + Math.sin(t * 2 + i) * 0.05,
             pBase[i * 3 + 1] * scale + Math.cos(t * 1.7 + i) * 0.05,
-            pBase[i * 3 + 2] * scale,
+            pBase[i * 3 + 2],
           )
         }
         pos.needsUpdate = true
         pMat.color.setHSL(0.55 + treble * 0.4, 0.9, 0.6)
       } else if (mode === 'wave') {
         const pos = wGeo.getAttribute('position') as THREE.BufferAttribute
-        const baseR = 3.1
+        const baseR = 3.0
         for (let i = 0; i < WAVE_COUNT; i++) {
           const a = (i / WAVE_COUNT) * Math.PI * 2
           const s = analyser ? (timeData[Math.floor((i / WAVE_COUNT) * 512)] - 128) / 128 : 0.2
-          const r = baseR + s * 1.2 + pulse * 0.3
+          const r = baseR + s * 1.1 + pulse * 0.25
           pos.setXYZ(i, Math.cos(a) * r, Math.sin(a) * r, 0)
         }
         pos.needsUpdate = true
       }
 
-      // gentle orbit keeps the cover centered
-      camera.position.set(Math.sin(t * 0.14) * 1.8, 0.6, 7.6 + Math.cos(t * 0.14) * 0.3)
+      // keep camera nearly fixed so the cover stays facing the screen
+      camera.position.set(Math.sin(t * 0.1) * 0.4, 0, 7.6)
       camera.lookAt(0, 0, 0)
 
       bloomPass.strength = 0.7 + pulse * 0.8

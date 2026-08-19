@@ -72,6 +72,7 @@ interface PlayerState {
   // --- ui / data ---
   activeView: View
   currentPage: 'browse' | 'nowplaying'
+  searchOpen: boolean
   searchKeyword: string
   searchResults: Song[]
   searching: boolean
@@ -114,6 +115,7 @@ interface PlayerState {
   setShowSettings: (v: boolean) => void
   setActiveView: (v: View) => void
   setPage: (p: 'browse' | 'nowplaying') => void
+  setSearchOpen: (v: boolean) => void
   loadHome: () => Promise<void>
   doSearch: (kw: string) => Promise<void>
   loadTopSongs: () => Promise<void>
@@ -189,6 +191,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   // --- ui / data ---
   activeView: 'home',
   currentPage: 'browse',
+  searchOpen: false,
   searchKeyword: '',
   searchResults: [],
   searching: false,
@@ -318,6 +321,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   setShowSettings: (v) => set({ showSettings: v }),
   setActiveView: (v) => set({ activeView: v }),
   setPage: (p) => set({ currentPage: p }),
+  setSearchOpen: (v) => set({ searchOpen: v }),
 
   // --- home dashboard ---
   loadHome: async () => {
@@ -339,7 +343,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   // --- discovery ---
   doSearch: async (kw) => {
     const key = kw.trim()
-    set({ searchKeyword: key, activeView: 'search', searching: true })
+    set({ searchKeyword: key, searchOpen: true, searching: true })
     if (!key) {
       set({ searching: false, searchResults: [] })
       return
@@ -527,6 +531,9 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       if (profile && profile.userId > 0) {
         set({ loggedIn: true, profile })
         get().toast(`欢迎，${profile.nickname}`, 'success')
+        if (!get().recommendSongs.length) {
+          getRecommendSongs().then((songs) => set({ recommendSongs: songs })).catch(() => {})
+        }
         return true
       }
       clearCookie()
@@ -549,8 +556,13 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     }
     try {
       const profile = await loginStatus()
-      if (profile && profile.userId > 0) set({ loggedIn: true, profile })
-      else {
+      if (profile && profile.userId > 0) {
+        set({ loggedIn: true, profile })
+        // preload personalized recommendations for the home page
+        if (!get().recommendSongs.length) {
+          getRecommendSongs().then((songs) => set({ recommendSongs: songs })).catch(() => {})
+        }
+      } else {
         clearCookie()
         set({ loggedIn: false, profile: null })
       }

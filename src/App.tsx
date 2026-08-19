@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react'
 import { usePlayerStore } from './store/playerStore'
 import TitleBar from './components/TitleBar'
-import Sidebar from './components/Sidebar'
+import TopNav from './components/TopNav'
 import PlayerBar from './components/PlayerBar'
 import NowPlayingView from './components/NowPlayingView'
 import HomePage from './components/HomePage'
-import SearchPage from './components/SearchPage'
+import SearchResults from './components/SearchResults'
 import ChartPage from './components/ChartPage'
 import PlaylistPage from './components/PlaylistPage'
 import RecommendPage from './components/RecommendPage'
@@ -26,6 +26,7 @@ export default function App() {
 
   const activeView = usePlayerStore((s) => s.activeView)
   const currentPage = usePlayerStore((s) => s.currentPage)
+  const searchOpen = usePlayerStore((s) => s.searchOpen)
 
   const refreshLogin = usePlayerStore((s) => s.refreshLogin)
   const loadHome = usePlayerStore((s) => s.loadHome)
@@ -131,8 +132,6 @@ export default function App() {
     switch (activeView) {
       case 'home':
         return <HomePage />
-      case 'search':
-        return <SearchPage />
       case 'chart':
         return <ChartPage />
       case 'playlist':
@@ -153,13 +152,13 @@ export default function App() {
   return (
     <div className="app">
       <TitleBar />
+      <TopNav />
       {currentPage === 'nowplaying' ? (
         <NowPlayingView />
       ) : (
-        <div className="app-body">
-          <Sidebar />
-          <main className="page-content">{renderPage()}</main>
-        </div>
+        <main className="page-content">
+          {searchOpen ? <SearchResults /> : renderPage()}
+        </main>
       )}
       <PlayerBar />
       <LoginModal />
