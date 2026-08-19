@@ -570,7 +570,11 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       return
     }
     try {
-      const songs = await getSongsByIds(likedIds.slice(0, 200))
+      const songs: Song[] = []
+      for (let i = 0; i < likedIds.length; i += 200) {
+        const chunk = await getSongsByIds(likedIds.slice(i, i + 200))
+        songs.push(...chunk)
+      }
       set({ likedSongs: songs })
     } catch {
       /* ignore */

@@ -48,13 +48,21 @@ export default function UserMenu() {
         onClick={() => setOpen(!open)}
         title={profile?.nickname}
       >
-        <img className="user-avatar" src={profile?.avatarUrl} alt="" />
+        {profile?.avatarUrl ? (
+          <img className="user-avatar" src={profile.avatarUrl} alt="" />
+        ) : (
+          <span className="user-avatar user-avatar-ph">♪</span>
+        )}
         {isVip && <span className="user-badge">VIP</span>}
       </button>
       {open && (
         <div className="user-dropdown">
           <div className="user-dropdown-head">
-            <img src={profile?.avatarUrl} alt="" />
+            {profile?.avatarUrl ? (
+              <img src={profile.avatarUrl} alt="" />
+            ) : (
+              <span className="user-avatar-ph-lg">♪</span>
+            )}
             <div className="uh-info">
               <div className="nm">{profile?.nickname}</div>
               <div className="vip">{vipLabel(vipType)}</div>

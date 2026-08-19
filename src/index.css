@@ -269,6 +269,26 @@ input {
   object-fit: cover;
   flex: none;
 }
+.user-avatar-ph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-2);
+  color: var(--text-faint);
+  font-size: 14px;
+}
+.user-avatar-ph-lg {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-3);
+  color: var(--text-faint);
+  font-size: 18px;
+  flex: none;
+}
 .user-badge {
   font-size: 10px;
   font-weight: 700;
@@ -421,8 +441,9 @@ input {
 .user-dropdown {
   position: absolute;
   top: calc(100% + 8px);
-  left: 0;
-  width: 100%;
+  right: 0;
+  left: auto;
+  width: 240px;
   background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: 16px;

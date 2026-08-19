@@ -29,6 +29,7 @@ export default function App() {
 
   const refreshLogin = usePlayerStore((s) => s.refreshLogin)
   const loadHome = usePlayerStore((s) => s.loadHome)
+  const loadHomeQuote = usePlayerStore((s) => s.loadHomeQuote)
   const next = usePlayerStore((s) => s.next)
 
   // register audio element
@@ -36,11 +37,12 @@ export default function App() {
     if (audioRef.current) setAudioEl(audioRef.current)
   }, [setAudioEl])
 
-  // restore login session + load home on startup
+  // restore login session + load home + random lyric quote on startup
   useEffect(() => {
     refreshLogin()
     loadHome()
-  }, [refreshLogin, loadHome])
+    loadHomeQuote()
+  }, [refreshLogin, loadHome, loadHomeQuote])
 
   // theme: follow system / light / dark
   useEffect(() => {
