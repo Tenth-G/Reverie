@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../store/playerStore";
-import LyricsPanel from "./LyricsPanel";
+import ParticleAlbumCover from "./ParticleAlbumCover";
+import Lyrics3D from "./Lyrics3D";
 import { sizedImage } from "../utils/image";
 import { IconChevronDown } from "./icons";
 
@@ -8,10 +9,45 @@ const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 
 export default function NowPlayingView() {
   const currentSong = usePlayerStore((s) => s.currentSong);
+  const lyricLines = usePlayerStore((s) => s.lyricLines);
+  const progress = usePlayerStore((s) => s.progress);
   const setPage = usePlayerStore((s) => s.setPage);
   const coverRef = useRef<HTMLDivElement>(null);
   const [fadedIn, setFadedIn] = useState(false);
   const closingRef = useRef(false);
+  const [currentLyricLine, setCurrentLyricLine] = useState("");
+  const [nextLyricLine, setNextLyricLine] = useState("");
+  const [rotation, setRotation] = useState({ x: 0, y: 0 });
+
+  // Parse and update lyrics based on progress
+  useEffect(() => {
+    if (!lyricLines || !lyricLines.length) {
+      setCurrentLyricLine("");
+      setNextLyricLine("");
+      return;
+    }
+
+    let currentIndex = -1;
+    for (let i = 0; i < lyricLines.length; i++) {
+      if (lyricLines[i].time <= progress) {
+        currentIndex = i;
+      } else {
+        break;
+      }
+    }
+
+    if (currentIndex >= 0) {
+      setCurrentLyricLine(lyricLines[currentIndex].text || "♪");
+      if (currentIndex + 1 < lyricLines.length) {
+        setNextLyricLine(lyricLines[currentIndex + 1].text || "");
+      } else {
+        setNextLyricLine("");
+      }
+    } else {
+      setCurrentLyricLine("♪");
+      setNextLyricLine(lyricLines[0]?.text || "");
+    }
+  }, [lyricLines, progress]);
 
   // Opening: the cover expands upward from the player bar cover (FLIP).
   useEffect(() => {
@@ -63,8 +99,12 @@ export default function NowPlayingView() {
     }
   };
 
+  const handleDoubleClick = () => {
+    setRotation({ x: 0, y: 0 });
+  };
+
   return (
-    <div className="now-playing">
+    <div className="now-playing now-playing-3d">
       <button
         className={`np-btn np-back ${fadedIn ? "np-fade-in" : ""}`}
         onClick={handleClose}
@@ -73,17 +113,24 @@ export default function NowPlayingView() {
         <IconChevronDown width={20} height={20} />
       </button>
 
-      <div className="np-stage">
-        <div className="np-cover" ref={coverRef}>
+      <div className="np-stage-3d">
+        <div className="np-cover-3d" ref={coverRef}>
           {currentSong?.picUrl ? (
-            <img src={sizedImage(currentSong.picUrl, 1120)} alt="" />
+            <ParticleAlbumCover
+              imageUrl={sizedImage(currentSong.picUrl, 1120)}
+              onDoubleClick={handleDoubleClick}
+            />
           ) : (
             <div className="np-cover-ph">♪</div>
           )}
         </div>
-        {/* lyrics overlay on top of the cover */}
-        <div className="np-lyrics">
-          <LyricsPanel />
+        {/* 3D lyrics overlay */}
+        <div className="np-lyrics-3d">
+          <Lyrics3D
+            currentLine={currentLyricLine}
+            nextLine={nextLyricLine}
+            rotation={rotation}
+          />
         </div>
       </div>
     </div>

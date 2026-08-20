@@ -1681,3 +1681,81 @@ input {
     transform: translateY(0);
   }
 }
+
+/* ============================ 3D Particle Album Cover ============================ */
+.now-playing-3d {
+  background: #000000;
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 40px 130px;
+}
+
+.np-stage-3d {
+  position: relative;
+  width: min(700px, 90vw);
+  height: min(700px, 90vh);
+}
+
+.np-cover-3d {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  will-change: transform;
+}
+
+.particle-album-cover {
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+}
+
+.particle-album-cover:active {
+  cursor: grabbing;
+}
+
+.np-lyrics-3d {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  animation: np-lyrics-in 0.45s ease 0.1s both;
+}
+
+.lyrics-3d {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+  padding: 40px;
+}
+
+.lyrics-3d-current {
+  font-size: 28px;
+  font-weight: 600;
+  color: #ffffff;
+  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.8);
+  transition: transform 0.3s ease;
+  transform-style: preserve-3d;
+  line-height: 1.5;
+  max-width: 90%;
+}
+
+.lyrics-3d-next {
+  font-size: 18px;
+  color: rgba(255, 255, 255, 0.5);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8);
+  transition: transform 0.3s ease;
+  transform-style: preserve-3d;
+  line-height: 1.5;
+  max-width: 90%;
+}
+}
