@@ -17,7 +17,6 @@
 
 ### 安装地址
 
-- 项目主页：https://github.com/Tenth-G/Reverie
 - 安装包下载地址：https://github.com/Tenth-G/Reverie/releases
 - 安装版（`Reverie-Setup-<版本>-x64.exe`）：下载后双击运行，按向导完成安装
 - 便携版（`Reverie-Portable-<版本>-x64.exe`）：免安装，下载后直接运行
