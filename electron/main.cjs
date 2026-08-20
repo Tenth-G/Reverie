@@ -47,6 +47,74 @@ function sendUpdateEvent(type, data) {
 }
 
 /**
+ * Update sources, checked in order by reachability:
+ * 1. GitHub Releases (works when the network can reach GitHub)
+ * 2. Qiniu Kodo bucket (domestic mirror, works when GitHub is blocked/slow)
+ * Each must serve latest.yml + the installer + its blockmap at stable URLs.
+ */
+const UPDATE_SOURCES = [
+  {
+    name: "github",
+    probeUrl: "https://api.github.com/repos/Tenth-G/Reverie/releases/latest",
+    config: { provider: "github", owner: "Tenth-G", repo: "Reverie" },
+  },
+  {
+    name: "qiniu",
+    probeUrl: "http://tk25wzhbq.hd-bkt.clouddn.com/latest.yml",
+    config: {
+      provider: "generic",
+      url: "http://tk25wzhbq.hd-bkt.clouddn.com",
+    },
+  },
+];
+
+let checkInFlight = false;
+
+/** Race the sources and pick the first one that responds (network aware). */
+async function pickUpdateSource() {
+  const results = await Promise.all(
+    UPDATE_SOURCES.map(async (source) => {
+      try {
+        const res = await fetch(source.probeUrl, {
+          method: "GET",
+          signal: AbortSignal.timeout(2500),
+        });
+        return res.ok ? source : null;
+      } catch {
+        return null;
+      }
+    }),
+  );
+  return results.find((s) => s !== null) ?? UPDATE_SOURCES[0];
+}
+
+/**
+ * Network-aware update check: probe both sources, use the reachable one,
+ * and fail over to the other if the check itself errors.
+ */
+async function smartCheck(manual) {
+  if (checkInFlight) return;
+  checkInFlight = true;
+  try {
+    const primary = await pickUpdateSource();
+    try {
+      autoUpdater.setFeedURL(primary.config);
+      await autoUpdater.checkForUpdates();
+    } catch (err) {
+      // autoUpdater already emits the "error" event with the manual flag;
+      // just retry with the other source.
+      const fallback = UPDATE_SOURCES.find((s) => s !== primary);
+      autoUpdater.setFeedURL(fallback.config);
+      await autoUpdater.checkForUpdates();
+    }
+  } catch {
+    // covered by the autoUpdater "error" event
+  } finally {
+    checkInFlight = false;
+  }
+}
+
+/**
  * Wire the electron-updater auto update flow:
  * detect the new version, show a modal with 取消/更新, download only after the
  * user confirms, then let them restart to install.
@@ -93,7 +161,7 @@ function setupUpdater() {
 
   // Auto check shortly after launch (silent on failure).
   setTimeout(() => {
-    autoUpdater.checkForUpdates().catch(() => {});
+    smartCheck(false).catch(() => {});
   }, 5000);
 }
 
@@ -281,15 +349,7 @@ ipcMain.handle(
 ipcMain.handle("update:check", () => {
   if (!updateEnabled) return { ok: false, reason: "disabled" };
   manualCheck = true;
-  autoUpdater
-    .checkForUpdates()
-    .then(() => {})
-    .catch((err) =>
-      sendUpdateEvent("error", {
-        message: String((err && err.message) || err),
-        manual: true,
-      }),
-    );
+  smartCheck(true).catch(() => {});
   return { ok: true };
 });
 ipcMain.handle("update:download", async () => {
