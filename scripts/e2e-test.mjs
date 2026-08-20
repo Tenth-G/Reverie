@@ -108,8 +108,8 @@ async function main() {
   record('播放页歌词容器存在', (await win.locator('.np-lyrics').count()) === 1)
   await win.screenshot({ path: `${OUT_DIR}/e2e-04-nowplaying.png` })
   await win.locator('.np-back').click()
-  await win.waitForTimeout(300)
-  record('播放页返回', (await win.locator('.now-playing').count()) === 0 && (await win.locator('.titlebar').count()) === 1)
+  await win.waitForFunction(() => document.querySelectorAll('.now-playing').length === 0, null, { timeout: 5000 })
+  record('播放页返回', (await win.locator('.titlebar').count()) === 1)
 
   record('无渲染进程错误', rendererErrors.length === 0, rendererErrors.slice(0, 3).join(' || ') || 'clean')
 
