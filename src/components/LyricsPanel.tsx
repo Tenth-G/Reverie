@@ -14,6 +14,7 @@ export default function LyricsPanel() {
   const active = findActiveIndex(lyricLines, progress)
   const prevActive = useRef(-1)
 
+  // Keep the active line centered inside the lyric window.
   useEffect(() => {
     if (active === prevActive.current) return
     prevActive.current = active
@@ -26,33 +27,33 @@ export default function LyricsPanel() {
     }
   }, [active])
 
-  if (!lyricLines.length) {
-    return <div className="empty">暂无歌词</div>
-  }
-
   const sungFrac = computeSungFraction(lyricLines, active, progress)
 
   return (
     <div className={`lyrics-panel theme-${lyricTheme}`}>
-      <div className="lyrics-scroll" ref={scrollRef}>
-        {lyricLines.map((line, i) => {
-          const isCur = i === active
-          return (
-            <div
-              key={i}
-              data-line={i}
-              className={`lyric-line ${isCur ? 'current' : 'dim'}`}
-              style={{ fontSize: lyricFontSize }}
-              onClick={() => seek(line.time)}
-            >
-              <div className="l">
-                {isCur && line.text ? renderKaraoke(line.text, sungFrac) : line.text || '…'}
+      {lyricLines.length ? (
+        <div className="lyrics-scroll" ref={scrollRef}>
+          {lyricLines.map((line, i) => {
+            const isCur = i === active
+            return (
+              <div
+                key={i}
+                data-line={i}
+                className={`lyric-line ${isCur ? 'current' : 'dim'}`}
+                style={{ fontSize: lyricFontSize }}
+                onClick={() => seek(line.time)}
+              >
+                <div className="l">
+                  {isCur && line.text ? renderKaraoke(line.text, sungFrac) : line.text || '…'}
+                </div>
+                {showTranslation && line.translation && <div className="tr">{line.translation}</div>}
               </div>
-              {showTranslation && line.translation && <div className="tr">{line.translation}</div>}
-            </div>
-          )
-        })}
-      </div>
+            )
+          })}
+        </div>
+      ) : (
+        <div className="empty">暂无歌词</div>
+      )}
     </div>
   )
 }

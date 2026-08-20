@@ -1290,42 +1290,51 @@ input {
   width: 84px;
 }
 
-/* ============================ Lyrics ============================ */
+/* ============================ Lyrics (floating glass card) ============================ */
 .lyrics-scroll {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 24px 16px;
+  text-align: center;
+  padding: 20px 16px 30px;
   scroll-behavior: smooth;
   scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 24%, #000 76%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 24%, #000 76%, transparent 100%);
 }
 .lyrics-scroll::-webkit-scrollbar {
   display: none;
 }
 .lyric-line {
-  padding: 9px 10px;
-  border-radius: 8px;
+  padding: 8px 14px;
   cursor: pointer;
-  transition: opacity 0.35s ease, filter 0.35s ease, transform 0.35s ease;
-  text-align: left;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.46);
+  transition: color 0.35s ease, opacity 0.35s ease, filter 0.35s ease, transform 0.35s ease;
+  user-select: none;
 }
 .lyric-line .l {
   font-weight: 600;
-  transition: color 0.3s ease, transform 0.3s ease;
   line-height: 1.5;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.75);
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.9),
+    0 4px 16px rgba(0, 0, 0, 0.55);
 }
 .lyric-line .tr {
   font-size: 0.85em;
   margin-top: 3px;
-  opacity: 0.9;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.75);
+  color: rgba(255, 255, 255, 0.78);
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.9),
+    0 4px 16px rgba(0, 0, 0, 0.55);
 }
 .lyric-line.dim {
-  color: var(--text-dim);
+  filter: blur(0.6px);
 }
-.lyric-line.current .l {
-  transform: scale(1.02);
-  transform-origin: left center;
+.lyric-line.current {
+  color: #fff;
+  filter: none;
+  transform: scale(1.05);
 }
 
 /* word-level karaoke */
@@ -1374,20 +1383,25 @@ input {
   color: var(--accent-2);
 }
 
-/* lyrics panel (centered, no scrollbar) */
+/* the card body: scrollable lyric window with edge fade */
 .lyrics-panel {
   position: absolute;
   inset: 0;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
-.lyrics-panel .lyrics-scroll {
-  height: 100%;
-  overflow-y: auto;
-  text-align: center;
-  padding: 24px 12px;
-}
-.lyrics-panel .lyric-line {
-  text-align: center;
+.lyrics-panel .empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: rgba(255, 255, 255, 0.78);
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.9),
+    0 4px 16px rgba(0, 0, 0, 0.55);
 }
 
 /* ============================ Now playing page ============================ */
@@ -1458,6 +1472,15 @@ input {
   background: var(--bg-3);
   color: var(--text-faint);
   font-size: 64px;
+}
+/* pure lyrics, no background, floating directly on the album cover */
+.np-lyrics {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-radius: 24px;
+  overflow: hidden;
+  animation: np-lyrics-in 0.45s ease 0.1s both;
 }
 @keyframes np-lyrics-in {
   from {
