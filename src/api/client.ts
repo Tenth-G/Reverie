@@ -375,7 +375,11 @@ function deepFindBadgeUrl(obj: unknown): string {
       if (typeof v === 'string' && /^https?:\/\//i.test(v)) {
         if (/avatar|background|cover|img1v1|default/i.test(k)) continue
         let score = 0
-        if (/dynamicicon/i.test(k)) score = 300 // the animated member badge
+        // the official app shows the ANIMATED member badge next to the
+        // nickname; redVipDynamicIconUrl is the dynamic *level* badge when set
+        if (/^redVipDynamicIconUrl/i.test(k)) score = 500 // dynamic level badge
+        else if (/dynamicicon/i.test(k)) score = 400 // animated member badge (what official apps use)
+        else if (/levelicon|level_icon|viplevelicon/i.test(k)) score = 300 // static level badge fallback
         else if (/identityicon/i.test(k)) score = 120
         else if (/vipicon/i.test(k)) score = 110
         else if (/badge/i.test(k)) score = 100

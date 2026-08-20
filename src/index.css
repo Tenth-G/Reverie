@@ -299,23 +299,15 @@ input {
   text-overflow: ellipsis;
   color: var(--text);
 }
-/* VIP label text inside the capsule (lengthens it) */
-.user-vip-text {
-  font-size: 12px;
-  font-weight: 600;
-  color: #e6a23c;
-  white-space: nowrap;
-  flex: none;
-}
 .user-caret {
   color: var(--text-faint);
   flex: none;
 }
-/* official member badge fetched from the API (animated webp/apng plays directly) */
+/* official member badge fetched from the API (animated webp plays directly) */
 .user-badge-api {
-  height: 18px;
+  height: 20px;
   width: auto;
-  border-radius: 4px;
+  border-radius: 5px;
   flex: none;
   object-fit: contain;
 }
