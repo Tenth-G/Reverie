@@ -170,6 +170,15 @@ input {
   color: #fff;
 }
 
+/* macOS draws its traffic lights over the top-left corner of the web view, so
+   keep the drag filler and the now-playing back button clear of them. */
+[data-platform="darwin"] .titlebar {
+  padding-left: 78px;
+}
+[data-platform="darwin"] .np-back {
+  left: 96px;
+}
+
 /* ============================ Top navigation ============================ */
 .topnav {
   flex: none;

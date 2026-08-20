@@ -56,10 +56,26 @@ async function main() {
     "标题栏居中显示 Reverie",
     (await win.locator(".titlebar-name").textContent()) === "Reverie",
   );
+  // macOS uses its native traffic lights, so only the settings button is drawn;
+  // Windows/Linux draw all four.
+  const isMac = process.platform === "darwin";
+  const expectedTbBtns = isMac ? 1 : 4;
+  const tbBtns = await win.locator(".tb-btn").count();
   record(
-    "窗口控制按钮 (4个: 设置/最小化/最大化/关闭)",
-    (await win.locator(".tb-btn").count()) === 4,
+    isMac
+      ? "窗口控制按钮 (mac: 仅设置，窗口按钮交给系统)"
+      : "窗口控制按钮 (4个: 设置/最小化/最大化/关闭)",
+    tbBtns === expectedTbBtns,
+    `${tbBtns} 个`,
   );
+  if (isMac) {
+    record(
+      "mac 标记 data-platform=darwin",
+      (await win.evaluate(() =>
+        document.documentElement.getAttribute("data-platform"),
+      )) === "darwin",
+    );
+  }
   record("顶部导航栏渲染", (await win.locator(".topnav").count()) === 1);
   record("左侧导航已移除", (await win.locator(".sidebar").count()) === 0);
   record("悬浮播放栏渲染", (await win.locator(".player-bar").count()) === 1);

@@ -261,13 +261,20 @@ async function startApi() {
   }
 }
 
+const isMac = process.platform === "darwin";
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1380,
     height: 860,
     minWidth: 1080,
     minHeight: 680,
-    frame: false,
+    // macOS keeps its native traffic lights in the top-left and only hides the
+    // title bar chrome; Windows/Linux stay fully frameless with the custom
+    // window buttons drawn by the renderer.
+    ...(isMac
+      ? { titleBarStyle: "hidden", trafficLightPosition: { x: 18, y: 14 } }
+      : { frame: false }),
     backgroundColor: "#0a0a12",
     title: "Reverie",
     icon: windowIcon,
