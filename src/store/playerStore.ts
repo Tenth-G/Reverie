@@ -1,4 +1,4 @@
-import { create } from 'zustand'
+import { create } from "zustand";
 import {
   clearCookie,
   fmTrash,
@@ -17,208 +17,274 @@ import {
   loginStatus,
   searchSongs,
   setCookie,
-} from '../api/client'
-import type { LyricLine, PlaylistInfo, PlayMode, Song, UserProfile, View } from '../api/types'
-import type { VipInfo } from '../api/client'
-import { parseLyrics, pickRandomLyricLine } from '../utils/lyrics'
+} from "../api/client";
+import type {
+  LyricLine,
+  PlaylistInfo,
+  PlayMode,
+  Song,
+  UserProfile,
+  View,
+} from "../api/types";
+import type { VipInfo } from "../api/client";
+import { parseLyrics, pickRandomLyricLine } from "../utils/lyrics";
+import { checkLatestRelease, compareVersions } from "../utils/updater";
+import type { UpdateInfo } from "../utils/updater";
 
 export interface ToastMsg {
-  id: number
-  text: string
-  type: 'info' | 'error' | 'success'
+  id: number;
+  text: string;
+  type: "info" | "error" | "success";
 }
 
-export type ThemePreference = 'system' | 'light' | 'dark'
+export type ThemePreference = "system" | "light" | "dark";
 
 /* ------------------------- persistence helpers ------------------------- */
 function readNum(key: string, def: number): number {
   try {
-    const v = Number(localStorage.getItem(key))
-    return Number.isFinite(v) ? v : def
+    const v = Number(localStorage.getItem(key));
+    return Number.isFinite(v) ? v : def;
   } catch {
-    return def
+    return def;
   }
 }
 function readBool(key: string, def: boolean): boolean {
   try {
-    const v = localStorage.getItem(key)
-    return v === null ? def : v === '1'
+    const v = localStorage.getItem(key);
+    return v === null ? def : v === "1";
   } catch {
-    return def
+    return def;
   }
 }
 function readStr(key: string, def: string): string {
   try {
-    return localStorage.getItem(key) ?? def
+    return localStorage.getItem(key) ?? def;
   } catch {
-    return def
+    return def;
   }
 }
 function write(key: string, v: string) {
   try {
-    localStorage.setItem(key, v)
+    localStorage.setItem(key, v);
   } catch {
     /* ignore */
   }
 }
 
 function readThemePref(): ThemePreference {
-  const v = readStr('reverie_theme', 'system') as ThemePreference
-  return v === 'light' || v === 'dark' || v === 'system' ? v : 'system'
+  const v = readStr("reverie_theme", "system") as ThemePreference;
+  return v === "light" || v === "dark" || v === "system" ? v : "system";
 }
 
 interface RecentSongData {
-  id: number
-  name: string
-  artists: string
-  artistNames: string[]
-  album: string
-  albumId: number
-  picUrl: string
-  duration: number
-  fee: number
-  mvId?: number
+  id: number;
+  name: string;
+  artists: string;
+  artistNames: string[];
+  album: string;
+  albumId: number;
+  picUrl: string;
+  duration: number;
+  fee: number;
+  mvId?: number;
 }
 
 function readRecentSongs(): Song[] {
   try {
-    const raw = localStorage.getItem('reverie_recent')
-    if (!raw) return []
-    const arr = JSON.parse(raw) as RecentSongData[]
-    return Array.isArray(arr) ? arr : []
+    const raw = localStorage.getItem("reverie_recent");
+    if (!raw) return [];
+    const arr = JSON.parse(raw) as RecentSongData[];
+    return Array.isArray(arr) ? arr : [];
   } catch {
-    return []
+    return [];
   }
 }
 
-let toastSeq = 0
+/* ---------------------- session persistence (local only) ---------------------- */
+
+const SESSION_KEY = "reverie_session";
+const LEGACY_KEYS = ["ncm_theme"];
+
+interface SessionData {
+  queue: Song[];
+  index: number;
+  currentSong: Song | null;
+}
+
+/** Restore the last playback session (queue / index / current song), no autoplay. */
+function readSession(): SessionData {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return { queue: [], index: -1, currentSong: null };
+    const d = JSON.parse(raw) as SessionData;
+    if (
+      !Array.isArray(d.queue) ||
+      typeof d.index !== "number" ||
+      !d.currentSong
+    ) {
+      return { queue: [], index: -1, currentSong: null };
+    }
+    return { queue: d.queue, index: d.index, currentSong: d.currentSong };
+  } catch {
+    return { queue: [], index: -1, currentSong: null };
+  }
+}
+
+function writeSession(s: SessionData) {
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(s));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Remove obsolete storage keys from older app versions. */
+function clearLegacyKeys() {
+  try {
+    for (const k of LEGACY_KEYS) localStorage.removeItem(k);
+  } catch {
+    /* ignore */
+  }
+}
+
+const restoredSession = readSession();
+clearLegacyKeys();
+
+let toastSeq = 0;
 
 interface PlayerState {
   // --- auth ---
-  loggedIn: boolean
-  profile: UserProfile | null
-  likedIds: number[]
-  likedSongs: Song[]
-  likedAt: Record<number, number>
-  vipInfo: VipInfo | null
-  recentSongs: Song[]
-  homeQuote: { text: string; source: string } | null
+  loggedIn: boolean;
+  profile: UserProfile | null;
+  likedIds: number[];
+  likedSongs: Song[];
+  likedAt: Record<number, number>;
+  vipInfo: VipInfo | null;
+  recentSongs: Song[];
+  homeQuote: { text: string; source: string } | null;
 
   // --- audio ---
-  audioEl: HTMLAudioElement | null
-  currentSong: Song | null
-  currentUrl: string | null
-  loadingUrl: boolean
-  playing: boolean
-  progress: number
-  duration: number
-  volume: number
-  muted: boolean
-  playMode: PlayMode
+  audioEl: HTMLAudioElement | null;
+  currentSong: Song | null;
+  currentUrl: string | null;
+  loadingUrl: boolean;
+  playing: boolean;
+  progress: number;
+  duration: number;
+  volume: number;
+  muted: boolean;
+  playMode: PlayMode;
 
   // --- queue ---
-  queue: Song[]
-  index: number
+  queue: Song[];
+  index: number;
 
   // --- lyrics ---
-  lyricLines: LyricLine[]
-  showTranslation: boolean
+  lyricLines: LyricLine[];
+  showTranslation: boolean;
+
+  // --- update ---
+  updateInfo: UpdateInfo | null;
+  updateChecking: boolean;
+  showUpdate: boolean;
 
   // --- appearance ---
-  theme: ThemePreference
-  lyricTheme: string
-  lyricFontSize: number
+  theme: ThemePreference;
+  lyricTheme: string;
+  lyricFontSize: number;
 
   // --- ui / data ---
-  activeView: View
-  prevView: View
-  currentPage: 'browse' | 'nowplaying'
-  searchOpen: boolean
-  searchKeyword: string
-  searchResults: Song[]
-  searching: boolean
-  topSongs: Song[]
-  topSongsLoading: boolean
-  hotPlaylists: PlaylistInfo[]
-  hotPlaylistsLoading: boolean
-  userPlaylists: PlaylistInfo[]
-  playlistSongs: Song[]
-  playlistName: string
-  recommendSongs: Song[]
-  fmSongs: Song[]
-  showLogin: boolean
-  showSettings: boolean
-  toasts: ToastMsg[]
+  activeView: View;
+  prevView: View;
+  currentPage: "browse" | "nowplaying";
+  searchOpen: boolean;
+  searchKeyword: string;
+  searchResults: Song[];
+  searching: boolean;
+  topSongs: Song[];
+  topSongsLoading: boolean;
+  hotPlaylists: PlaylistInfo[];
+  hotPlaylistsLoading: boolean;
+  userPlaylists: PlaylistInfo[];
+  playlistSongs: Song[];
+  playlistName: string;
+  recommendSongs: Song[];
+  fmSongs: Song[];
+  showLogin: boolean;
+  showSettings: boolean;
+  toasts: ToastMsg[];
 
   // --- actions ---
-  setAudioEl: (el: HTMLAudioElement) => void
-  toast: (text: string, type?: ToastMsg['type']) => void
-  dismissToast: (id: number) => void
-  togglePlay: () => void
-  next: () => void
-  prev: () => void
-  seek: (ms: number) => void
-  setVolume: (v: number) => void
-  toggleMute: () => void
-  setPlayMode: (m: PlayMode) => void
-  cyclePlayMode: () => void
-  setShowTranslation: (v: boolean) => void
-  setTheme: (t: ThemePreference) => void
-  setLyricTheme: (t: string) => void
-  setLyricFontSize: (s: number) => void
-  setShowLogin: (v: boolean) => void
-  setShowSettings: (v: boolean) => void
-  setActiveView: (v: View) => void
-  setPage: (p: 'browse' | 'nowplaying') => void
-  setSearchOpen: (v: boolean) => void
-  loadHome: () => Promise<void>
-  doSearch: (kw: string) => Promise<void>
-  loadTopSongs: () => Promise<void>
-  loadPersonalFm: () => Promise<void>
-  loadUserPlaylists: () => Promise<void>
-  openPlaylist: (id: number, name: string) => Promise<void>
-  closePlaylist: () => void
-  playSong: (song: Song, queue?: Song[]) => Promise<void>
-  playQueueAt: (i: number) => Promise<void>
-  fmNext: () => Promise<void>
-  fmDislike: () => Promise<void>
-  toggleLike: () => Promise<void>
-  loadLiked: () => Promise<void>
-  loadLikedSongs: () => Promise<void>
-  loadVipInfo: () => Promise<void>
-  trackRecent: (song: Song) => void
-  clearRecent: () => void
-  loadHomeQuote: () => Promise<void>
-  applyLogin: (cookie: string) => Promise<boolean>
-  logout: () => void
-  refreshLogin: () => Promise<void>
+  setAudioEl: (el: HTMLAudioElement) => void;
+  toast: (text: string, type?: ToastMsg["type"]) => void;
+  dismissToast: (id: number) => void;
+  togglePlay: () => void;
+  next: () => void;
+  prev: () => void;
+  seek: (ms: number) => void;
+  setVolume: (v: number) => void;
+  toggleMute: () => void;
+  setPlayMode: (m: PlayMode) => void;
+  cyclePlayMode: () => void;
+  setShowTranslation: (v: boolean) => void;
+  checkUpdate: (manual?: boolean) => Promise<void>;
+  dismissUpdate: () => void;
+  setTheme: (t: ThemePreference) => void;
+  setLyricTheme: (t: string) => void;
+  setLyricFontSize: (s: number) => void;
+  setShowLogin: (v: boolean) => void;
+  setShowSettings: (v: boolean) => void;
+  setActiveView: (v: View) => void;
+  setPage: (p: "browse" | "nowplaying") => void;
+  setSearchOpen: (v: boolean) => void;
+  loadHome: () => Promise<void>;
+  doSearch: (kw: string) => Promise<void>;
+  loadTopSongs: () => Promise<void>;
+  loadPersonalFm: () => Promise<void>;
+  loadUserPlaylists: () => Promise<void>;
+  openPlaylist: (id: number, name: string) => Promise<void>;
+  closePlaylist: () => void;
+  playSong: (song: Song, queue?: Song[]) => Promise<void>;
+  playQueueAt: (i: number) => Promise<void>;
+  fmNext: () => Promise<void>;
+  fmDislike: () => Promise<void>;
+  toggleLike: () => Promise<void>;
+  loadLiked: () => Promise<void>;
+  loadLikedSongs: () => Promise<void>;
+  loadVipInfo: () => Promise<void>;
+  trackRecent: (song: Song) => void;
+  clearRecent: () => void;
+  loadHomeQuote: () => Promise<void>;
+  applyLogin: (cookie: string) => Promise<boolean>;
+  logout: () => void;
+  refreshLogin: () => Promise<void>;
 }
 
 function loadLyricsFor(song: Song, set: (p: Partial<PlayerState>) => void) {
-  set({ lyricLines: [{ time: 0, text: '加载歌词中…' }] })
+  set({ lyricLines: [{ time: 0, text: "加载歌词中…" }] });
   getLyric(song.id)
     .then(({ lrc, tlyric }) => {
-      set({ lyricLines: parseLyrics(lrc, tlyric) })
+      set({ lyricLines: parseLyrics(lrc, tlyric) });
     })
-    .catch(() => set({ lyricLines: [{ time: 0, text: '暂无歌词' }] }))
+    .catch(() => set({ lyricLines: [{ time: 0, text: "暂无歌词" }] }));
 }
 
 async function resolveUrl(song: Song): Promise<string | null> {
   // VIP songs without login fail on every level; only try standard once to stay fast.
-  const loggedIn = usePlayerStore.getState().loggedIn
+  const loggedIn = usePlayerStore.getState().loggedIn;
   const levels =
     song.fee === 1 && !loggedIn
-      ? (['standard'] as const)
-      : (['exhigh', 'higher', 'standard'] as const)
+      ? (["standard"] as const)
+      : (["exhigh", "higher", "standard"] as const);
   for (const level of levels) {
     try {
-      const { url } = await getSongUrl(song.id, level)
-      if (url) return url
+      const { url } = await getSongUrl(song.id, level);
+      if (url) return url;
     } catch {
       /* try next level */
     }
   }
-  return null
+  return null;
 }
 
 export const usePlayerStore = create<PlayerState>()((set, get) => ({
@@ -234,35 +300,40 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
 
   // --- audio ---
   audioEl: null,
-  currentSong: null,
+  currentSong: restoredSession.currentSong,
   currentUrl: null,
   loadingUrl: false,
   playing: false,
   progress: 0,
-  duration: 0,
-  volume: readNum('reverie_volume', 0.9),
+  duration: restoredSession.currentSong?.duration ?? 0,
+  volume: readNum("reverie_volume", 0.9),
   muted: false,
-  playMode: (readStr('reverie_playmode', 'sequence') as PlayMode) || 'sequence',
+  playMode: (readStr("reverie_playmode", "sequence") as PlayMode) || "sequence",
 
   // --- queue ---
-  queue: [],
-  index: -1,
+  queue: restoredSession.queue,
+  index: restoredSession.index,
 
   // --- lyrics ---
   lyricLines: [],
-  showTranslation: readBool('reverie_translation', true),
+  showTranslation: readBool("reverie_translation", true),
+
+  // --- update ---
+  updateInfo: null,
+  updateChecking: false,
+  showUpdate: false,
 
   // --- appearance ---
   theme: readThemePref(),
-  lyricTheme: readStr('reverie_lyrictheme', 'neon'),
-  lyricFontSize: readNum('reverie_lyricfont', 22),
+  lyricTheme: readStr("reverie_lyrictheme", "neon"),
+  lyricFontSize: readNum("reverie_lyricfont", 22),
 
   // --- ui / data ---
-  activeView: 'home',
-  prevView: 'home',
-  currentPage: 'browse',
+  activeView: "home",
+  prevView: "home",
+  currentPage: "browse",
   searchOpen: false,
-  searchKeyword: '',
+  searchKeyword: "",
   searchResults: [],
   searching: false,
   topSongs: [],
@@ -271,7 +342,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   hotPlaylistsLoading: false,
   userPlaylists: [],
   playlistSongs: [],
-  playlistName: '',
+  playlistName: "",
   recommendSongs: [],
   fmSongs: [],
   showLogin: false,
@@ -279,97 +350,113 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   toasts: [],
 
   // --- toast ---
-  toast: (text, type = 'info') => {
-    const id = ++toastSeq
-    set((s) => ({ toasts: [...s.toasts, { id, text, type }] }))
-    setTimeout(() => get().dismissToast(id), 3200)
+  toast: (text, type = "info") => {
+    const id = ++toastSeq;
+    set((s) => ({ toasts: [...s.toasts, { id, text, type }] }));
+    setTimeout(() => get().dismissToast(id), 3200);
   },
-  dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+  dismissToast: (id) =>
+    set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 
   setAudioEl: (el) => {
-    if (!el) return
-    if (get().audioEl === el) return
-    set({ audioEl: el })
+    if (!el) return;
+    if (get().audioEl === el) return;
+    set({ audioEl: el });
   },
 
   // --- playback ---
   togglePlay: () => {
-    const { playing, currentUrl, currentSong } = get()
-    if (!currentSong) return
+    const { playing, currentUrl, currentSong } = get();
+    if (!currentSong) return;
     if (!currentUrl) {
-      get().playSong(currentSong)
-      return
+      get().playSong(currentSong);
+      return;
     }
-    set({ playing: !playing })
+    set({ playing: !playing });
   },
   next: () => {
-    const { queue, index, playMode } = get()
-    if (!queue.length) return
-    let ni = index
-    if (playMode === 'shuffle') {
-      ni = Math.floor(Math.random() * queue.length)
-      if (queue.length > 1 && ni === index) ni = (ni + 1) % queue.length
+    const { queue, index, playMode } = get();
+    if (!queue.length) return;
+    let ni = index;
+    if (playMode === "shuffle") {
+      ni = Math.floor(Math.random() * queue.length);
+      if (queue.length > 1 && ni === index) ni = (ni + 1) % queue.length;
     } else {
-      ni = index + 1
-      if (ni >= queue.length) ni = 0
+      ni = index + 1;
+      if (ni >= queue.length) ni = 0;
     }
-    get().playQueueAt(ni)
+    get().playQueueAt(ni);
   },
   prev: () => {
-    const { queue, index, progress } = get()
-    if (!queue.length) return
+    const { queue, index, progress } = get();
+    if (!queue.length) return;
     if (progress > 3000) {
-      get().seek(0)
-      return
+      get().seek(0);
+      return;
     }
-    let pi = index - 1
-    if (pi < 0) pi = queue.length - 1
-    get().playQueueAt(pi)
+    let pi = index - 1;
+    if (pi < 0) pi = queue.length - 1;
+    get().playQueueAt(pi);
   },
   seek: (ms) => {
-    const el = get().audioEl
-    set({ progress: ms })
-    if (el && Number.isFinite(el.duration)) el.currentTime = ms / 1000
+    const el = get().audioEl;
+    set({ progress: ms });
+    if (el && Number.isFinite(el.duration)) el.currentTime = ms / 1000;
   },
   setVolume: (v) => {
-    const vol = Math.min(1, Math.max(0, v))
-    const el = get().audioEl
-    set({ volume: vol, muted: vol === 0 })
-    if (el) el.volume = vol
-    write('reverie_volume', String(vol))
+    const vol = Math.min(1, Math.max(0, v));
+    const el = get().audioEl;
+    set({ volume: vol, muted: vol === 0 });
+    if (el) el.volume = vol;
+    write("reverie_volume", String(vol));
   },
   toggleMute: () => {
-    const { muted, volume, audioEl } = get()
-    const next = !muted
-    set({ muted: next })
-    if (audioEl) audioEl.volume = next ? 0 : volume
+    const { muted, volume, audioEl } = get();
+    const next = !muted;
+    set({ muted: next });
+    if (audioEl) audioEl.volume = next ? 0 : volume;
   },
   setPlayMode: (m) => {
-    set({ playMode: m })
-    write('reverie_playmode', m)
+    set({ playMode: m });
+    write("reverie_playmode", m);
   },
   cyclePlayMode: () => {
-    const order: PlayMode[] = ['sequence', 'one', 'shuffle']
-    const cur = get().playMode
-    const next = order[(order.indexOf(cur) + 1) % order.length]
-    set({ playMode: next })
-    write('reverie_playmode', next)
+    const order: PlayMode[] = ["sequence", "one", "shuffle"];
+    const cur = get().playMode;
+    const next = order[(order.indexOf(cur) + 1) % order.length];
+    set({ playMode: next });
+    write("reverie_playmode", next);
   },
   setShowTranslation: (v) => {
-    set({ showTranslation: v })
-    write('reverie_translation', v ? '1' : '0')
+    set({ showTranslation: v });
+    write("reverie_translation", v ? "1" : "0");
   },
+  checkUpdate: async (manual = false) => {
+    if (get().updateChecking) return;
+    set({ updateChecking: true });
+    const { ok, update } = await checkLatestRelease();
+    if (ok && update && compareVersions(update.version, __APP_VERSION__) > 0) {
+      set({ updateInfo: update, showUpdate: true });
+    } else if (manual) {
+      get().toast(
+        ok ? "当前已是最新版本" : "检查更新失败，请稍后重试",
+        ok ? "success" : "error",
+      );
+    }
+    set({ updateChecking: false });
+  },
+  dismissUpdate: () => set({ showUpdate: false }),
   setTheme: (t) => {
-    set({ theme: t })
-    write('reverie_theme', t)
+    set({ theme: t });
+    write("reverie_theme", t);
   },
   setLyricTheme: (t) => {
-    set({ lyricTheme: t })
-    write('reverie_lyrictheme', t)
+    set({ lyricTheme: t });
+    write("reverie_lyrictheme", t);
   },
   setLyricFontSize: (s) => {
-    set({ lyricFontSize: s })
-    write('reverie_lyricfont', String(s))
+    set({ lyricFontSize: s });
+    write("reverie_lyricfont", String(s));
   },
   setShowLogin: (v) => set({ showLogin: v }),
   setShowSettings: (v) => set({ showSettings: v }),
@@ -379,112 +466,131 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
 
   // --- home dashboard ---
   loadHome: async () => {
-    set({ activeView: 'home' })
+    set({ activeView: "home" });
     if (!get().hotPlaylists.length) {
-      set({ hotPlaylistsLoading: true })
-      getHotPlaylists(12).then((lists) => set({ hotPlaylists: lists, hotPlaylistsLoading: false })).catch(() => set({ hotPlaylistsLoading: false }))
+      set({ hotPlaylistsLoading: true });
+      getHotPlaylists(12)
+        .then((lists) =>
+          set({ hotPlaylists: lists, hotPlaylistsLoading: false }),
+        )
+        .catch(() => set({ hotPlaylistsLoading: false }));
     }
     if (!get().topSongs.length) {
-      set({ topSongsLoading: true })
-      getTopSongs(0, 10).then((songs) => set({ topSongs: songs, topSongsLoading: false })).catch(() => set({ topSongsLoading: false }))
+      set({ topSongsLoading: true });
+      getTopSongs(0, 10)
+        .then((songs) => set({ topSongs: songs, topSongsLoading: false }))
+        .catch(() => set({ topSongsLoading: false }));
     }
     if (get().loggedIn && !get().recommendSongs.length) {
-      getRecommendSongs().then((songs) => set({ recommendSongs: songs })).catch(() => {})
+      getRecommendSongs()
+        .then((songs) => set({ recommendSongs: songs }))
+        .catch(() => {});
     }
   },
 
   // --- discovery ---
   doSearch: async (kw) => {
-    const key = kw.trim()
-    set({ searchKeyword: key, searchOpen: true, searching: true })
+    const key = kw.trim();
+    set({ searchKeyword: key, searchOpen: true, searching: true });
     if (!key) {
-      set({ searching: false, searchResults: [] })
-      return
+      set({ searching: false, searchResults: [] });
+      return;
     }
     if (!get().loggedIn) {
       // not logged in: don't load/display any data
-      set({ searching: false, searchResults: [] })
-      return
+      set({ searching: false, searchResults: [] });
+      return;
     }
     try {
-      const results = await searchSongs(key, 100)
-      set({ searchResults: results, searching: false })
-      if (!results.length) get().toast('没有找到相关歌曲', 'info')
+      const results = await searchSongs(key, 100);
+      set({ searchResults: results, searching: false });
+      if (!results.length) get().toast("没有找到相关歌曲", "info");
     } catch {
-      set({ searching: false })
-      get().toast('搜索失败，请检查网络', 'error')
+      set({ searching: false });
+      get().toast("搜索失败，请检查网络", "error");
     }
   },
   loadTopSongs: async () => {
-    set({ activeView: 'chart', topSongsLoading: true })
+    set({ activeView: "chart", topSongsLoading: true });
     try {
-      const songs = await getTopSongs(0, 60)
-      set({ topSongs: songs, topSongsLoading: false })
+      const songs = await getTopSongs(0, 60);
+      set({ topSongs: songs, topSongsLoading: false });
     } catch {
-      set({ topSongsLoading: false })
-      get().toast('加载排行榜失败', 'error')
+      set({ topSongsLoading: false });
+      get().toast("加载排行榜失败", "error");
     }
   },
   loadPersonalFm: async () => {
     // 漫游：随机播放歌曲
     if (!get().loggedIn) {
-      get().toast('请先登录', 'info')
-      set({ showLogin: true })
-      return
+      get().toast("请先登录", "info");
+      set({ showLogin: true });
+      return;
     }
-    set({ activeView: 'fm' })
+    set({ activeView: "fm" });
     try {
-      const songs = await getTopSongs(0, 60)
-      const free = songs.filter((s) => s.fee === 0)
-      const pool = free.length >= 5 ? free : songs
-      const shuffled = [...pool].sort(() => Math.random() - 0.5)
-      set({ fmSongs: shuffled, playMode: 'shuffle' })
-      if (shuffled.length) get().playSong(shuffled[0], shuffled)
-      else get().toast('暂无内容', 'info')
+      const songs = await getTopSongs(0, 60);
+      const free = songs.filter((s) => s.fee === 0);
+      const pool = free.length >= 5 ? free : songs;
+      const shuffled = [...pool].sort(() => Math.random() - 0.5);
+      set({ fmSongs: shuffled, playMode: "shuffle" });
+      if (shuffled.length) get().playSong(shuffled[0], shuffled);
+      else get().toast("暂无内容", "info");
     } catch {
-      get().toast('加载随机歌曲失败', 'error')
+      get().toast("加载随机歌曲失败", "error");
     }
   },
   loadUserPlaylists: async () => {
-    const uid = get().profile?.userId
+    const uid = get().profile?.userId;
     if (!uid) {
-      get().toast('请先登录', 'info')
-      set({ showLogin: true })
-      return
+      get().toast("请先登录", "info");
+      set({ showLogin: true });
+      return;
     }
-    set({ activeView: 'userlist' })
+    set({ activeView: "userlist" });
     try {
-      const lists = await getUserPlaylists(uid)
-      set({ userPlaylists: lists })
+      const lists = await getUserPlaylists(uid);
+      set({ userPlaylists: lists });
     } catch {
-      get().toast('加载我的歌单失败', 'error')
+      get().toast("加载我的歌单失败", "error");
     }
   },
   openPlaylist: async (id, name) => {
-    set({ activeView: 'playlist', playlistName: name, prevView: get().activeView })
+    set({
+      activeView: "playlist",
+      playlistName: name,
+      prevView: get().activeView,
+    });
     try {
-      const { songs } = await getPlaylistDetail(id)
-      set({ playlistSongs: songs })
-      if (songs.length) get().toast(`已载入歌单「${name}」共 ${songs.length} 首`, 'success')
-      else get().toast('歌单为空', 'info')
+      const { songs } = await getPlaylistDetail(id);
+      set({ playlistSongs: songs });
+      if (songs.length)
+        get().toast(`已载入歌单「${name}」共 ${songs.length} 首`, "success");
+      else get().toast("歌单为空", "info");
     } catch {
-      get().toast('载入歌单失败', 'error')
+      get().toast("载入歌单失败", "error");
     }
   },
   closePlaylist: () => {
-    set({ playlistSongs: [], playlistName: '', activeView: get().prevView || 'home' })
+    set({
+      playlistSongs: [],
+      playlistName: "",
+      activeView: get().prevView || "home",
+    });
   },
 
   // --- core play ---
   playSong: async (song, queue) => {
-    const st = get()
-    let targetQueue = queue
-    let targetIndex = queue ? queue.findIndex((s) => s.id === song.id) : st.index
+    const st = get();
+    let targetQueue = queue;
+    let targetIndex = queue
+      ? queue.findIndex((s) => s.id === song.id)
+      : st.index;
     if (!targetQueue || targetQueue.length === 0) {
-      targetQueue = [song]
-      targetIndex = 0
+      targetQueue = [song];
+      targetIndex = 0;
     }
-    if (targetIndex < 0) targetIndex = 0
+    if (targetIndex < 0) targetIndex = 0;
 
     set({
       queue: targetQueue,
@@ -494,155 +600,170 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       playing: false,
       progress: 0,
       duration: song.duration || 0,
-    })
-    loadLyricsFor(song, set)
-    get().trackRecent(song)
+    });
+    writeSession({ queue: targetQueue, index: targetIndex, currentSong: song });
+    loadLyricsFor(song, set);
+    get().trackRecent(song);
 
-    const url = await resolveUrl(song)
+    const url = await resolveUrl(song);
     if (!url) {
-      set({ loadingUrl: false, currentUrl: null, playing: false })
+      set({ loadingUrl: false, currentUrl: null, playing: false });
       get().toast(
         song.fee === 1
-          ? '该歌曲为 VIP 歌曲，请登录并开通会员后播放'
-          : '无法获取播放地址（可能需要登录）',
-        'error',
-      )
-      return
+          ? "该歌曲为 VIP 歌曲，请登录并开通会员后播放"
+          : "无法获取播放地址（可能需要登录）",
+        "error",
+      );
+      return;
     }
-    set({ currentUrl: url, loadingUrl: false, playing: true })
+    set({ currentUrl: url, loadingUrl: false, playing: true });
   },
   playQueueAt: async (i) => {
-    const { queue } = get()
-    const song = queue[i]
-    if (!song) return
-    await get().playSong(song, queue)
+    const { queue } = get();
+    const song = queue[i];
+    if (!song) return;
+    await get().playSong(song, queue);
   },
   fmNext: async () => {
     // 漫游：播完一批后换一批新的随机歌曲
-    const { queue, index } = get()
-    const nextIdx = index + 1
+    const { queue, index } = get();
+    const nextIdx = index + 1;
     if (nextIdx < queue.length) {
-      await get().playQueueAt(nextIdx)
-      return
+      await get().playQueueAt(nextIdx);
+      return;
     }
     try {
-      const songs = await getTopSongs(0, 60)
-      const shuffled = [...songs].sort(() => Math.random() - 0.5)
-      set({ fmSongs: shuffled })
-      await get().playSong(shuffled[0], shuffled)
+      const songs = await getTopSongs(0, 60);
+      const shuffled = [...songs].sort(() => Math.random() - 0.5);
+      set({ fmSongs: shuffled });
+      await get().playSong(shuffled[0], shuffled);
     } catch {
-      get().toast('加载下一批失败', 'error')
+      get().toast("加载下一批失败", "error");
     }
   },
   fmDislike: async () => {
-    const { currentSong } = get()
-    if (!currentSong) return
+    const { currentSong } = get();
+    if (!currentSong) return;
     try {
-      await fmTrash(currentSong.id)
-      get().toast('已标记为不喜欢，将减少推荐', 'info')
+      await fmTrash(currentSong.id);
+      get().toast("已标记为不喜欢，将减少推荐", "info");
     } catch {
       /* ignore */
     }
-    await get().fmNext()
+    await get().fmNext();
   },
 
   // --- like / red heart ---
   toggleLike: async () => {
-    const { currentSong, likedIds, loggedIn } = get()
-    if (!currentSong) return
+    const { currentSong, likedIds, loggedIn } = get();
+    if (!currentSong) return;
     if (!loggedIn) {
-      get().toast('请先登录', 'info')
-      set({ showLogin: true })
-      return
+      get().toast("请先登录", "info");
+      set({ showLogin: true });
+      return;
     }
-    const liked = likedIds.includes(currentSong.id)
-    const next = !liked
+    const liked = likedIds.includes(currentSong.id);
+    const next = !liked;
     try {
-      await likeSong(currentSong.id, next)
-      const id = currentSong.id
+      await likeSong(currentSong.id, next);
+      const id = currentSong.id;
       set((s) => ({
-        likedIds: next ? [...s.likedIds, id] : s.likedIds.filter((x) => x !== id),
+        likedIds: next
+          ? [...s.likedIds, id]
+          : s.likedIds.filter((x) => x !== id),
         likedAt: next
           ? { ...s.likedAt, [id]: Date.now() }
-          : Object.fromEntries(Object.entries(s.likedAt).filter(([k]) => Number(k) !== id)),
-      }))
-      get().loadLikedSongs()
-      get().toast(next ? '已添加到我喜欢' : '已取消喜欢', 'success')
+          : Object.fromEntries(
+              Object.entries(s.likedAt).filter(([k]) => Number(k) !== id),
+            ),
+      }));
+      get().loadLikedSongs();
+      get().toast(next ? "已添加到我喜欢" : "已取消喜欢", "success");
     } catch {
-      get().toast('操作失败', 'error')
+      get().toast("操作失败", "error");
     }
   },
   loadLiked: async () => {
-    const uid = get().profile?.userId
-    if (!uid) return
+    const uid = get().profile?.userId;
+    if (!uid) return;
     try {
-      const ids = await getLikedIds(uid)
-      set({ likedIds: ids })
+      const ids = await getLikedIds(uid);
+      set({ likedIds: ids });
     } catch {
       /* ignore */
     }
   },
   loadLikedSongs: async () => {
-    const { likedIds, likedAt } = get()
+    const { likedIds, likedAt } = get();
     if (!likedIds.length) {
-      set({ likedSongs: [] })
-      return
+      set({ likedSongs: [] });
+      return;
     }
     try {
-      const songs: Song[] = []
+      const songs: Song[] = [];
       for (let i = 0; i < likedIds.length; i += 200) {
-        const chunk = await getSongsByIds(likedIds.slice(i, i + 200))
-        songs.push(...chunk)
+        const chunk = await getSongsByIds(likedIds.slice(i, i + 200));
+        songs.push(...chunk);
       }
       // most recently liked first (local timestamps when available)
-      songs.sort((a, b) => (likedAt[b.id] ?? -Infinity) - (likedAt[a.id] ?? -Infinity))
-      set({ likedSongs: songs })
+      songs.sort(
+        (a, b) => (likedAt[b.id] ?? -Infinity) - (likedAt[a.id] ?? -Infinity),
+      );
+      set({ likedSongs: songs });
     } catch {
       /* ignore */
     }
   },
   loadVipInfo: async () => {
-    const uid = get().profile?.userId
-    if (!uid) return
+    const uid = get().profile?.userId;
+    if (!uid) return;
     try {
-      const info = await getVipInfo(uid)
-      set({ vipInfo: info })
+      const info = await getVipInfo(uid);
+      set({ vipInfo: info });
     } catch {
       /* ignore */
     }
   },
   trackRecent: (song) => {
-    const next = [song, ...get().recentSongs.filter((s) => s.id !== song.id)].slice(0, 50)
-    set({ recentSongs: next })
+    const next = [
+      song,
+      ...get().recentSongs.filter((s) => s.id !== song.id),
+    ].slice(0, 50);
+    set({ recentSongs: next });
     try {
-      localStorage.setItem('reverie_recent', JSON.stringify(next))
+      localStorage.setItem("reverie_recent", JSON.stringify(next));
     } catch {
       /* ignore */
     }
   },
   clearRecent: () => {
-    set({ recentSongs: [] })
+    set({ recentSongs: [] });
     try {
-      localStorage.removeItem('reverie_recent')
+      localStorage.removeItem("reverie_recent");
     } catch {
       /* ignore */
     }
-    get().toast('已清空最近播放', 'info')
+    get().toast("已清空最近播放", "info");
   },
   loadHomeQuote: async () => {
-    const pool = [186016, 347230, 509781655, 3414449762, 168160, 193535]
-    const candidates = [...pool].sort(() => Math.random() - 0.5)
+    const pool = [186016, 347230, 509781655, 3414449762, 168160, 193535];
+    const candidates = [...pool].sort(() => Math.random() - 0.5);
     for (const id of candidates) {
       try {
-        const songs = await getSongsByIds([id])
-        const song = songs[0]
+        const songs = await getSongsByIds([id]);
+        const song = songs[0];
         // skip multi-artist (duet) songs so no singer names leak into the quote
-        if (!song || song.artistNames.length !== 1) continue
-        const { lrc } = await getLyric(id)
-        const line = pickRandomLyricLine(lrc)
+        if (!song || song.artistNames.length !== 1) continue;
+        const { lrc } = await getLyric(id);
+        const line = pickRandomLyricLine(lrc);
         if (line) {
-          set({ homeQuote: { text: line, source: `《${song.name}》· ${song.artists}` } })
-          return
+          set({
+            homeQuote: {
+              text: line,
+              source: `《${song.name}》· ${song.artists}`,
+            },
+          });
+          return;
         }
       } catch {
         /* try next */
@@ -652,36 +773,38 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
 
   // --- auth ---
   applyLogin: async (c) => {
-    if (!c) return false
-    setCookie(c)
+    if (!c) return false;
+    setCookie(c);
     try {
-      const profile = await loginStatus()
+      const profile = await loginStatus();
       if (profile && profile.userId > 0) {
-        set({ loggedIn: true, profile })
-        get().toast(`欢迎，${profile.nickname}`, 'success')
-        get().loadLiked()
-        get().loadLikedSongs()
-        get().loadVipInfo()
+        set({ loggedIn: true, profile });
+        get().toast(`欢迎，${profile.nickname}`, "success");
+        get().loadLiked();
+        get().loadLikedSongs();
+        get().loadVipInfo();
         if (!get().recommendSongs.length) {
-          getRecommendSongs().then((songs) => set({ recommendSongs: songs })).catch(() => {})
+          getRecommendSongs()
+            .then((songs) => set({ recommendSongs: songs }))
+            .catch(() => {});
         }
-        return true
+        return true;
       }
-      clearCookie()
-      set({ loggedIn: false, profile: null })
-      return false
+      clearCookie();
+      set({ loggedIn: false, profile: null });
+      return false;
     } catch {
-      return false
+      return false;
     }
   },
   logout: () => {
-    clearCookie()
+    clearCookie();
     // stop playback and clear the current session
-    const el = get().audioEl
+    const el = get().audioEl;
     if (el) {
-      el.pause()
-      el.removeAttribute('src')
-      el.load()
+      el.pause();
+      el.removeAttribute("src");
+      el.load();
     }
     set({
       loggedIn: false,
@@ -698,31 +821,38 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       queue: [],
       index: -1,
       lyricLines: [],
-    })
-    get().toast('已退出登录', 'info')
+    });
+    try {
+      localStorage.removeItem(SESSION_KEY);
+    } catch {
+      /* ignore */
+    }
+    get().toast("已退出登录", "info");
   },
   refreshLogin: async () => {
-    const c = getCookie()
+    const c = getCookie();
     if (!c) {
-      set({ loggedIn: false, profile: null })
-      return
+      set({ loggedIn: false, profile: null });
+      return;
     }
     try {
-      const profile = await loginStatus()
+      const profile = await loginStatus();
       if (profile && profile.userId > 0) {
-        set({ loggedIn: true, profile })
-        get().loadLiked()
-        get().loadLikedSongs()
-        get().loadVipInfo()
+        set({ loggedIn: true, profile });
+        get().loadLiked();
+        get().loadLikedSongs();
+        get().loadVipInfo();
         if (!get().recommendSongs.length) {
-          getRecommendSongs().then((songs) => set({ recommendSongs: songs })).catch(() => {})
+          getRecommendSongs()
+            .then((songs) => set({ recommendSongs: songs }))
+            .catch(() => {});
         }
       } else {
-        clearCookie()
-        set({ loggedIn: false, profile: null })
+        clearCookie();
+        set({ loggedIn: false, profile: null });
       }
     } catch {
       /* keep current state */
     }
   },
-}))
+}));

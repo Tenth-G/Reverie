@@ -11,38 +11,38 @@ import type {
   SongDetailResponse,
   SongUrlResponse,
   UserProfile,
-} from './types'
+} from "./types";
 
 const API_BASE: string =
-  (typeof window !== 'undefined' && window.ncm?.apiBase) ||
-  'http://127.0.0.1:3939'
+  (typeof window !== "undefined" && window.ncm?.apiBase) ||
+  "http://127.0.0.1:3939";
 
-const COOKIE_KEY = 'ncm_player_cookie'
+const COOKIE_KEY = "ncm_player_cookie";
 
-let cookie: string = ''
+let cookie: string = "";
 try {
-  cookie = localStorage.getItem(COOKIE_KEY) || ''
+  cookie = localStorage.getItem(COOKIE_KEY) || "";
 } catch {
-  cookie = ''
+  cookie = "";
 }
 
 export function getCookie(): string {
-  return cookie
+  return cookie;
 }
 
 export function setCookie(c: string): void {
-  cookie = c
+  cookie = c;
   try {
-    localStorage.setItem(COOKIE_KEY, c)
+    localStorage.setItem(COOKIE_KEY, c);
   } catch {
     /* ignore */
   }
 }
 
 export function clearCookie(): void {
-  cookie = ''
+  cookie = "";
   try {
-    localStorage.removeItem(COOKIE_KEY)
+    localStorage.removeItem(COOKIE_KEY);
   } catch {
     /* ignore */
   }
@@ -53,17 +53,17 @@ async function request<T = unknown>(
   params: Record<string, string | number> = {},
   cacheBust = true,
 ): Promise<T> {
-  const q = new URLSearchParams()
+  const q = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
-    if (v !== undefined && v !== null && v !== '') q.set(k, String(v))
+    if (v !== undefined && v !== null && v !== "") q.set(k, String(v));
   }
-  if (cookie) q.set('cookie', cookie)
-  if (cacheBust) q.set('timestamp', String(Date.now()))
+  if (cookie) q.set("cookie", cookie);
+  if (cacheBust) q.set("timestamp", String(Date.now()));
 
-  const url = `${API_BASE}${path}?${q.toString()}`
-  const res = await fetch(url, { headers: { 'Cache-Control': 'no-cache' } })
-  if (!res.ok) throw new Error(`HTTP ${res.status} for ${path}`)
-  return (await res.json()) as T
+  const url = `${API_BASE}${path}?${q.toString()}`;
+  const res = await fetch(url, { headers: { "Cache-Control": "no-cache" } });
+  if (!res.ok) throw new Error(`HTTP ${res.status} for ${path}`);
+  return (await res.json()) as T;
 }
 
 /* ------------------------------------------------------------------ */
@@ -71,75 +71,83 @@ async function request<T = unknown>(
 /* ------------------------------------------------------------------ */
 
 function normalizeSong(raw: unknown): Song | null {
-  const s = raw as Record<string, unknown>
-  if (!s || typeof s.id !== 'number') return null
+  const s = raw as Record<string, unknown>;
+  if (!s || typeof s.id !== "number") return null;
 
   // artist(s): prefer `ar`/`artists`, accept both shapes
-  let artistNames: string[] = []
-  const ar = s.ar as Array<Record<string, unknown>> | undefined
-  const artists = s.artists as Array<Record<string, unknown>> | undefined
+  let artistNames: string[] = [];
+  const ar = s.ar as Array<Record<string, unknown>> | undefined;
+  const artists = s.artists as Array<Record<string, unknown>> | undefined;
   if (Array.isArray(ar) && ar.length) {
-    artistNames = ar.map((a) => String(a?.name ?? '')).filter(Boolean)
+    artistNames = ar.map((a) => String(a?.name ?? "")).filter(Boolean);
   } else if (Array.isArray(artists) && artists.length) {
-    artistNames = artists.map((a) => String(a?.name ?? '')).filter(Boolean)
-  } else if (typeof s.name === 'string') {
+    artistNames = artists.map((a) => String(a?.name ?? "")).filter(Boolean);
+  } else if (typeof s.name === "string") {
     // some endpoints have flat `artist` string
-    const flat = s.artists as unknown
-    if (typeof flat === 'string') artistNames = [flat]
+    const flat = s.artists as unknown;
+    if (typeof flat === "string") artistNames = [flat];
   }
 
-  const al = s.al as Record<string, unknown> | undefined
-  const album = s.album as Record<string, unknown> | undefined
+  const al = s.al as Record<string, unknown> | undefined;
+  const album = s.album as Record<string, unknown> | undefined;
 
-  const picUrl = String(al?.picUrl || album?.picUrl || '')
+  const picUrl = String(al?.picUrl || album?.picUrl || "");
 
-  const duration = Number(s.dt ?? s.duration ?? 0)
-  const fee = Number(s.fee ?? 0)
+  const duration = Number(s.dt ?? s.duration ?? 0);
+  const fee = Number(s.fee ?? 0);
 
   return {
     id: s.id,
-    name: String(s.name ?? '未知歌曲'),
-    artists: artistNames.join(' / ') || '未知歌手',
+    name: String(s.name ?? "未知歌曲"),
+    artists: artistNames.join(" / ") || "未知歌手",
     artistNames,
-    album: String(al?.name ?? album?.name ?? '未知专辑'),
+    album: String(al?.name ?? album?.name ?? "未知专辑"),
     albumId: Number(al?.id ?? album?.id ?? 0),
     picUrl,
     duration,
     fee,
-    mvId: typeof s.mv === 'number' ? s.mv : typeof s.mvid === 'number' ? s.mvid : undefined,
-  }
+    mvId:
+      typeof s.mv === "number"
+        ? s.mv
+        : typeof s.mvid === "number"
+          ? s.mvid
+          : undefined,
+  };
 }
 
 /** Enrich a list of raw songs via `/song/detail` (fills picUrl/ar/al uniformly). */
 async function enrichSongs(ids: number[]): Promise<Map<number, Song>> {
-  const map = new Map<number, Song>()
-  if (!ids.length) return map
-  const res = await request<SongDetailResponse>('/song/detail', {
-    ids: ids.join(','),
-  })
+  const map = new Map<number, Song>();
+  if (!ids.length) return map;
+  const res = await request<SongDetailResponse>("/song/detail", {
+    ids: ids.join(","),
+  });
   for (const raw of res.songs ?? []) {
-    const song = normalizeSong(raw)
-    if (song) map.set(song.id, song)
+    const song = normalizeSong(raw);
+    if (song) map.set(song.id, song);
   }
-  return map
+  return map;
 }
 
-export async function searchSongs(keyword: string, limit = 40): Promise<Song[]> {
-  const res = await request<SearchResponse>('/search', {
+export async function searchSongs(
+  keyword: string,
+  limit = 40,
+): Promise<Song[]> {
+  const res = await request<SearchResponse>("/search", {
     keywords: keyword,
     limit,
     type: 1,
-  })
-  const raws = (res.result?.songs ?? []) as unknown[]
+  });
+  const raws = (res.result?.songs ?? []) as unknown[];
   // Try to enrich so every song has a cover image.
   const ids = raws
     .map((r) => normalizeSong(r)?.id)
-    .filter((x): x is number => typeof x === 'number')
-  const enriched = await enrichSongs(ids)
+    .filter((x): x is number => typeof x === "number");
+  const enriched = await enrichSongs(ids);
   return raws
     .map((r) => normalizeSong(r))
     .filter((s): s is Song => s !== null)
-    .map((s) => enriched.get(s.id) ?? s)
+    .map((s) => enriched.get(s.id) ?? s);
 }
 
 /* ------------------------------------------------------------------ */
@@ -148,24 +156,24 @@ export async function searchSongs(keyword: string, limit = 40): Promise<Song[]> 
 
 export async function getSongUrl(
   id: number,
-  level: 'standard' | 'higher' | 'exhigh' | 'lossless' = 'exhigh',
+  level: "standard" | "higher" | "exhigh" | "lossless" = "exhigh",
 ): Promise<{ url: string | null; br: number }> {
-  const res = await request<SongUrlResponse>('/song/url/v1', { id, level })
-  const d = res.data?.[0]
-  return { url: d?.url ?? null, br: d?.br ?? 0 }
+  const res = await request<SongUrlResponse>("/song/url/v1", { id, level });
+  const d = res.data?.[0];
+  return { url: d?.url ?? null, br: d?.br ?? 0 };
 }
 
 export async function getLyric(id: number): Promise<{
-  lrc: string
-  tlyric: string
-  nolyric: boolean
+  lrc: string;
+  tlyric: string;
+  nolyric: boolean;
 }> {
-  const res = await request<LyricResponse>('/lyric', { id })
+  const res = await request<LyricResponse>("/lyric", { id });
   return {
-    lrc: res.lrc?.lyric ?? '',
-    tlyric: res.tlyric?.lyric ?? '',
+    lrc: res.lrc?.lyric ?? "",
+    tlyric: res.tlyric?.lyric ?? "",
     nolyric: !!res.nolyric,
-  }
+  };
 }
 
 /* ------------------------------------------------------------------ */
@@ -173,93 +181,82 @@ export async function getLyric(id: number): Promise<{
 /* ------------------------------------------------------------------ */
 
 export async function getTopSongs(type = 0, limit = 100): Promise<Song[]> {
-  const res = await request<{ code?: number; data?: unknown[] }>('/top/song', {
+  const res = await request<{ code?: number; data?: unknown[] }>("/top/song", {
     type,
-  })
-  const raws = (res.data ?? []).slice(0, limit) as unknown[]
-  return raws
-    .map((r) => normalizeSong(r))
-    .filter((s): s is Song => s !== null)
+  });
+  const raws = (res.data ?? []).slice(0, limit) as unknown[];
+  return raws.map((r) => normalizeSong(r)).filter((s): s is Song => s !== null);
 }
 
 export async function getPlaylistDetail(id: number): Promise<{
-  name: string
-  coverImgUrl: string
-  songs: Song[]
+  name: string;
+  coverImgUrl: string;
+  songs: Song[];
 }> {
-  const res = await request<{ code?: number; playlist?: Record<string, unknown> }>(
-    '/playlist/detail',
-    { id },
-  )
-  const pl = res.playlist ?? {}
-  const tracks = (pl.tracks ?? []) as unknown[]
+  const res = await request<{
+    code?: number;
+    playlist?: Record<string, unknown>;
+  }>("/playlist/detail", { id });
+  const pl = res.playlist ?? {};
+  const tracks = (pl.tracks ?? []) as unknown[];
   return {
-    name: String(pl.name ?? '歌单'),
-    coverImgUrl: String(pl.coverImgUrl ?? ''),
+    name: String(pl.name ?? "歌单"),
+    coverImgUrl: String(pl.coverImgUrl ?? ""),
     songs: tracks
       .map((r) => normalizeSong(r))
       .filter((s): s is Song => s !== null),
-  }
+  };
 }
 
 export async function getHotPlaylists(limit = 30): Promise<PlaylistInfo[]> {
   const res = await request<{ code?: number; playlists?: unknown[] }>(
-    '/top/playlist',
-    { limit, order: 'hot', cat: '全部' },
-  )
+    "/top/playlist",
+    { limit, order: "hot", cat: "全部" },
+  );
   return (res.playlists ?? [])
     .map((p) => {
-      const o = p as Record<string, unknown>
+      const o = p as Record<string, unknown>;
       return {
         id: Number(o.id),
-        name: String(o.name ?? ''),
-        coverImgUrl: String(o.coverImgUrl ?? ''),
+        name: String(o.name ?? ""),
+        coverImgUrl: String(o.coverImgUrl ?? ""),
         trackCount: Number(o.trackCount ?? 0),
-        description: String(o.description ?? ''),
-      }
+        description: String(o.description ?? ""),
+      };
     })
-    .filter((p) => p.id > 0)
+    .filter((p) => p.id > 0);
 }
 
 export async function getRecommendSongs(): Promise<Song[]> {
-  const res = await request<{ code?: number; data?: { dailySongs?: unknown[] } }>(
-    '/recommend/songs',
-  )
-  const raws = (res.data?.dailySongs ?? []) as unknown[]
-  return raws
-    .map((r) => normalizeSong(r))
-    .filter((s): s is Song => s !== null)
-}
-
-export async function getPersonalFm(): Promise<Song[]> {
-  const res = await request<{ code?: number; data?: unknown[] }>('/personal_fm')
-  const raws = (res.data ?? []) as unknown[]
-  return raws
-    .map((r) => normalizeSong(r))
-    .filter((s): s is Song => s !== null)
+  const res = await request<{
+    code?: number;
+    data?: { dailySongs?: unknown[] };
+  }>("/recommend/songs");
+  const raws = (res.data?.dailySongs ?? []) as unknown[];
+  return raws.map((r) => normalizeSong(r)).filter((s): s is Song => s !== null);
 }
 
 export async function fmTrash(id: number): Promise<void> {
-  await request('/fm_trash', { id })
+  await request("/fm_trash", { id });
 }
 
 export async function getUserPlaylists(uid: number): Promise<PlaylistInfo[]> {
   const res = await request<{ code?: number; playlist?: unknown[] }>(
-    '/user/playlist',
+    "/user/playlist",
     { uid, limit: 50 },
-  )
+  );
   return (res.playlist ?? [])
     .map((p) => {
-      const o = p as Record<string, unknown>
+      const o = p as Record<string, unknown>;
       return {
         id: Number(o.id),
-        name: String(o.name ?? ''),
-        coverImgUrl: String(o.coverImgUrl ?? ''),
+        name: String(o.name ?? ""),
+        coverImgUrl: String(o.coverImgUrl ?? ""),
         trackCount: Number(o.trackCount ?? 0),
-        description: String(o.description ?? ''),
-      }
+        description: String(o.description ?? ""),
+      };
     })
-    .filter((p) => p.id > 0)
+    .filter((p) => p.id > 0);
 }
 
 /* ------------------------------------------------------------------ */
@@ -267,47 +264,51 @@ export async function getUserPlaylists(uid: number): Promise<PlaylistInfo[]> {
 /* ------------------------------------------------------------------ */
 
 export async function qrKey(): Promise<string> {
-  const res = await request<QrKeyResponse>('/login/qr/key', {}, true)
-  return res.data?.unikey ?? ''
+  const res = await request<QrKeyResponse>("/login/qr/key", {}, true);
+  return res.data?.unikey ?? "";
 }
 
 export async function qrCreate(key: string): Promise<QrCreateResult> {
   const res = await request<QrCreateResponse>(
-    '/login/qr/create',
-    { key, qrimg: 'true', platform: 'web' },
+    "/login/qr/create",
+    { key, qrimg: "true", platform: "web" },
     false,
-  )
+  );
   return {
-    qrimg: res.data?.qrimg ?? '',
-    qrurl: res.data?.qrurl ?? '',
-  }
+    qrimg: res.data?.qrimg ?? "",
+    qrurl: res.data?.qrurl ?? "",
+  };
 }
 
 export async function qrCheck(key: string): Promise<QrCheckResponse> {
-  return request<QrCheckResponse>('/login/qr/check', { key, timestamp: Date.now() }, false)
+  return request<QrCheckResponse>(
+    "/login/qr/check",
+    { key, timestamp: Date.now() },
+    false,
+  );
 }
 
 export async function loginStatus(): Promise<UserProfile | null> {
-  const res = await request<LoginStatusResponse>('/login/status')
+  const res = await request<LoginStatusResponse>("/login/status");
   const profile = (res.data?.profile ?? res.profile ?? null) as Record<
     string,
     unknown
-  > | null
+  > | null;
   const account = (res.data?.account ?? res.account ?? null) as Record<
     string,
     unknown
-  > | null
-  if (!profile && !account) return null
-  const accountVip = Number(account?.vipType ?? 0)
-  const profileVip = Number(profile?.vipType ?? 0)
+  > | null;
+  if (!profile && !account) return null;
+  const accountVip = Number(account?.vipType ?? 0);
+  const profileVip = Number(profile?.vipType ?? 0);
   return {
     userId: Number(profile?.userId ?? account?.id ?? 0),
-    nickname: String(profile?.nickname ?? '网易云用户'),
-    avatarUrl: String(profile?.avatarUrl ?? ''),
+    nickname: String(profile?.nickname ?? "网易云用户"),
+    avatarUrl: String(profile?.avatarUrl ?? ""),
     signature: profile?.signature ? String(profile.signature) : undefined,
     vipType: Math.max(accountVip, profileVip),
     badgeUrl: deepFindBadgeUrl(res.data ?? res) || undefined,
-  }
+  };
 }
 
 /* ------------------------------------------------------------------ */
@@ -315,140 +316,154 @@ export async function loginStatus(): Promise<UserProfile | null> {
 /* ------------------------------------------------------------------ */
 
 export async function likeSong(id: number, like: boolean): Promise<void> {
-  await request('/like', { id, like: like ? 'true' : 'false' }, false)
+  await request("/like", { id, like: like ? "true" : "false" }, false);
 }
 
 export async function getLikedIds(uid: number): Promise<number[]> {
-  const res = await request<{ ids?: number[] }>('/likelist', { uid }, false)
-  return res.ids ?? []
+  const res = await request<{ ids?: number[] }>("/likelist", { uid }, false);
+  return res.ids ?? [];
 }
 
 export interface VipInfo {
-  vipType: number
-  vipLevel: number
+  vipType: number;
+  vipLevel: number;
   /** milliseconds epoch; 0 = not a member */
-  expireTime: number
+  expireTime: number;
   /** official/custom member badge image url from the API */
-  badgeUrl?: string
+  badgeUrl?: string;
 }
 
 /** Parse an epoch value that may be seconds or ms, or a "YYYY-MM-DD" date string. */
 function parseEpoch(v: unknown): number {
-  if (typeof v === 'number') return v > 1e11 ? v : v * 1000
-  if (typeof v === 'string') {
-    const n = Number(v)
-    if (Number.isFinite(n) && n > 1e8) return n > 1e11 ? n : n * 1000
+  if (typeof v === "number") return v > 1e11 ? v : v * 1000;
+  if (typeof v === "string") {
+    const n = Number(v);
+    if (Number.isFinite(n) && n > 1e8) return n > 1e11 ? n : n * 1000;
     if (/^\d{4}-\d{2}-\d{2}/.test(v)) {
-      const t = Date.parse(v)
-      if (Number.isFinite(t)) return t
+      const t = Date.parse(v);
+      if (Number.isFinite(t)) return t;
     }
   }
-  return 0
+  return 0;
 }
 
 /** Recursively find the membership expire time under any field name (takes the max). */
 function deepFindExpireMs(obj: unknown): number {
-  if (!obj || typeof obj !== 'object') return 0
-  let best = 0
+  if (!obj || typeof obj !== "object") return 0;
+  let best = 0;
   const walk = (o: unknown, depth: number) => {
-    if (!o || typeof o !== 'object' || depth > 4) return
+    if (!o || typeof o !== "object" || depth > 4) return;
     for (const [k, v] of Object.entries(o as Record<string, unknown>)) {
       if (/expire|endtime|end_time|deadline|validto|valid_to/i.test(k)) {
-        const n = parseEpoch(v)
-        if (n > best) best = n
+        const n = parseEpoch(v);
+        if (n > best) best = n;
       }
-      if (v && typeof v === 'object') walk(v, depth + 1)
+      if (v && typeof v === "object") walk(v, depth + 1);
     }
-  }
-  walk(obj, 0)
-  return best
+  };
+  walk(obj, 0);
+  return best;
 }
 
 /** Recursively find the best badge-like image URL (vip icon / custom badge). */
 function deepFindBadgeUrl(obj: unknown): string {
-  if (!obj || typeof obj !== 'object') return ''
-  let best = ''
-  let bestScore = 0
+  if (!obj || typeof obj !== "object") return "";
+  let best = "";
+  let bestScore = 0;
   const walk = (o: unknown, depth: number) => {
-    if (!o || typeof o !== 'object' || depth > 6) return
+    if (!o || typeof o !== "object" || depth > 6) return;
     for (const [k, v] of Object.entries(o as Record<string, unknown>)) {
-      if (typeof v === 'string' && /^https?:\/\//i.test(v)) {
-        if (/avatar|background|cover|img1v1|default/i.test(k)) continue
-        let score = 0
+      if (typeof v === "string" && /^https?:\/\//i.test(v)) {
+        if (/avatar|background|cover|img1v1|default/i.test(k)) continue;
+        let score = 0;
         // the official app shows the ANIMATED member badge next to the
         // nickname; redVipDynamicIconUrl is the dynamic *level* badge when set
-        if (/^redVipDynamicIconUrl/i.test(k)) score = 500 // dynamic level badge
-        else if (/dynamicicon/i.test(k)) score = 400 // animated member badge (what official apps use)
-        else if (/levelicon|level_icon|viplevelicon/i.test(k)) score = 300 // static level badge fallback
-        else if (/identityicon/i.test(k)) score = 120
-        else if (/vipicon/i.test(k)) score = 110
-        else if (/badge/i.test(k)) score = 100
-        else if (/decorat/i.test(k)) score = 90
-        else if (/vip/i.test(k)) score = 60
-        else if (/icon/i.test(k)) score = 40
-        else if (/level/i.test(k)) score = 25
+        if (/^redVipDynamicIconUrl/i.test(k))
+          score = 500; // dynamic level badge
+        else if (/dynamicicon/i.test(k))
+          score = 400; // animated member badge (what official apps use)
+        else if (/levelicon|level_icon|viplevelicon/i.test(k))
+          score = 300; // static level badge fallback
+        else if (/identityicon/i.test(k)) score = 120;
+        else if (/vipicon/i.test(k)) score = 110;
+        else if (/badge/i.test(k)) score = 100;
+        else if (/decorat/i.test(k)) score = 90;
+        else if (/vip/i.test(k)) score = 60;
+        else if (/icon/i.test(k)) score = 40;
+        else if (/level/i.test(k)) score = 25;
         if (score > bestScore) {
-          bestScore = score
-          best = v
+          bestScore = score;
+          best = v;
         }
       }
-      if (v && typeof v === 'object') walk(v, depth + 1)
+      if (v && typeof v === "object") walk(v, depth + 1);
     }
-  }
-  walk(obj, 0)
-  return best
+  };
+  walk(obj, 0);
+  return best;
 }
 
 export async function getVipInfo(uid: number): Promise<VipInfo> {
-  let d: Record<string, unknown> = {}
+  let d: Record<string, unknown> = {};
   // /vip/info (v1) carries the official member badge icons — including the
   // animated dynamicIconUrl (associator.dynamicIconUrl, an animated webp).
   // /vip/info/v2 only returns codes/levels/expire times (no icon urls), so it
   // must NOT be used alone. Merge both, letting v1's richer objects win.
-  for (const ep of ['/vip/info/v2', '/vip/info'] as const) {
+  for (const ep of ["/vip/info/v2", "/vip/info"] as const) {
     try {
-      const res = await request<{ data?: Record<string, unknown> }>(ep, { uid }, false)
-      if (res?.data && typeof res.data === 'object') {
-        d = { ...d, ...res.data }
+      const res = await request<{ data?: Record<string, unknown> }>(
+        ep,
+        { uid },
+        false,
+      );
+      if (res?.data && typeof res.data === "object") {
+        d = { ...d, ...res.data };
       }
     } catch {
       /* ignore */
     }
   }
-  const redLevel = Number(d.redVipLevel ?? d.level ?? 0)
+  const redLevel = Number(d.redVipLevel ?? d.level ?? 0);
   const vipType = Number(
     d.vipType ?? d.redVipType ?? d.vipStatus ?? (redLevel > 0 ? 10 : 0),
-  )
-  const expireTime = deepFindExpireMs(d)
-  let badgeUrl = deepFindBadgeUrl(d)
+  );
+  const expireTime = deepFindExpireMs(d);
+  let badgeUrl = deepFindBadgeUrl(d);
   // the custom member badge lives in the user profile
   if (!badgeUrl) {
     try {
-      const res = await request<unknown>('/user/detail/new', { uid, all: 'true' }, false)
-      badgeUrl = deepFindBadgeUrl(res)
+      const res = await request<unknown>(
+        "/user/detail/new",
+        { uid, all: "true" },
+        false,
+      );
+      badgeUrl = deepFindBadgeUrl(res);
     } catch {
       /* ignore */
     }
   }
   if (!badgeUrl) {
     try {
-      const res = await request<unknown>('/user/detail', { uid }, false)
-      badgeUrl = deepFindBadgeUrl(res)
+      const res = await request<unknown>("/user/detail", { uid }, false);
+      badgeUrl = deepFindBadgeUrl(res);
     } catch {
       /* ignore */
     }
   }
-  return { vipType, vipLevel: redLevel, expireTime, badgeUrl: badgeUrl || undefined }
+  return {
+    vipType,
+    vipLevel: redLevel,
+    expireTime,
+    badgeUrl: badgeUrl || undefined,
+  };
 }
 
 export async function getSongsByIds(ids: number[]): Promise<Song[]> {
-  if (!ids.length) return []
-  const res = await request<SongDetailResponse>('/song/detail', {
-    ids: ids.join(','),
-  })
+  if (!ids.length) return [];
+  const res = await request<SongDetailResponse>("/song/detail", {
+    ids: ids.join(","),
+  });
   return (res.songs ?? [])
     .map((r) => normalizeSong(r))
-    .filter((s): s is Song => s !== null)
+    .filter((s): s is Song => s !== null);
 }
-
-export { API_BASE }

@@ -1,8 +1,8 @@
-import type { ReactNode } from 'react'
-import { usePlayerStore } from '../store/playerStore'
+import type { ReactNode } from "react";
+import { usePlayerStore } from "../store/playerStore";
 
 export default function LoginGate({ children }: { children: ReactNode }) {
-  const loggedIn = usePlayerStore((s) => s.loggedIn)
+  const loggedIn = usePlayerStore((s) => s.loggedIn);
 
   if (!loggedIn) {
     return (
@@ -13,8 +13,8 @@ export default function LoginGate({ children }: { children: ReactNode }) {
           请点击右上角<span className="hint-strong">「登录」</span>进行登录
         </p>
       </div>
-    )
+    );
   }
 
-  return <>{children}</>
+  return <>{children}</>;
 }

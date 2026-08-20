@@ -1,32 +1,43 @@
-'use strict'
+"use strict";
 
-const { execFileSync } = require('child_process')
-const path = require('path')
+const { execFileSync } = require("child_process");
+const path = require("path");
 
-const rcedit = path.join(__dirname, 'node_modules', 'electron-winstaller', 'vendor', 'rcedit.exe')
+const rcedit = path.join(
+  __dirname,
+  "node_modules",
+  "electron-winstaller",
+  "vendor",
+  "rcedit.exe",
+);
 
 /** @type {import('electron-builder').Configuration} */
 module.exports = {
-  appId: 'com.reverie.player',
-  productName: 'Reverie',
+  appId: "com.reverie.player",
+  productName: "Reverie",
   directories: {
-    output: 'release',
+    output: "release",
   },
-  files: ['dist/index.html', 'dist/assets/**/*', 'electron/**/*', 'package.json'],
+  files: [
+    "dist/index.html",
+    "dist/assets/**/*",
+    "electron/**/*",
+    "package.json",
+  ],
   asar: true,
   win: {
-    target: ['nsis', 'portable'],
+    target: ["nsis", "portable"],
   },
   nsis: {
     oneClick: false,
     allowToChangeInstallationDirectory: true,
     createDesktopShortcut: true,
     createStartMenuShortcut: true,
-    shortcutName: 'Reverie',
-    artifactName: '${productName}-Setup-${version}-${arch}.${ext}',
+    shortcutName: "Reverie",
+    artifactName: "${productName}-Setup-${version}-${arch}.${ext}",
   },
   portable: {
-    artifactName: '${productName}-Portable-${version}-${arch}.${ext}',
+    artifactName: "${productName}-Portable-${version}-${arch}.${ext}",
   },
   // Clear the CompanyName of the packaged app exe. This runs BEFORE the
   // installers are built, so the installers bundle the fixed exe and their
@@ -35,14 +46,14 @@ module.exports = {
     const exe = path.join(
       context.appOutDir,
       `${context.packager.appInfo.productName}.exe`,
-    )
+    );
     try {
-      execFileSync(rcedit, [exe, '--set-version-string', 'CompanyName', ' '], {
-        stdio: 'ignore',
-      })
-      console.log('[afterPack] cleared CompanyName:', exe)
+      execFileSync(rcedit, [exe, "--set-version-string", "CompanyName", " "], {
+        stdio: "ignore",
+      });
+      console.log("[afterPack] cleared CompanyName:", exe);
     } catch (e) {
-      console.error('[afterPack] rcedit failed:', e.message)
+      console.error("[afterPack] rcedit failed:", e.message);
     }
   },
-}
+};

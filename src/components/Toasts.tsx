@@ -1,8 +1,8 @@
-import { usePlayerStore } from '../store/playerStore'
+import { usePlayerStore } from "../store/playerStore";
 
 export default function Toasts() {
-  const toasts = usePlayerStore((s) => s.toasts)
-  if (!toasts.length) return null
+  const toasts = usePlayerStore((s) => s.toasts);
+  if (!toasts.length) return null;
   return (
     <div className="toast-wrap">
       {toasts.map((t) => (
@@ -11,5 +11,5 @@ export default function Toasts() {
         </div>
       ))}
     </div>
-  )
+  );
 }

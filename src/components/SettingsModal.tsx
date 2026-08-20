@@ -1,52 +1,77 @@
-import { usePlayerStore } from '../store/playerStore'
-import type { ThemePreference } from '../store/playerStore'
-import type { PlayMode } from '../api/types'
-import { IconClose } from './icons'
+import { useState } from "react";
+import { usePlayerStore } from "../store/playerStore";
+import type { ThemePreference } from "../store/playerStore";
+import type { PlayMode } from "../api/types";
+import { IconClose } from "./icons";
 
 const THEMES = [
-  { id: 'default', name: '经典', color: '#ec4141' },
-  { id: 'neon', name: '霓虹', color: '#7df9ff' },
-  { id: 'fire', name: '火焰', color: '#ffd166' },
-  { id: 'aurora', name: '极光', color: '#a78bfa' },
-  { id: 'mint', name: '薄荷', color: '#6ee7b7' },
-  { id: 'rose', name: '玫瑰', color: '#fb7185' },
-]
+  { id: "default", name: "经典", color: "#ec4141" },
+  { id: "neon", name: "霓虹", color: "#7df9ff" },
+  { id: "fire", name: "火焰", color: "#ffd166" },
+  { id: "aurora", name: "极光", color: "#a78bfa" },
+  { id: "mint", name: "薄荷", color: "#6ee7b7" },
+  { id: "rose", name: "玫瑰", color: "#fb7185" },
+];
 
 const APP_THEMES: Array<{ id: ThemePreference; name: string }> = [
-  { id: 'system', name: '跟随系统' },
-  { id: 'light', name: '浅色' },
-  { id: 'dark', name: '深色' },
-]
+  { id: "system", name: "跟随系统" },
+  { id: "light", name: "浅色" },
+  { id: "dark", name: "深色" },
+];
 
 const PLAY_MODES: Array<{ id: PlayMode; name: string }> = [
-  { id: 'sequence', name: '顺序播放' },
-  { id: 'one', name: '单曲循环' },
-  { id: 'shuffle', name: '随机播放' },
-]
+  { id: "sequence", name: "顺序播放" },
+  { id: "one", name: "单曲循环" },
+  { id: "shuffle", name: "随机播放" },
+];
+
+const PRIVACY_TEXT = `· 您的所有个人数据（界面设置、最近播放、登录 Cookie 等）仅保存在本机，不会上传到任何服务器。
+· 登录 Cookie 仅在调用网易云音乐接口时随请求发送，用于身份认证，不会用于其他用途。
+· 首页问候语中的城市信息通过第三方 IP 定位服务（myip.ipip.net / ipinfo.io）获取，仅用于展示，不存储、不上传。
+· 本应用不收集任何统计数据，不进行任何形式的追踪。`;
+
+const DISCLAIMER_TEXT = `· Reverie 是一款开源音乐播放器，仅供个人学习与交流使用，请勿用于商业用途。
+· 音乐数据来源于开源的 NeteaseCloudMusicApi 项目，歌曲版权归各版权方所有。
+· 本应用与网易云音乐及其关联公司无任何隶属或合作关系，也不提供任何付费内容的破解或绕过。
+· 若本应用侵犯了您的合法权益，请联系移除相关数据。
+· 使用本应用产生的任何后果由使用者自行承担。`;
+
+type Panel = "none" | "privacy" | "disclaimer";
 
 export default function SettingsModal() {
-  const showSettings = usePlayerStore((s) => s.showSettings)
-  const setShowSettings = usePlayerStore((s) => s.setShowSettings)
-  const theme = usePlayerStore((s) => s.theme)
-  const setTheme = usePlayerStore((s) => s.setTheme)
-  const playMode = usePlayerStore((s) => s.playMode)
-  const setPlayMode = usePlayerStore((s) => s.setPlayMode)
-  const lyricTheme = usePlayerStore((s) => s.lyricTheme)
-  const setLyricTheme = usePlayerStore((s) => s.setLyricTheme)
-  const lyricFontSize = usePlayerStore((s) => s.lyricFontSize)
-  const setLyricFontSize = usePlayerStore((s) => s.setLyricFontSize)
-  const showTranslation = usePlayerStore((s) => s.showTranslation)
-  const setShowTranslation = usePlayerStore((s) => s.setShowTranslation)
-  const clearRecent = usePlayerStore((s) => s.clearRecent)
-  const loggedIn = usePlayerStore((s) => s.loggedIn)
-  const logout = usePlayerStore((s) => s.logout)
+  const [panel, setPanel] = useState<Panel>("none");
+  const showSettings = usePlayerStore((s) => s.showSettings);
+  const setShowSettings = usePlayerStore((s) => s.setShowSettings);
+  const theme = usePlayerStore((s) => s.theme);
+  const setTheme = usePlayerStore((s) => s.setTheme);
+  const playMode = usePlayerStore((s) => s.playMode);
+  const setPlayMode = usePlayerStore((s) => s.setPlayMode);
+  const lyricTheme = usePlayerStore((s) => s.lyricTheme);
+  const setLyricTheme = usePlayerStore((s) => s.setLyricTheme);
+  const lyricFontSize = usePlayerStore((s) => s.lyricFontSize);
+  const setLyricFontSize = usePlayerStore((s) => s.setLyricFontSize);
+  const showTranslation = usePlayerStore((s) => s.showTranslation);
+  const setShowTranslation = usePlayerStore((s) => s.setShowTranslation);
+  const clearRecent = usePlayerStore((s) => s.clearRecent);
+  const loggedIn = usePlayerStore((s) => s.loggedIn);
+  const logout = usePlayerStore((s) => s.logout);
+  const checkUpdate = usePlayerStore((s) => s.checkUpdate);
+  const updateChecking = usePlayerStore((s) => s.updateChecking);
 
-  if (!showSettings) return null
+  if (!showSettings) return null;
+
+  const togglePanel = (p: Panel) => setPanel((cur) => (cur === p ? "none" : p));
 
   return (
     <div className="modal-backdrop" onClick={() => setShowSettings(false)}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
           <h2>设置</h2>
           <button className="icon-btn" onClick={() => setShowSettings(false)}>
             <IconClose />
@@ -60,7 +85,7 @@ export default function SettingsModal() {
             {APP_THEMES.map((t) => (
               <button
                 key={t.id}
-                className={`opt-btn ${theme === t.id ? 'active' : ''}`}
+                className={`opt-btn ${theme === t.id ? "active" : ""}`}
                 onClick={() => setTheme(t.id)}
               >
                 {t.name}
@@ -75,7 +100,7 @@ export default function SettingsModal() {
             {PLAY_MODES.map((m) => (
               <button
                 key={m.id}
-                className={`opt-btn ${playMode === m.id ? 'active' : ''}`}
+                className={`opt-btn ${playMode === m.id ? "active" : ""}`}
                 onClick={() => setPlayMode(m.id)}
               >
                 {m.name}
@@ -90,7 +115,7 @@ export default function SettingsModal() {
             {THEMES.map((t) => (
               <button
                 key={t.id}
-                className={`theme-dot ${lyricTheme === t.id ? 'active' : ''}`}
+                className={`theme-dot ${lyricTheme === t.id ? "active" : ""}`}
                 style={{ background: t.color }}
                 title={t.name}
                 onClick={() => setLyricTheme(t.id)}
@@ -107,7 +132,10 @@ export default function SettingsModal() {
             min={14}
             max={40}
             value={lyricFontSize}
-            style={{ width: 140, ['--val' as never]: `${((lyricFontSize - 14) / 26) * 100}%` }}
+            style={{
+              width: 140,
+              ["--val" as never]: `${((lyricFontSize - 14) / 26) * 100}%`,
+            }}
             onChange={(e) => setLyricFontSize(Number(e.target.value))}
           />
         </div>
@@ -115,10 +143,10 @@ export default function SettingsModal() {
         <div className="setting-row">
           <label>显示歌词翻译</label>
           <button
-            className={`btn ${showTranslation ? 'primary' : ''}`}
+            className={`btn ${showTranslation ? "primary" : ""}`}
             onClick={() => setShowTranslation(!showTranslation)}
           >
-            {showTranslation ? '已开启' : '已关闭'}
+            {showTranslation ? "已开启" : "已关闭"}
           </button>
         </div>
 
@@ -138,16 +166,68 @@ export default function SettingsModal() {
           </div>
         )}
 
-        <div className="setting-row" style={{ borderBottom: 'none', paddingBottom: 0 }}>
-          <div style={{ color: 'var(--text-faint)', fontSize: 11, lineHeight: 1.7 }}>
-            Reverie v1.0.0 · Electron {window.ncm?.versions.electron ?? '—'}
-            <br />
-            数据来源：NeteaseCloudMusicApi (GitHub)
-            <br />
-            仅供学习交流，不隶属任何平台，不提供任何违法内容
+        <div className="setting-divider" />
+
+        <div className="setting-row">
+          <label>关于</label>
+          <div className="about-info">
+            <div className="about-app">
+              Reverie <span>v{__APP_VERSION__}</span>
+            </div>
+            <div className="about-meta">
+              Electron {window.ncm?.versions.electron ?? "—"} · Chrome{" "}
+              {window.ncm?.versions.chrome ?? "—"}
+            </div>
+          </div>
+        </div>
+
+        <div className="setting-row">
+          <label>更新</label>
+          <button
+            className="btn"
+            onClick={() => checkUpdate(true)}
+            disabled={updateChecking}
+          >
+            {updateChecking ? "检查中…" : "检查更新"}
+          </button>
+        </div>
+
+        <div className="setting-row">
+          <label>隐私说明</label>
+          <button className="btn" onClick={() => togglePanel("privacy")}>
+            {panel === "privacy" ? "收起" : "查看"}
+          </button>
+        </div>
+        {panel === "privacy" && (
+          <div className="about-panel">{PRIVACY_TEXT}</div>
+        )}
+
+        <div className="setting-row">
+          <label>免责声明</label>
+          <button className="btn" onClick={() => togglePanel("disclaimer")}>
+            {panel === "disclaimer" ? "收起" : "查看"}
+          </button>
+        </div>
+        {panel === "disclaimer" && (
+          <div className="about-panel">{DISCLAIMER_TEXT}</div>
+        )}
+
+        <div
+          className="setting-row"
+          style={{ borderBottom: "none", paddingBottom: 0 }}
+        >
+          <div
+            style={{
+              color: "var(--text-faint)",
+              fontSize: 11,
+              lineHeight: 1.7,
+            }}
+          >
+            数据来源：NeteaseCloudMusicApi (GitHub) ·
+            仅供学习交流，不隶属任何平台
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }

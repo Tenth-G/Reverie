@@ -1,6 +1,6 @@
-import { usePlayerStore } from '../store/playerStore'
-import { formatTime } from '../utils/lyrics'
-import type { PlayMode } from '../api/types'
+import { usePlayerStore } from "../store/playerStore";
+import { formatTime } from "../utils/lyrics";
+import type { PlayMode } from "../api/types";
 import {
   IconHeart,
   IconList,
@@ -12,44 +12,44 @@ import {
   IconRepeatOne,
   IconShuffle,
   IconVolume,
-} from './icons'
+} from "./icons";
 
 const MODE_LABEL: Record<PlayMode, string> = {
-  sequence: '顺序播放',
-  loop: '列表循环',
-  one: '单曲循环',
-  shuffle: '随机播放',
-}
+  sequence: "顺序播放",
+  loop: "列表循环",
+  one: "单曲循环",
+  shuffle: "随机播放",
+};
 
 function ModeIcon({ mode }: { mode: PlayMode }) {
-  if (mode === 'shuffle') return <IconShuffle />
-  if (mode === 'one') return <IconRepeatOne />
-  return <IconList />
+  if (mode === "shuffle") return <IconShuffle />;
+  if (mode === "one") return <IconRepeatOne />;
+  return <IconList />;
 }
 
 export default function PlayerBar() {
-  const currentSong = usePlayerStore((s) => s.currentSong)
-  const playing = usePlayerStore((s) => s.playing)
-  const loadingUrl = usePlayerStore((s) => s.loadingUrl)
-  const progress = usePlayerStore((s) => s.progress)
-  const duration = usePlayerStore((s) => s.duration)
-  const volume = usePlayerStore((s) => s.volume)
-  const muted = usePlayerStore((s) => s.muted)
-  const playMode = usePlayerStore((s) => s.playMode)
-  const likedIds = usePlayerStore((s) => s.likedIds)
+  const currentSong = usePlayerStore((s) => s.currentSong);
+  const playing = usePlayerStore((s) => s.playing);
+  const loadingUrl = usePlayerStore((s) => s.loadingUrl);
+  const progress = usePlayerStore((s) => s.progress);
+  const duration = usePlayerStore((s) => s.duration);
+  const volume = usePlayerStore((s) => s.volume);
+  const muted = usePlayerStore((s) => s.muted);
+  const playMode = usePlayerStore((s) => s.playMode);
+  const likedIds = usePlayerStore((s) => s.likedIds);
 
-  const togglePlay = usePlayerStore((s) => s.togglePlay)
-  const next = usePlayerStore((s) => s.next)
-  const prev = usePlayerStore((s) => s.prev)
-  const seek = usePlayerStore((s) => s.seek)
-  const setVolume = usePlayerStore((s) => s.setVolume)
-  const toggleMute = usePlayerStore((s) => s.toggleMute)
-  const cyclePlayMode = usePlayerStore((s) => s.cyclePlayMode)
-  const setPage = usePlayerStore((s) => s.setPage)
-  const toggleLike = usePlayerStore((s) => s.toggleLike)
+  const togglePlay = usePlayerStore((s) => s.togglePlay);
+  const next = usePlayerStore((s) => s.next);
+  const prev = usePlayerStore((s) => s.prev);
+  const seek = usePlayerStore((s) => s.seek);
+  const setVolume = usePlayerStore((s) => s.setVolume);
+  const toggleMute = usePlayerStore((s) => s.toggleMute);
+  const cyclePlayMode = usePlayerStore((s) => s.cyclePlayMode);
+  const setPage = usePlayerStore((s) => s.setPage);
+  const toggleLike = usePlayerStore((s) => s.toggleLike);
 
-  const pct = duration > 0 ? Math.min(100, (progress / duration) * 100) : 0
-  const liked = currentSong ? likedIds.includes(currentSong.id) : false
+  const pct = duration > 0 ? Math.min(100, (progress / duration) * 100) : 0;
+  const liked = currentSong ? likedIds.includes(currentSong.id) : false;
 
   return (
     <footer className="player-bar">
@@ -62,7 +62,7 @@ export default function PlayerBar() {
           min={0}
           max={duration || 0}
           value={progress}
-          style={{ ['--val' as never]: `${pct}%` }}
+          style={{ ["--val" as never]: `${pct}%` }}
           onChange={(e) => seek(Number(e.target.value))}
         />
         <span className="pb-time">{formatTime(duration)}</span>
@@ -71,10 +71,10 @@ export default function PlayerBar() {
       <div className="pb-row">
         <div className="pb-left">
           <div
-            className={`pb-cover ${playing ? 'spinning' : ''}`}
-            onClick={() => setPage('nowplaying')}
+            className={`pb-cover ${playing ? "spinning" : ""}`}
+            onClick={() => setPage("nowplaying")}
             title="打开播放页"
-            style={{ cursor: 'pointer' }}
+            style={{ cursor: "pointer" }}
           >
             {currentSong ? (
               <img src={currentSong.picUrl} alt="" />
@@ -83,8 +83,10 @@ export default function PlayerBar() {
             )}
           </div>
           <div className="pb-info">
-            <div className="t">{currentSong?.name ?? '未在播放'}</div>
-            <div className="a">{currentSong?.artists ?? '选择一首歌开始播放'}</div>
+            <div className="t">{currentSong?.name ?? "未在播放"}</div>
+            <div className="a">
+              {currentSong?.artists ?? "选择一首歌开始播放"}
+            </div>
           </div>
         </div>
 
@@ -92,23 +94,37 @@ export default function PlayerBar() {
           <button className="icon-btn" onClick={prev} title="上一首">
             <IconPrev />
           </button>
-          <button className="icon-btn primary" onClick={togglePlay} title={playing ? '暂停' : '播放'}>
-            {loadingUrl ? <span className="spin-dot" /> : playing ? <IconPause /> : <IconPlay />}
+          <button
+            className="icon-btn primary"
+            onClick={togglePlay}
+            title={playing ? "暂停" : "播放"}
+          >
+            {loadingUrl ? (
+              <span className="spin-dot" />
+            ) : playing ? (
+              <IconPause />
+            ) : (
+              <IconPlay />
+            )}
           </button>
           <button className="icon-btn" onClick={next} title="下一首">
             <IconNext />
           </button>
-          <button className="icon-btn active" onClick={cyclePlayMode} title={MODE_LABEL[playMode]}>
+          <button
+            className="icon-btn active"
+            onClick={cyclePlayMode}
+            title={MODE_LABEL[playMode]}
+          >
             <ModeIcon mode={playMode} />
           </button>
         </div>
 
         <div className="pb-right">
           <button
-            className={`icon-btn ${liked ? 'active' : ''}`}
+            className={`icon-btn ${liked ? "active" : ""}`}
             onClick={toggleLike}
-            title={liked ? '取消喜欢' : '喜欢'}
-            style={liked ? { color: '#ec4141' } : undefined}
+            title={liked ? "取消喜欢" : "喜欢"}
+            style={liked ? { color: "#ec4141" } : undefined}
           >
             <IconHeart />
           </button>
@@ -122,7 +138,7 @@ export default function PlayerBar() {
               min={0}
               max={100}
               value={Math.round((muted ? 0 : volume) * 100)}
-              style={{ ['--val' as never]: `${(muted ? 0 : volume) * 100}%` }}
+              style={{ ["--val" as never]: `${(muted ? 0 : volume) * 100}%` }}
               onChange={(e) => setVolume(Number(e.target.value) / 100)}
             />
           </div>
@@ -138,5 +154,5 @@ export default function PlayerBar() {
         }
       `}</style>
     </footer>
-  )
+  );
 }

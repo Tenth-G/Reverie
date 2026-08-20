@@ -1,75 +1,77 @@
-import type { LyricLine } from '../api/types'
+import type { LyricLine } from "../api/types";
 
-const TIME_TAG = /\[(\d{1,2}):(\d{1,2})(?:[.:](\d{1,3}))?\]/g
+const TIME_TAG = /\[(\d{1,2}):(\d{1,2})(?:[.:](\d{1,3}))?\]/g;
 
 interface RawLine {
-  time: number
-  text: string
+  time: number;
+  text: string;
 }
 
 function parsePlain(lrc: string): RawLine[] {
-  const lines: RawLine[] = []
+  const lines: RawLine[] = [];
   for (const raw of lrc.split(/\r?\n/)) {
-    const times: number[] = []
-    TIME_TAG.lastIndex = 0
-    let m: RegExpExecArray | null
+    const times: number[] = [];
+    TIME_TAG.lastIndex = 0;
+    let m: RegExpExecArray | null;
     while ((m = TIME_TAG.exec(raw))) {
-      const mm = Number(m[1])
-      const ss = Number(m[2])
-      const frac = String(m[3] ?? '0').padEnd(3, '0').slice(0, 3)
-      times.push(mm * 60000 + ss * 1000 + Number(frac))
+      const mm = Number(m[1]);
+      const ss = Number(m[2]);
+      const frac = String(m[3] ?? "0")
+        .padEnd(3, "0")
+        .slice(0, 3);
+      times.push(mm * 60000 + ss * 1000 + Number(frac));
     }
-    const text = raw.replace(TIME_TAG, '').replace(/^\s+|\s+$/g, '')
-    if (!times.length) continue
-    for (const t of times) lines.push({ time: t, text })
+    const text = raw.replace(TIME_TAG, "").replace(/^\s+|\s+$/g, "");
+    if (!times.length) continue;
+    for (const t of times) lines.push({ time: t, text });
   }
-  lines.sort((a, b) => a.time - b.time)
-  return lines
+  lines.sort((a, b) => a.time - b.time);
+  return lines;
 }
 
 /**
  * Parse LRC + optional translation (TLyric) into a merged lyric line list.
  * Translation lines are matched to original lines by timestamp.
  */
-export function parseLyrics(lrc: string, tlyric = ''): LyricLine[] {
-  const originals = parsePlain(lrc)
-  const translations = parsePlain(tlyric)
+export function parseLyrics(lrc: string, tlyric = ""): LyricLine[] {
+  const originals = parsePlain(lrc);
+  const translations = parsePlain(tlyric);
 
   // Build a lookup for translations by exact timestamp (first wins).
-  const transByTime = new Map<number, string>()
+  const transByTime = new Map<number, string>();
   for (const t of translations) {
-    if (!transByTime.has(t.time)) transByTime.set(t.time, t.text)
+    if (!transByTime.has(t.time)) transByTime.set(t.time, t.text);
   }
 
   // Deduplicate original timestamps (keep the first text per timestamp).
-  const seen = new Map<number, LyricLine>()
+  const seen = new Map<number, LyricLine>();
   for (const o of originals) {
-    if (seen.has(o.time)) continue
-    const line: LyricLine = { time: o.time, text: o.text }
-    const tr = transByTime.get(o.time)
-    if (tr && tr !== o.text) line.translation = tr
-    seen.set(o.time, line)
+    if (seen.has(o.time)) continue;
+    const line: LyricLine = { time: o.time, text: o.text };
+    const tr = transByTime.get(o.time);
+    if (tr && tr !== o.text) line.translation = tr;
+    seen.set(o.time, line);
   }
 
-  const result = Array.from(seen.values()).sort((a, b) => a.time - b.time)
+  const result = Array.from(seen.values()).sort((a, b) => a.time - b.time);
 
   // If no lyrics at all, synthesize a single placeholder.
   if (!result.length) {
-    return [{ time: 0, text: '纯音乐，请欣赏' }]
+    return [{ time: 0, text: "纯音乐，请欣赏" }];
   }
 
-  return result
+  return result;
 }
 
 /** Format milliseconds as m:ss or h:mm:ss. */
 export function formatTime(ms: number): string {
-  if (!Number.isFinite(ms) || ms < 0) ms = 0
-  const totalSec = Math.floor(ms / 1000)
-  const h = Math.floor(totalSec / 3600)
-  const m = Math.floor((totalSec % 3600) / 60)
-  const s = totalSec % 60
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`
+  if (!Number.isFinite(ms) || ms < 0) ms = 0;
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = totalSec % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -77,28 +79,28 @@ export function formatTime(ms: number): string {
 /* ------------------------------------------------------------------ */
 
 const METADATA_RE =
-  /作词|作曲|编曲|制作人|制作|录音|混音|母带|监制|和声|配唱|键盘|吉他|贝斯|鼓|弦乐|编写|编程|op\s*[:：]|sp\s*[:：]|企划|统筹|发行|封面|摄影|设计|文案|出品|版权|词曲|未经许可|纯音乐|间奏|伴奏|人声|录制|缩混|master|producer|arrang|compose|编曲人|词曲人/i
+  /作词|作曲|编曲|制作人|制作|录音|混音|母带|监制|和声|配唱|键盘|吉他|贝斯|鼓|弦乐|编写|编程|op\s*[:：]|sp\s*[:：]|企划|统筹|发行|封面|摄影|设计|文案|出品|版权|词曲|未经许可|纯音乐|间奏|伴奏|人声|录制|缩混|master|producer|arrang|compose|编曲人|词曲人/i;
 
 /** Lines that reveal a duet role or person-name prefix (e.g. "女：…", "周杰伦：…"). */
 const NONLYRIC_RE =
-  /^[（(](男|女|合|独|齐|对白|旁白|说唱)[）)]|[:：]\s*(女|男|合|独|对白|旁白|说唱|合唱)|^[\u4e00-\u9fa5]{1,6}[:：]/i
+  /^[（(](男|女|合|独|齐|对白|旁白|说唱)[）)]|[:：]\s*(女|男|合|独|对白|旁白|说唱|合唱)|^[\u4e00-\u9fa5]{1,6}[:：]/i;
 
 /** Whether a lyric line is a real lyric (not metadata/credit/empty). */
 export function isLyricLine(text: string): boolean {
-  const t = text.trim()
-  if (!t) return false
-  if (t.length < 4) return false
-  if (METADATA_RE.test(t)) return false
-  if (NONLYRIC_RE.test(t)) return false
-  return true
+  const t = text.trim();
+  if (!t) return false;
+  if (t.length < 4) return false;
+  if (METADATA_RE.test(t)) return false;
+  if (NONLYRIC_RE.test(t)) return false;
+  return true;
 }
 
 /** Pick a random meaningful lyric line from raw LRC. */
 export function pickRandomLyricLine(lrc: string): string | null {
   const lines = lrc
     .split(/\r?\n/)
-    .map((raw) => raw.replace(/\[[^\]]*\]/g, '').trim())
-    .filter((t) => isLyricLine(t) && t.length >= 6 && t.length <= 60)
-  if (!lines.length) return null
-  return lines[Math.floor(Math.random() * lines.length)]
+    .map((raw) => raw.replace(/\[[^\]]*\]/g, "").trim())
+    .filter((t) => isLyricLine(t) && t.length >= 6 && t.length <= 60);
+  if (!lines.length) return null;
+  return lines[Math.floor(Math.random() * lines.length)];
 }

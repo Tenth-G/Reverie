@@ -1,11 +1,11 @@
-import { usePlayerStore } from '../store/playerStore'
-import { Page, PageHeader } from './Page'
-import SongList from './SongList'
-import { IconRefresh } from './icons'
+import { usePlayerStore } from "../store/playerStore";
+import { Page, PageHeader } from "./Page";
+import SongList from "./SongList";
+import { IconRefresh } from "./icons";
 
 export default function FmPage() {
-  const fmSongs = usePlayerStore((s) => s.fmSongs)
-  const loadPersonalFm = usePlayerStore((s) => s.loadPersonalFm)
+  const fmSongs = usePlayerStore((s) => s.fmSongs);
+  const loadPersonalFm = usePlayerStore((s) => s.loadPersonalFm);
 
   return (
     <Page>
@@ -20,5 +20,5 @@ export default function FmPage() {
       />
       <SongList songs={fmSongs} emptyText="登录后开启漫游随机播放" />
     </Page>
-  )
+  );
 }

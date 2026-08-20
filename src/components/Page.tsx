@@ -1,13 +1,13 @@
-import type { ReactNode } from 'react'
+import type { ReactNode } from "react";
 
 export function PageHeader({
   title,
   subtitle,
   actions,
 }: {
-  title: string
-  subtitle?: string
-  actions?: ReactNode
+  title: string;
+  subtitle?: string;
+  actions?: ReactNode;
 }) {
   return (
     <div className="page-header">
@@ -17,7 +17,7 @@ export function PageHeader({
       </div>
       {actions && <div className="page-actions">{actions}</div>}
     </div>
-  )
+  );
 }
 
 export function Page({ children }: { children: ReactNode }) {
@@ -25,5 +25,5 @@ export function Page({ children }: { children: ReactNode }) {
     <div className="page">
       <div className="page-scroll">{children}</div>
     </div>
-  )
+  );
 }
