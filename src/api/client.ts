@@ -396,22 +396,21 @@ function deepFindBadgeUrl(obj: unknown): string {
 }
 
 export async function getVipInfo(uid: number): Promise<VipInfo> {
-  let d: Record<string, unknown> | null = null
-  try {
-    const res = await request<{ data?: Record<string, unknown> }>('/vip/info/v2', { uid }, false)
-    d = (res.data ?? null) as Record<string, unknown> | null
-  } catch {
-    /* fall through */
-  }
-  if (!d || !Object.keys(d).length) {
+  let d: Record<string, unknown> = {}
+  // /vip/info (v1) carries the official member badge icons — including the
+  // animated dynamicIconUrl (associator.dynamicIconUrl, an animated webp).
+  // /vip/info/v2 only returns codes/levels/expire times (no icon urls), so it
+  // must NOT be used alone. Merge both, letting v1's richer objects win.
+  for (const ep of ['/vip/info/v2', '/vip/info'] as const) {
     try {
-      const res = await request<{ data?: Record<string, unknown> }>('/vip/info', { uid }, false)
-      d = (res.data ?? null) as Record<string, unknown> | null
+      const res = await request<{ data?: Record<string, unknown> }>(ep, { uid }, false)
+      if (res?.data && typeof res.data === 'object') {
+        d = { ...d, ...res.data }
+      }
     } catch {
       /* ignore */
     }
   }
-  d = d ?? {}
   const redLevel = Number(d.redVipLevel ?? d.level ?? 0)
   const vipType = Number(
     d.vipType ?? d.redVipType ?? d.vipStatus ?? (redLevel > 0 ? 10 : 0),
