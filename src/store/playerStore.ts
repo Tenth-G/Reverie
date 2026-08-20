@@ -11,7 +11,6 @@ import {
   getSongsByIds,
   getSongUrl,
   getTopSongs,
-  getUserLevel,
   getUserPlaylists,
   getVipInfo,
   likeSong,
@@ -102,7 +101,6 @@ interface PlayerState {
   likedSongs: Song[]
   likedAt: Record<number, number>
   vipInfo: VipInfo | null
-  userLevel: number
   recentSongs: Song[]
   homeQuote: { text: string; source: string } | null
 
@@ -188,7 +186,6 @@ interface PlayerState {
   loadLiked: () => Promise<void>
   loadLikedSongs: () => Promise<void>
   loadVipInfo: () => Promise<void>
-  loadUserLevel: () => Promise<void>
   trackRecent: (song: Song) => void
   clearRecent: () => void
   loadHomeQuote: () => Promise<void>
@@ -232,7 +229,6 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   likedSongs: [],
   likedAt: {},
   vipInfo: null,
-  userLevel: 0,
   recentSongs: readRecentSongs(),
   homeQuote: null,
 
@@ -615,16 +611,6 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       /* ignore */
     }
   },
-  loadUserLevel: async () => {
-    const uid = get().profile?.userId
-    if (!uid) return
-    try {
-      const level = await getUserLevel(uid)
-      set({ userLevel: level })
-    } catch {
-      /* ignore */
-    }
-  },
   trackRecent: (song) => {
     const next = [song, ...get().recentSongs.filter((s) => s.id !== song.id)].slice(0, 50)
     set({ recentSongs: next })
@@ -676,7 +662,6 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
         get().loadLiked()
         get().loadLikedSongs()
         get().loadVipInfo()
-        get().loadUserLevel()
         if (!get().recommendSongs.length) {
           getRecommendSongs().then((songs) => set({ recommendSongs: songs })).catch(() => {})
         }
@@ -729,7 +714,6 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
         get().loadLiked()
         get().loadLikedSongs()
         get().loadVipInfo()
-        get().loadUserLevel()
         if (!get().recommendSongs.length) {
           getRecommendSongs().then((songs) => set({ recommendSongs: songs })).catch(() => {})
         }

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { usePlayerStore } from '../store/playerStore'
-import LyricsPanel from './LyricsPanel'
 import { IconChevronDown } from './icons'
 
 const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)'
@@ -79,9 +78,6 @@ export default function NowPlayingView() {
           ) : (
             <div className="np-cover-ph">♪</div>
           )}
-        </div>
-        <div className={`np-lyrics ${fadedIn ? 'np-fade-in' : ''}`}>
-          <LyricsPanel />
         </div>
       </div>
     </div>

@@ -329,20 +329,39 @@ export interface VipInfo {
   expireTime: number
 }
 
+/** Parse an epoch value that may be in seconds or milliseconds. */
+function toEpochMs(value: unknown): number {
+  const n = Number(value ?? 0)
+  if (!n || !Number.isFinite(n)) return 0
+  return n > 1e11 ? n : n * 1000
+}
+
 export async function getVipInfo(uid: number): Promise<VipInfo> {
-  const res = await request<{ data?: Record<string, unknown> }>(
-    '/vip/info/v2',
-    { uid },
-    false,
-  )
-  const d = (res.data ?? {}) as Record<string, unknown>
+  // try the newer endpoint first, fall back to /vip/info
+  let d: Record<string, unknown> | null = null
+  try {
+    const res = await request<{ data?: Record<string, unknown> }>('/vip/info/v2', { uid }, false)
+    d = (res.data ?? null) as Record<string, unknown> | null
+  } catch {
+    /* fall through */
+  }
+  if (!d || !Object.keys(d).length) {
+    try {
+      const res = await request<{ data?: Record<string, unknown> }>('/vip/info', { uid }, false)
+      d = (res.data ?? null) as Record<string, unknown> | null
+    } catch {
+      /* ignore */
+    }
+  }
+  d = d ?? {}
   const redLevel = Number(d.redVipLevel ?? d.level ?? 0)
   const vipType = Number(
     d.vipType ?? d.redVipType ?? d.vipStatus ?? (redLevel > 0 ? 10 : 0),
   )
-  const vipLevel = redLevel
-  const expireTime = Number(d.redVipExpireTime ?? d.expireTime ?? 0)
-  return { vipType, vipLevel, expireTime }
+  const expireTime = toEpochMs(
+    d.redVipExpireTime ?? d.expireTime ?? d.redVipExpire ?? d.vipExpireTime ?? d.vipExpire ?? d.endTime ?? 0,
+  )
+  return { vipType, vipLevel: redLevel, expireTime }
 }
 
 export async function getSongsByIds(ids: number[]): Promise<Song[]> {
@@ -353,14 +372,6 @@ export async function getSongsByIds(ids: number[]): Promise<Song[]> {
   return (res.songs ?? [])
     .map((r) => normalizeSong(r))
     .filter((s): s is Song => s !== null)
-}
-
-/** 听歌等级 (from /user/level) */
-export async function getUserLevel(uid: number): Promise<number> {
-  const res = await request<{
-    data?: { levelInfo?: { currentLevel?: number } }
-  }>('/user/level', { uid }, false)
-  return Number(res.data?.levelInfo?.currentLevel ?? 0)
 }
 
 export { API_BASE }

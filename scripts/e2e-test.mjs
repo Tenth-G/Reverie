@@ -105,7 +105,7 @@ async function main() {
   record('播放页隐藏顶部导航', (await win.locator('.topnav').isHidden()))
   record('播放页隐藏标题栏', (await win.locator('.titlebar').isHidden()))
   record('播放页封面容器存在', (await win.locator('.np-cover').count()) === 1)
-  record('播放页歌词容器存在', (await win.locator('.np-lyrics').count()) === 1)
+  record('播放页无歌词容器（歌词已移除）', (await win.locator('.np-lyrics').count()) === 0)
   await win.screenshot({ path: `${OUT_DIR}/e2e-04-nowplaying.png` })
   await win.locator('.np-back').click()
   await win.waitForFunction(() => document.querySelectorAll('.now-playing').length === 0, null, { timeout: 5000 })

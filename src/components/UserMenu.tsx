@@ -34,7 +34,6 @@ export default function UserMenu() {
   const [open, setOpen] = useState(false)
   const profile = usePlayerStore((s) => s.profile)
   const vipInfo = usePlayerStore((s) => s.vipInfo)
-  const userLevel = usePlayerStore((s) => s.userLevel)
   const logout = usePlayerStore((s) => s.logout)
   const setShowLogin = usePlayerStore((s) => s.setShowLogin)
   const ref = useRef<HTMLDivElement>(null)
@@ -73,9 +72,13 @@ export default function UserMenu() {
         )}
         {isVip &&
           (vipType === 11 ? (
-            <img className="user-badge-img svip" src={badgeSvip} alt="黑胶SVIP" />
+            <span className="user-badge-dyn svip">
+              <img src={badgeSvip} alt="黑胶SVIP" />
+            </span>
           ) : (
-            <img className="user-badge-img" src={badgeVip} alt="黑胶VIP" />
+            <span className="user-badge-dyn">
+              <img src={badgeVip} alt="黑胶VIP" />
+            </span>
           ))}
       </button>
       {open && (
@@ -106,10 +109,6 @@ export default function UserMenu() {
           <div className="user-dropdown-row">
             <span>会员状态</span>
             <span>{isVip ? days || '生效中' : '普通用户'}</span>
-          </div>
-          <div className="user-dropdown-row">
-            <span>听歌等级</span>
-            <span>{userLevel > 0 ? `Lv.${userLevel}` : '—'}</span>
           </div>
           <button className="user-dropdown-item" onClick={switchAccount}>
             切换账号

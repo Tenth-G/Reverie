@@ -289,15 +289,52 @@ input {
   font-size: 18px;
   flex: none;
 }
-.user-badge-img {
+/* dynamic official member badge (animated glow + shimmer, like the app) */
+.user-badge-dyn {
+  position: relative;
+  display: inline-flex;
   height: 18px;
-  width: auto;
   border-radius: 4px;
+  overflow: hidden;
   flex: none;
-  object-fit: contain;
+  animation: badge-glow 2.4s ease-in-out infinite;
 }
-.user-badge-img.svip {
+.user-badge-dyn.svip {
   height: 22px;
+}
+.user-badge-dyn img {
+  height: 100%;
+  width: auto;
+  display: block;
+}
+.user-badge-dyn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 45%;
+  left: -60%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: skewX(-15deg);
+  animation: badge-shine 2.2s ease-in-out infinite;
+}
+@keyframes badge-glow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 2px rgba(255, 190, 60, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 7px rgba(255, 190, 60, 0.9));
+  }
+}
+@keyframes badge-shine {
+  0% {
+    left: -60%;
+  }
+  55%,
+  100% {
+    left: 130%;
+  }
 }
 .topnav-login {
   display: inline-flex;
@@ -1446,18 +1483,6 @@ input {
   color: var(--text-faint);
   font-size: 64px;
 }
-/* lyrics float over the lower part of the cover (no dark layer) */
-.np-lyrics {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  top: 28%;
-  z-index: 5;
-  border-radius: 0 0 24px 24px;
-  background: transparent;
-  animation: np-lyrics-in 0.4s ease 0.1s both;
-}
 @keyframes np-lyrics-in {
   from {
     opacity: 0;
@@ -1465,13 +1490,6 @@ input {
   to {
     opacity: 1;
   }
-}
-.np-lyrics .lyrics-panel {
-  position: absolute;
-  inset: 0;
-}
-.np-lyrics .lyrics-scroll {
-  padding-top: 8px;
 }
 /* back button fades in with the page */
 .np-back {
