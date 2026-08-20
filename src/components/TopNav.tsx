@@ -158,7 +158,7 @@ export default function TopNav() {
                     <span>登录后即可搜索音乐，请点击右上角「登录」</span>
                   </div>
                 ) : (
-                  searchResults.slice(0, 12).map((song) => (
+                  searchResults.slice(0, 20).map((song) => (
                     <div
                       key={song.id}
                       className="search-dropdown-item"
@@ -186,8 +186,10 @@ export default function TopNav() {
           <button
             className="topnav-icon-btn"
             onClick={() => {
+              // reopen clean: don't keep the previous search content
               setSearchOpen(true)
               setPage('browse')
+              usePlayerStore.setState({ searchKeyword: '', searchResults: [], searching: false })
             }}
             title="搜索"
           >

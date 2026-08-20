@@ -53,7 +53,11 @@ export default function UserMenu() {
         ) : (
           <span className="user-avatar user-avatar-ph">♪</span>
         )}
-        {isVip && <span className="user-badge">VIP</span>}
+        {isVip ? (
+          <span className="user-badge">VIP</span>
+        ) : (
+          <span className="user-badge user-badge-plain">乐迷</span>
+        )}
       </button>
       {open && (
         <div className="user-dropdown">

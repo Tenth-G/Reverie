@@ -79,12 +79,17 @@ export function formatTime(ms: number): string {
 const METADATA_RE =
   /作词|作曲|编曲|制作人|制作|录音|混音|母带|监制|和声|配唱|键盘|吉他|贝斯|鼓|弦乐|编写|编程|op\s*[:：]|sp\s*[:：]|企划|统筹|发行|封面|摄影|设计|文案|出品|版权|词曲|未经许可|纯音乐|间奏|伴奏|人声|录制|缩混|master|producer|arrang|compose|编曲人|词曲人/i
 
+/** Lines that reveal a duet role or person-name prefix (e.g. "女：…", "周杰伦：…"). */
+const NONLYRIC_RE =
+  /^[（(](男|女|合|独|齐|对白|旁白|说唱)[）)]|[:：]\s*(女|男|合|独|对白|旁白|说唱|合唱)|^[\u4e00-\u9fa5]{1,6}[:：]/i
+
 /** Whether a lyric line is a real lyric (not metadata/credit/empty). */
 export function isLyricLine(text: string): boolean {
   const t = text.trim()
   if (!t) return false
   if (t.length < 4) return false
   if (METADATA_RE.test(t)) return false
+  if (NONLYRIC_RE.test(t)) return false
   return true
 }
 

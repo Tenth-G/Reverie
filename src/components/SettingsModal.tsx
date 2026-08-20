@@ -1,5 +1,6 @@
 import { usePlayerStore } from '../store/playerStore'
 import type { ThemePreference } from '../store/playerStore'
+import type { PlayMode } from '../api/types'
 import { IconClose } from './icons'
 
 const THEMES = [
@@ -17,17 +18,26 @@ const APP_THEMES: Array<{ id: ThemePreference; name: string }> = [
   { id: 'dark', name: '深色' },
 ]
 
+const PLAY_MODES: Array<{ id: PlayMode; name: string }> = [
+  { id: 'sequence', name: '顺序播放' },
+  { id: 'one', name: '单曲循环' },
+  { id: 'shuffle', name: '随机播放' },
+]
+
 export default function SettingsModal() {
   const showSettings = usePlayerStore((s) => s.showSettings)
   const setShowSettings = usePlayerStore((s) => s.setShowSettings)
   const theme = usePlayerStore((s) => s.theme)
   const setTheme = usePlayerStore((s) => s.setTheme)
+  const playMode = usePlayerStore((s) => s.playMode)
+  const setPlayMode = usePlayerStore((s) => s.setPlayMode)
   const lyricTheme = usePlayerStore((s) => s.lyricTheme)
   const setLyricTheme = usePlayerStore((s) => s.setLyricTheme)
   const lyricFontSize = usePlayerStore((s) => s.lyricFontSize)
   const setLyricFontSize = usePlayerStore((s) => s.setLyricFontSize)
   const showTranslation = usePlayerStore((s) => s.showTranslation)
   const setShowTranslation = usePlayerStore((s) => s.setShowTranslation)
+  const clearRecent = usePlayerStore((s) => s.clearRecent)
   const loggedIn = usePlayerStore((s) => s.loggedIn)
   const logout = usePlayerStore((s) => s.logout)
 
@@ -54,6 +64,21 @@ export default function SettingsModal() {
                 onClick={() => setTheme(t.id)}
               >
                 {t.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="setting-row">
+          <label>播放模式</label>
+          <div className="opt-group">
+            {PLAY_MODES.map((m) => (
+              <button
+                key={m.id}
+                className={`opt-btn ${playMode === m.id ? 'active' : ''}`}
+                onClick={() => setPlayMode(m.id)}
+              >
+                {m.name}
               </button>
             ))}
           </div>
@@ -94,6 +119,13 @@ export default function SettingsModal() {
             onClick={() => setShowTranslation(!showTranslation)}
           >
             {showTranslation ? '已开启' : '已关闭'}
+          </button>
+        </div>
+
+        <div className="setting-row">
+          <label>最近播放</label>
+          <button className="btn danger" onClick={clearRecent}>
+            清空记录
           </button>
         </div>
 

@@ -14,7 +14,7 @@ export default function PlaylistPage() {
         subtitle={`${playlistSongs.length} 首`}
         actions={
           <button className="btn" onClick={closePlaylist}>
-            ← 返回首页
+            ← 返回
           </button>
         }
       />

@@ -99,6 +99,7 @@ interface PlayerState {
   profile: UserProfile | null
   likedIds: number[]
   likedSongs: Song[]
+  likedAt: Record<number, number>
   vipInfo: VipInfo | null
   recentSongs: Song[]
   homeQuote: { text: string; source: string } | null
@@ -130,6 +131,7 @@ interface PlayerState {
 
   // --- ui / data ---
   activeView: View
+  prevView: View
   currentPage: 'browse' | 'nowplaying'
   searchOpen: boolean
   searchKeyword: string
@@ -158,6 +160,7 @@ interface PlayerState {
   seek: (ms: number) => void
   setVolume: (v: number) => void
   toggleMute: () => void
+  setPlayMode: (m: PlayMode) => void
   cyclePlayMode: () => void
   setShowTranslation: (v: boolean) => void
   setTheme: (t: ThemePreference) => void
@@ -184,6 +187,7 @@ interface PlayerState {
   loadLikedSongs: () => Promise<void>
   loadVipInfo: () => Promise<void>
   trackRecent: (song: Song) => void
+  clearRecent: () => void
   loadHomeQuote: () => Promise<void>
   applyLogin: (cookie: string) => Promise<boolean>
   logout: () => void
@@ -200,7 +204,13 @@ function loadLyricsFor(song: Song, set: (p: Partial<PlayerState>) => void) {
 }
 
 async function resolveUrl(song: Song): Promise<string | null> {
-  for (const level of ['exhigh', 'higher', 'standard'] as const) {
+  // VIP songs without login fail on every level; only try standard once to stay fast.
+  const loggedIn = usePlayerStore.getState().loggedIn
+  const levels =
+    song.fee === 1 && !loggedIn
+      ? (['standard'] as const)
+      : (['exhigh', 'higher', 'standard'] as const)
+  for (const level of levels) {
     try {
       const { url } = await getSongUrl(song.id, level)
       if (url) return url
@@ -217,6 +227,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   profile: null,
   likedIds: [],
   likedSongs: [],
+  likedAt: {},
   vipInfo: null,
   recentSongs: readRecentSongs(),
   homeQuote: null,
@@ -248,6 +259,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
 
   // --- ui / data ---
   activeView: 'home',
+  prevView: 'home',
   currentPage: 'browse',
   searchOpen: false,
   searchKeyword: '',
@@ -332,8 +344,12 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     set({ muted: next })
     if (audioEl) audioEl.volume = next ? 0 : volume
   },
+  setPlayMode: (m) => {
+    set({ playMode: m })
+    write('reverie_playmode', m)
+  },
   cyclePlayMode: () => {
-    const order: PlayMode[] = ['sequence', 'loop', 'one', 'shuffle']
+    const order: PlayMode[] = ['sequence', 'one', 'shuffle']
     const cur = get().playMode
     const next = order[(order.indexOf(cur) + 1) % order.length]
     set({ playMode: next })
@@ -391,7 +407,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       return
     }
     try {
-      const results = await searchSongs(key, 30)
+      const results = await searchSongs(key, 100)
       set({ searchResults: results, searching: false })
       if (!results.length) get().toast('没有找到相关歌曲', 'info')
     } catch {
@@ -419,7 +435,9 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     set({ activeView: 'fm' })
     try {
       const songs = await getTopSongs(0, 60)
-      const shuffled = [...songs].sort(() => Math.random() - 0.5)
+      const free = songs.filter((s) => s.fee === 0)
+      const pool = free.length >= 5 ? free : songs
+      const shuffled = [...pool].sort(() => Math.random() - 0.5)
       set({ fmSongs: shuffled, playMode: 'shuffle' })
       if (shuffled.length) get().playSong(shuffled[0], shuffled)
       else get().toast('暂无内容', 'info')
@@ -443,7 +461,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     }
   },
   openPlaylist: async (id, name) => {
-    set({ activeView: 'playlist', playlistName: name })
+    set({ activeView: 'playlist', playlistName: name, prevView: get().activeView })
     try {
       const { songs } = await getPlaylistDetail(id)
       set({ playlistSongs: songs })
@@ -454,8 +472,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     }
   },
   closePlaylist: () => {
-    set({ playlistSongs: [], playlistName: '' })
-    set({ activeView: 'home' })
+    set({ playlistSongs: [], playlistName: '', activeView: get().prevView || 'home' })
   },
 
   // --- core play ---
@@ -542,11 +559,13 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     const next = !liked
     try {
       await likeSong(currentSong.id, next)
-      set({
-        likedIds: next
-          ? [...likedIds, currentSong.id]
-          : likedIds.filter((id) => id !== currentSong.id),
-      })
+      const id = currentSong.id
+      set((s) => ({
+        likedIds: next ? [...s.likedIds, id] : s.likedIds.filter((x) => x !== id),
+        likedAt: next
+          ? { ...s.likedAt, [id]: Date.now() }
+          : Object.fromEntries(Object.entries(s.likedAt).filter(([k]) => Number(k) !== id)),
+      }))
       get().loadLikedSongs()
       get().toast(next ? '已添加到我喜欢' : '已取消喜欢', 'success')
     } catch {
@@ -564,7 +583,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     }
   },
   loadLikedSongs: async () => {
-    const { likedIds } = get()
+    const { likedIds, likedAt } = get()
     if (!likedIds.length) {
       set({ likedSongs: [] })
       return
@@ -575,6 +594,8 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
         const chunk = await getSongsByIds(likedIds.slice(i, i + 200))
         songs.push(...chunk)
       }
+      // most recently liked first (local timestamps when available)
+      songs.sort((a, b) => (likedAt[b.id] ?? -Infinity) - (likedAt[a.id] ?? -Infinity))
       set({ likedSongs: songs })
     } catch {
       /* ignore */
@@ -599,20 +620,33 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       /* ignore */
     }
   },
+  clearRecent: () => {
+    set({ recentSongs: [] })
+    try {
+      localStorage.removeItem('reverie_recent')
+    } catch {
+      /* ignore */
+    }
+    get().toast('已清空最近播放', 'info')
+  },
   loadHomeQuote: async () => {
     const pool = [186016, 347230, 509781655, 3414449762, 168160, 193535]
-    const id = pool[Math.floor(Math.random() * pool.length)]
-    try {
-      const songs = await getSongsByIds([id])
-      const song = songs[0]
-      if (!song) return
-      const { lrc } = await getLyric(id)
-      const line = pickRandomLyricLine(lrc)
-      if (line) {
-        set({ homeQuote: { text: line, source: `《${song.name}》· ${song.artists}` } })
+    const candidates = [...pool].sort(() => Math.random() - 0.5)
+    for (const id of candidates) {
+      try {
+        const songs = await getSongsByIds([id])
+        const song = songs[0]
+        // skip multi-artist (duet) songs so no singer names leak into the quote
+        if (!song || song.artistNames.length !== 1) continue
+        const { lrc } = await getLyric(id)
+        const line = pickRandomLyricLine(lrc)
+        if (line) {
+          set({ homeQuote: { text: line, source: `《${song.name}》· ${song.artists}` } })
+          return
+        }
+      } catch {
+        /* try next */
       }
-    } catch {
-      /* keep previous quote */
     }
   },
 

@@ -1,8 +1,9 @@
 import { usePlayerStore } from '../store/playerStore'
+import { formatTime } from '../utils/lyrics'
 import type { PlayMode } from '../api/types'
 import {
   IconHeart,
-  IconLoop,
+  IconList,
   IconMute,
   IconNext,
   IconPause,
@@ -23,7 +24,7 @@ const MODE_LABEL: Record<PlayMode, string> = {
 function ModeIcon({ mode }: { mode: PlayMode }) {
   if (mode === 'shuffle') return <IconShuffle />
   if (mode === 'one') return <IconRepeatOne />
-  return <IconLoop />
+  return <IconList />
 }
 
 export default function PlayerBar() {
@@ -52,10 +53,11 @@ export default function PlayerBar() {
 
   return (
     <footer className="player-bar">
-      {/* progress bar sits above the pill */}
-      <div className="pb-progress-top">
+      {/* progress row inside the pill, with time at both ends */}
+      <div className="pb-progress">
+        <span className="pb-time">{formatTime(progress)}</span>
         <input
-          className="slider pb-top-slider"
+          className="slider pb-slider"
           type="range"
           min={0}
           max={duration || 0}
@@ -63,64 +65,67 @@ export default function PlayerBar() {
           style={{ ['--val' as never]: `${pct}%` }}
           onChange={(e) => seek(Number(e.target.value))}
         />
+        <span className="pb-time">{formatTime(duration)}</span>
       </div>
 
-      <div className="pb-left">
-        <div
-          className={`pb-cover ${playing ? 'spinning' : ''}`}
-          onClick={() => setPage('nowplaying')}
-          title="打开播放页"
-          style={{ cursor: 'pointer' }}
-        >
-          {currentSong ? (
-            <img src={currentSong.picUrl} alt="" />
-          ) : (
-            <div className="pb-cover-ph">♪</div>
-          )}
+      <div className="pb-row">
+        <div className="pb-left">
+          <div
+            className={`pb-cover ${playing ? 'spinning' : ''}`}
+            onClick={() => setPage('nowplaying')}
+            title="打开播放页"
+            style={{ cursor: 'pointer' }}
+          >
+            {currentSong ? (
+              <img src={currentSong.picUrl} alt="" />
+            ) : (
+              <div className="pb-cover-ph">♪</div>
+            )}
+          </div>
+          <div className="pb-info">
+            <div className="t">{currentSong?.name ?? '未在播放'}</div>
+            <div className="a">{currentSong?.artists ?? '选择一首歌开始播放'}</div>
+          </div>
         </div>
-        <div className="pb-info">
-          <div className="t">{currentSong?.name ?? '未在播放'}</div>
-          <div className="a">{currentSong?.artists ?? '选择一首歌开始播放'}</div>
-        </div>
-      </div>
 
-      <div className="pb-controls">
-        <button className="icon-btn" onClick={prev} title="上一首">
-          <IconPrev />
-        </button>
-        <button className="icon-btn primary" onClick={togglePlay} title={playing ? '暂停' : '播放'}>
-          {loadingUrl ? <span className="spin-dot" /> : playing ? <IconPause /> : <IconPlay />}
-        </button>
-        <button className="icon-btn" onClick={next} title="下一首">
-          <IconNext />
-        </button>
-        <button className="icon-btn active" onClick={cyclePlayMode} title={MODE_LABEL[playMode]}>
-          <ModeIcon mode={playMode} />
-        </button>
-      </div>
-
-      <div className="pb-right">
-        <button
-          className={`icon-btn ${liked ? 'active' : ''}`}
-          onClick={toggleLike}
-          title={liked ? '取消喜欢' : '喜欢'}
-          style={liked ? { color: '#ec4141' } : undefined}
-        >
-          <IconHeart />
-        </button>
-        <div className="vol-wrap">
-          <button className="icon-btn" onClick={toggleMute} title="静音">
-            {muted || volume === 0 ? <IconMute /> : <IconVolume />}
+        <div className="pb-controls">
+          <button className="icon-btn" onClick={prev} title="上一首">
+            <IconPrev />
           </button>
-          <input
-            className="slider"
-            type="range"
-            min={0}
-            max={100}
-            value={Math.round((muted ? 0 : volume) * 100)}
-            style={{ ['--val' as never]: `${(muted ? 0 : volume) * 100}%` }}
-            onChange={(e) => setVolume(Number(e.target.value) / 100)}
-          />
+          <button className="icon-btn primary" onClick={togglePlay} title={playing ? '暂停' : '播放'}>
+            {loadingUrl ? <span className="spin-dot" /> : playing ? <IconPause /> : <IconPlay />}
+          </button>
+          <button className="icon-btn" onClick={next} title="下一首">
+            <IconNext />
+          </button>
+          <button className="icon-btn active" onClick={cyclePlayMode} title={MODE_LABEL[playMode]}>
+            <ModeIcon mode={playMode} />
+          </button>
+        </div>
+
+        <div className="pb-right">
+          <button
+            className={`icon-btn ${liked ? 'active' : ''}`}
+            onClick={toggleLike}
+            title={liked ? '取消喜欢' : '喜欢'}
+            style={liked ? { color: '#ec4141' } : undefined}
+          >
+            <IconHeart />
+          </button>
+          <div className="vol-wrap">
+            <button className="icon-btn" onClick={toggleMute} title="静音">
+              {muted || volume === 0 ? <IconMute /> : <IconVolume />}
+            </button>
+            <input
+              className="slider"
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round((muted ? 0 : volume) * 100)}
+              style={{ ['--val' as never]: `${(muted ? 0 : volume) * 100}%` }}
+              onChange={(e) => setVolume(Number(e.target.value) / 100)}
+            />
+          </div>
         </div>
       </div>
 
