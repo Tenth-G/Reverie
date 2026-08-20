@@ -1,5 +1,6 @@
 import type { Song } from "../api/types";
 import { usePlayerStore } from "../store/playerStore";
+import { sizedImage } from "../utils/image";
 
 export default function SongCards({ songs }: { songs: Song[] }) {
   const playSong = usePlayerStore((s) => s.playSong);
@@ -13,7 +14,7 @@ export default function SongCards({ songs }: { songs: Song[] }) {
           onClick={() => playSong(song, songs)}
         >
           {song.picUrl ? (
-            <img src={song.picUrl} alt="" loading="lazy" />
+            <img src={sizedImage(song.picUrl, 320)} alt="" loading="lazy" />
           ) : (
             <span className="song-card-ph">♪</span>
           )}

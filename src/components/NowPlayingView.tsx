@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../store/playerStore";
 import LyricsPanel from "./LyricsPanel";
+import { sizedImage } from "../utils/image";
 import { IconChevronDown } from "./icons";
 
 const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
@@ -75,7 +76,7 @@ export default function NowPlayingView() {
       <div className="np-stage">
         <div className="np-cover" ref={coverRef}>
           {currentSong?.picUrl ? (
-            <img src={currentSong.picUrl} alt="" />
+            <img src={sizedImage(currentSong.picUrl, 1120)} alt="" />
           ) : (
             <div className="np-cover-ph">♪</div>
           )}

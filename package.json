@@ -1,7 +1,7 @@
 {
   "name": "ncm-player",
   "productName": "Reverie",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Reverie — 一款音乐播放器",
   "type": "module",
   "main": "electron/main.cjs",
@@ -15,7 +15,7 @@
     "dev": "concurrently -k -s first \"npm:dev:vite\" \"npm:dev:electron\"",
     "dev:vite": "vite",
     "dev:electron": "wait-on tcp:127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .",
-    "build": "vite build",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && vite build",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"electron/**/*.cjs\" \"scripts/*.cjs\" \"scripts/*.mjs\" \"vite.config.ts\" \"electron-builder.config.cjs\" \"*.{json,html,md}\"",
     "typecheck": "tsc --noEmit",
     "start": "npm run build && electron .",

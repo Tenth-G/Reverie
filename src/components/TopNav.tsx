@@ -4,6 +4,7 @@ import type { ThemePreference } from "../store/playerStore";
 import type { View } from "../api/types";
 import type { ReactElement } from "react";
 import UserMenu from "./UserMenu";
+import { sizedImage } from "../utils/image";
 import {
   IconChart,
   IconClock,
@@ -181,7 +182,7 @@ export default function TopNav() {
                       }}
                     >
                       {song.picUrl ? (
-                        <img src={song.picUrl} alt="" />
+                        <img src={sizedImage(song.picUrl, 80)} alt="" />
                       ) : (
                         <span className="song-ph">♪</span>
                       )}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../store/playerStore";
+import { sizedImage } from "../utils/image";
 
 function vipLabel(vipType?: number): string {
   if (!vipType || vipType === 0) return "普通用户";
@@ -58,7 +59,11 @@ export default function UserMenu() {
         title={profile?.nickname}
       >
         {profile?.avatarUrl ? (
-          <img className="user-avatar" src={profile.avatarUrl} alt="" />
+          <img
+            className="user-avatar"
+            src={sizedImage(profile.avatarUrl, 100)}
+            alt=""
+          />
         ) : (
           <span className="user-avatar user-avatar-ph">♪</span>
         )}
@@ -71,7 +76,7 @@ export default function UserMenu() {
         <div className="user-dropdown">
           <div className="user-dropdown-head">
             {profile?.avatarUrl ? (
-              <img src={profile.avatarUrl} alt="" />
+              <img src={sizedImage(profile.avatarUrl, 100)} alt="" />
             ) : (
               <span className="user-avatar-ph-lg">♪</span>
             )}

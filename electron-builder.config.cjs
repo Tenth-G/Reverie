@@ -35,8 +35,21 @@ module.exports = {
     "dist/assets/**/*",
     "electron/**/*",
     "package.json",
+    // --- size optimizations: drop files never needed at runtime ---
+    // API demo/test UI pages (the embedded API is called as JSON only)
+    "!node_modules/NeteaseCloudMusicApi/public/**",
+    // Browser-only UMD builds & dev variants (Electron uses cjs production)
+    "!node_modules/**/umd/**",
+    "!node_modules/**/*.development.js",
+    "!node_modules/react-dom/server/**",
+    "!node_modules/react-dom/profiling/**",
+    // source maps / docs / tests / fixtures inside dependencies
+    "!**/*.map",
+    "!node_modules/**/*.md",
+    "!node_modules/**/{test,tests,__tests__,test-assets,example,examples,doc,docs,benchmark,benchmarks,fixtures}/**",
   ],
   asar: true,
+  compression: "maximum",
   publish: {
     provider: "github",
     owner: "Tenth-G",

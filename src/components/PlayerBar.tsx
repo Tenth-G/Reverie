@@ -1,5 +1,6 @@
 import { usePlayerStore } from "../store/playerStore";
 import { formatTime } from "../utils/lyrics";
+import { sizedImage } from "../utils/image";
 import type { PlayMode } from "../api/types";
 import {
   IconHeart,
@@ -77,7 +78,7 @@ export default function PlayerBar() {
             style={{ cursor: "pointer" }}
           >
             {currentSong ? (
-              <img src={currentSong.picUrl} alt="" />
+              <img src={sizedImage(currentSong.picUrl, 120)} alt="" />
             ) : (
               <div className="pb-cover-ph">♪</div>
             )}

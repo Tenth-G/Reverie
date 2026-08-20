@@ -1,4 +1,5 @@
 import type { PlaylistInfo } from "../api/types";
+import { sizedImage } from "../utils/image";
 
 interface Props {
   playlists: PlaylistInfo[];
@@ -22,7 +23,7 @@ export default function PlaylistGrid({
           className="playlist-card"
           onClick={() => onOpen(p.id, p.name)}
         >
-          <img src={p.coverImgUrl} alt="" loading="lazy" />
+          <img src={sizedImage(p.coverImgUrl, 320)} alt="" loading="lazy" />
           <div className="n">{p.name}</div>
           <div className="c">{p.trackCount} 首</div>
         </div>

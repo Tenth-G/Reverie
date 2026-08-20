@@ -1,6 +1,7 @@
 import type { Song } from "../api/types";
 import { usePlayerStore } from "../store/playerStore";
 import { formatTime } from "../utils/lyrics";
+import { sizedImage } from "../utils/image";
 import { IconPlay } from "./icons";
 
 interface Props {
@@ -47,7 +48,11 @@ export default function SongList({
                 </span>
                 {showCover &&
                   (song.picUrl ? (
-                    <img src={song.picUrl} alt="" loading="lazy" />
+                    <img
+                      src={sizedImage(song.picUrl, 80)}
+                      alt=""
+                      loading="lazy"
+                    />
                   ) : (
                     <span
                       style={{
