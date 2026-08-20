@@ -244,6 +244,8 @@ interface PlayerState {
 
   // --- lyrics ---
   lyricLines: LyricLine[];
+  /** Song the current lyricLines belong to; null when nothing is loaded. */
+  lyricSongId: number | null;
   showTranslation: boolean;
 
   // --- update ---
@@ -295,6 +297,8 @@ interface PlayerState {
   setPlayMode: (m: PlayMode) => void;
   cyclePlayMode: () => void;
   setShowTranslation: (v: boolean) => void;
+  loadLyrics: (song: Song) => Promise<void>;
+  ensureLyrics: () => void;
   checkUpdate: (manual?: boolean) => void;
   startUpdate: () => void;
   installUpdate: () => void;
@@ -331,15 +335,6 @@ interface PlayerState {
   applyLogin: (cookie: string) => Promise<boolean>;
   logout: () => void;
   refreshLogin: () => Promise<void>;
-}
-
-function loadLyricsFor(song: Song, set: (p: Partial<PlayerState>) => void) {
-  set({ lyricLines: [{ time: 0, text: "加载歌词中…" }] });
-  getLyric(song.id)
-    .then(({ lrc, tlyric }) => {
-      set({ lyricLines: parseLyrics(lrc, tlyric) });
-    })
-    .catch(() => set({ lyricLines: [{ time: 0, text: "暂无歌词" }] }));
 }
 
 async function resolveUrl(song: Song): Promise<string | null> {
@@ -390,6 +385,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
 
   // --- lyrics ---
   lyricLines: [],
+  lyricSongId: null,
   showTranslation: readBool("reverie_translation", true),
 
   // --- update ---
@@ -519,6 +515,34 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   setShowTranslation: (v) => {
     set({ showTranslation: v });
     write("reverie_translation", v ? "1" : "0");
+  },
+  /**
+   * Fetch the lyrics for a song. Tagged with lyricSongId so a slow response
+   * cannot land on top of a song the user has already switched away from.
+   */
+  loadLyrics: async (song) => {
+    set({
+      lyricSongId: song.id,
+      lyricLines: [{ time: 0, text: "加载歌词中…" }],
+    });
+    try {
+      const { lrc, tlyric } = await getLyric(song.id);
+      if (get().lyricSongId !== song.id) return;
+      set({ lyricLines: parseLyrics(lrc, tlyric) });
+    } catch {
+      if (get().lyricSongId !== song.id) return;
+      set({ lyricLines: [{ time: 0, text: "暂无歌词" }] });
+    }
+  },
+  /**
+   * The lyric view opened for a song whose lyrics were never fetched. Playing a
+   * song loads them, but a session restored on startup never went through
+   * playSong, so its lyrics would stay empty until the user pressed play.
+   */
+  ensureLyrics: () => {
+    const { currentSong, lyricSongId } = get();
+    if (!currentSong || lyricSongId === currentSong.id) return;
+    get().loadLyrics(currentSong);
   },
   checkUpdate: (manual = false) => {
     if (!window.ncm?.checkUpdate) {
@@ -789,7 +813,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       duration: song.duration || 0,
     });
     writeSession({ queue: targetQueue, index: targetIndex, currentSong: song });
-    loadLyricsFor(song, set);
+    get().loadLyrics(song);
     get().trackRecent(song);
 
     const url = await resolveUrl(song);
@@ -1054,6 +1078,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       index: -1,
       queueSource: "list",
       lyricLines: [],
+      lyricSongId: null,
     });
     try {
       localStorage.removeItem(SESSION_KEY);
