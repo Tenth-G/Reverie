@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { usePlayerStore } from '../store/playerStore'
-import badgeVip from '../assets/badge-vip.png'
-import badgeSvip from '../assets/badge-svip.png'
 
 function vipLabel(vipType?: number): string {
   if (!vipType || vipType === 0) return '普通用户'
@@ -56,6 +54,7 @@ export default function UserMenu() {
   const vipLevel = Number(vipInfo?.vipLevel ?? 0)
   const expireTime = Number(vipInfo?.expireTime ?? 0)
   const isVip = vipType > 0 || vipLevel > 0 || expireTime > 0
+  const badgeUrl = vipInfo?.badgeUrl
   const days = remainingDays(expireTime)
 
   return (
@@ -70,16 +69,10 @@ export default function UserMenu() {
         ) : (
           <span className="user-avatar user-avatar-ph">♪</span>
         )}
-        {isVip &&
-          (vipType === 11 ? (
-            <span className="user-badge-dyn svip">
-              <img src={badgeSvip} alt="黑胶SVIP" />
-            </span>
-          ) : (
-            <span className="user-badge-dyn">
-              <img src={badgeVip} alt="黑胶VIP" />
-            </span>
-          ))}
+        <span className="user-nick">{profile?.nickname ?? ''}</span>
+        {isVip && badgeUrl && (
+          <img className="user-badge-api" src={badgeUrl} alt="会员" />
+        )}
       </button>
       {open && (
         <div className="user-dropdown">
@@ -105,10 +98,6 @@ export default function UserMenu() {
           <div className="user-dropdown-row">
             <span>会员到期</span>
             <span>{isVip ? formatExpire(expireTime) : '—'}</span>
-          </div>
-          <div className="user-dropdown-row">
-            <span>会员状态</span>
-            <span>{isVip ? days || '生效中' : '普通用户'}</span>
           </div>
           <button className="user-dropdown-item" onClick={switchAccount}>
             切换账号

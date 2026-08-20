@@ -327,17 +327,71 @@ export interface VipInfo {
   vipLevel: number
   /** milliseconds epoch; 0 = not a member */
   expireTime: number
+  /** official/custom member badge image url from the API */
+  badgeUrl?: string
 }
 
-/** Parse an epoch value that may be in seconds or milliseconds. */
-function toEpochMs(value: unknown): number {
-  const n = Number(value ?? 0)
-  if (!n || !Number.isFinite(n)) return 0
-  return n > 1e11 ? n : n * 1000
+/** Parse an epoch value that may be seconds or ms, or a "YYYY-MM-DD" date string. */
+function parseEpoch(v: unknown): number {
+  if (typeof v === 'number') return v > 1e11 ? v : v * 1000
+  if (typeof v === 'string') {
+    const n = Number(v)
+    if (Number.isFinite(n) && n > 1e8) return n > 1e11 ? n : n * 1000
+    if (/^\d{4}-\d{2}-\d{2}/.test(v)) {
+      const t = Date.parse(v)
+      if (Number.isFinite(t)) return t
+    }
+  }
+  return 0
+}
+
+/** Recursively find the membership expire time under any field name. */
+function deepFindExpireMs(obj: unknown, depth = 0): number {
+  if (!obj || typeof obj !== 'object' || depth > 4) return 0
+  const entries = Object.entries(obj as Record<string, unknown>)
+  for (const [k, v] of entries) {
+    if (/vip.*(expire|end)|(expire|end).*vip|red.*(expire|end)/i.test(k)) {
+      const n = parseEpoch(v)
+      if (n) return n
+    }
+  }
+  for (const [k, v] of entries) {
+    if (/expire|endtime|end_time|deadline|validto|valid_to/i.test(k)) {
+      const n = parseEpoch(v)
+      if (n) return n
+    }
+  }
+  for (const v of Object.values(obj as Record<string, unknown>)) {
+    if (v && typeof v === 'object') {
+      const r = deepFindExpireMs(v, depth + 1)
+      if (r) return r
+    }
+  }
+  return 0
+}
+
+/** Recursively find a badge-like image URL (vip icon / custom badge). */
+function deepFindBadgeUrl(obj: unknown, depth = 0): string {
+  if (!obj || typeof obj !== 'object' || depth > 5) return ''
+  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+    if (
+      typeof v === 'string' &&
+      /^https?:\/\/.+\.(png|webp|apng|gif|jpg|jpeg)(\?|$)/i.test(v) &&
+      /vip|icon|badge|label|decorat|ticket/i.test(k)
+    ) {
+      return v
+    }
+  }
+  for (const v of Object.values(obj as Record<string, unknown>)) {
+    if (v && typeof v === 'object') {
+      const r = deepFindBadgeUrl(v, depth + 1)
+      if (r) return r
+    }
+  }
+  return ''
 }
 
 export async function getVipInfo(uid: number): Promise<VipInfo> {
-  // try the newer endpoint first, fall back to /vip/info
   let d: Record<string, unknown> | null = null
   try {
     const res = await request<{ data?: Record<string, unknown> }>('/vip/info/v2', { uid }, false)
@@ -358,10 +412,26 @@ export async function getVipInfo(uid: number): Promise<VipInfo> {
   const vipType = Number(
     d.vipType ?? d.redVipType ?? d.vipStatus ?? (redLevel > 0 ? 10 : 0),
   )
-  const expireTime = toEpochMs(
-    d.redVipExpireTime ?? d.expireTime ?? d.redVipExpire ?? d.vipExpireTime ?? d.vipExpire ?? d.endTime ?? 0,
-  )
-  return { vipType, vipLevel: redLevel, expireTime }
+  const expireTime = deepFindExpireMs(d)
+  let badgeUrl = deepFindBadgeUrl(d)
+  // the custom member badge lives in the user profile
+  if (!badgeUrl) {
+    try {
+      const res = await request<unknown>('/user/detail/new', { uid, all: 'true' }, false)
+      badgeUrl = deepFindBadgeUrl(res)
+    } catch {
+      /* ignore */
+    }
+  }
+  if (!badgeUrl) {
+    try {
+      const res = await request<unknown>('/user/detail', { uid }, false)
+      badgeUrl = deepFindBadgeUrl(res)
+    } catch {
+      /* ignore */
+    }
+  }
+  return { vipType, vipLevel: redLevel, expireTime, badgeUrl: badgeUrl || undefined }
 }
 
 export async function getSongsByIds(ids: number[]): Promise<Song[]> {
