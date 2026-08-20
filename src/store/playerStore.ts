@@ -195,6 +195,9 @@ interface PlayerState {
   updateVersion: string | null;
   updateNotes: string;
   updateProgress: number;
+  updateTransferred: number;
+  updateTotal: number;
+  updateSpeed: number;
   showUpdate: boolean;
 
   // --- appearance ---
@@ -237,6 +240,7 @@ interface PlayerState {
   cyclePlayMode: () => void;
   setShowTranslation: (v: boolean) => void;
   checkUpdate: (manual?: boolean) => void;
+  startUpdate: () => void;
   installUpdate: () => void;
   dismissUpdate: () => void;
   applyUpdateEvent: (type: string, data?: unknown) => void;
@@ -334,6 +338,9 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   updateVersion: null,
   updateNotes: "",
   updateProgress: 0,
+  updateTransferred: 0,
+  updateTotal: 0,
+  updateSpeed: 0,
   showUpdate: false,
 
   // --- appearance ---
@@ -458,42 +465,99 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       }
     });
   },
+  startUpdate: () => {
+    if (!window.ncm?.downloadUpdate) return;
+    set({ updatePhase: "downloading", updateProgress: 0 });
+    window.ncm.downloadUpdate().then((r) => {
+      if (!r.ok) {
+        set({ updatePhase: "error" });
+        get().toast("下载更新失败，请稍后重试", "error");
+      }
+    });
+  },
   installUpdate: () => window.ncm?.installUpdate(),
-  dismissUpdate: () => set({ showUpdate: false }),
+  dismissUpdate: () => {
+    // Remember the dismissal per version: next launch shows only a hint.
+    if (get().updatePhase === "available" && get().updateVersion) {
+      try {
+        localStorage.setItem("reverie_update_dismissed", get().updateVersion!);
+      } catch {
+        /* ignore */
+      }
+    }
+    set({ showUpdate: false });
+  },
   applyUpdateEvent: (type, data) => {
-    const manual = get().updatePhase === "checking";
     switch (type) {
       case "checking":
         set({ updatePhase: "checking" });
         break;
       case "available": {
-        const d = (data ?? {}) as { version?: string; notes?: string };
+        const d = (data ?? {}) as {
+          version?: string;
+          notes?: string;
+          manual?: boolean;
+        };
+        const version = d.version ?? "";
         set({
-          updatePhase: "downloading",
-          updateVersion: d.version ?? "",
+          updateVersion: version,
           updateNotes: d.notes ?? "",
           updateProgress: 0,
-          showUpdate: true,
         });
-        break;
+        if (d.manual) {
+          set({ updatePhase: "available", showUpdate: true });
+          return;
+        }
+        // Auto check: show the dialog, unless the user already dismissed this
+        // version — then fall back to a lightweight hint instead.
+        let dismissed = "";
+        try {
+          dismissed = localStorage.getItem("reverie_update_dismissed") ?? "";
+        } catch {
+          /* ignore */
+        }
+        if (dismissed === version) {
+          set({ updatePhase: "none", showUpdate: false });
+          get().toast(
+            `发现新版本 v${version}，可在 设置 → 检查更新 中更新`,
+            "info",
+          );
+        } else {
+          set({ updatePhase: "available", showUpdate: true });
+        }
+        return;
       }
-      case "progress":
+      case "progress": {
+        const d = (data ?? {}) as {
+          percent?: number;
+          transferred?: number;
+          total?: number;
+          speed?: number;
+        };
         set({
           updatePhase: "downloading",
-          updateProgress: Number(data ?? 0),
+          updateProgress: Number(d.percent ?? 0),
+          updateTransferred: Number(d.transferred ?? 0),
+          updateTotal: Number(d.total ?? 0),
+          updateSpeed: Number(d.speed ?? 0),
         });
-        break;
+        return;
+      }
       case "downloaded":
         set({ updatePhase: "downloaded", showUpdate: true });
-        break;
-      case "not-available":
+        return;
+      case "not-available": {
+        const d = (data ?? {}) as { manual?: boolean };
         set({ updatePhase: "none" });
-        if (manual) get().toast("当前已是最新版本", "success");
-        break;
-      case "error":
+        if (d.manual) get().toast("当前已是最新版本", "success");
+        return;
+      }
+      case "error": {
+        const d = (data ?? {}) as { manual?: boolean };
         set({ updatePhase: "error" });
-        if (manual) get().toast("检查更新失败，请稍后重试", "error");
-        break;
+        if (d.manual) get().toast("检查更新失败，请稍后重试", "error");
+        return;
+      }
       default:
         set({ updatePhase: "idle" });
     }

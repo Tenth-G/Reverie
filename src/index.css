@@ -1543,15 +1543,11 @@ input {
   color: var(--accent-2);
 }
 .update-progress {
-  display: flex;
-  align-items: center;
-  gap: 12px;
   margin: 6px 0 14px;
   color: var(--text-dim);
   font-size: 12px;
 }
 .update-progress-bar {
-  flex: 1;
   height: 6px;
   border-radius: 3px;
   background: var(--bg-3);
@@ -1564,6 +1560,18 @@ input {
   border-radius: 3px;
   background: linear-gradient(90deg, var(--accent), var(--accent-2));
   transition: width 0.25s linear;
+}
+.update-progress-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+.update-notes-title {
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
 }
 .update-notes {
   max-height: 200px;

@@ -18,6 +18,8 @@ interface NcmBridge {
   onMaximized: (callback: (maximized: boolean) => void) => () => void;
   /** Trigger a manual update check (electron-updater). */
   checkUpdate: () => Promise<{ ok: boolean; reason?: string }>;
+  /** Start downloading the available update (after user confirms). */
+  downloadUpdate: () => Promise<{ ok: boolean; reason?: string }>;
   /** Quit the app and install the downloaded update. */
   installUpdate: () => void;
   /** Subscribe to updater events pushed from the main process. */
@@ -30,7 +32,16 @@ interface NcmBridge {
         | "progress"
         | "downloaded"
         | "error";
-      data?: unknown;
+      data?: {
+        version?: string;
+        notes?: string;
+        manual?: boolean;
+        percent?: number;
+        transferred?: number;
+        total?: number;
+        speed?: number;
+        message?: string;
+      };
     }) => void,
   ) => () => void;
 }

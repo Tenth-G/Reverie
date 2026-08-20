@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld("ncm", {
   },
   // --- update (electron-updater) ---
   checkUpdate: () => ipcRenderer.invoke("update:check"),
+  downloadUpdate: () => ipcRenderer.invoke("update:download"),
   installUpdate: () => ipcRenderer.send("update:install"),
   onUpdateEvent: (callback) => {
     const listener = (_event, payload) => callback(payload);

@@ -11,6 +11,9 @@ const API_HOST = "127.0.0.1";
 /** Whether the in-app updater is enabled (packaged builds only). */
 let updateEnabled = false;
 
+/** True while the current check was triggered manually from the settings. */
+let manualCheck = false;
+
 /** Forward an updater event to every window (renderer drives the UI). */
 function sendUpdateEvent(type, data) {
   for (const w of BrowserWindow.getAllWindows()) {
@@ -20,7 +23,8 @@ function sendUpdateEvent(type, data) {
 
 /**
  * Wire the electron-updater auto update flow:
- * auto-download the new version, then let the user restart to install.
+ * detect the new version, show a modal with 取消/更新, download only after the
+ * user confirms, then let them restart to install.
  * Only active in packaged builds; skipped for dev / e2e (REVERIE_SKIP_UPDATE=1).
  */
 function setupUpdater() {
@@ -28,26 +32,39 @@ function setupUpdater() {
   if (process.env.REVERIE_SKIP_UPDATE === "1") return;
   updateEnabled = true;
 
-  autoUpdater.autoDownload = true;
+  // Never download without the user clicking 更新 in the dialog.
+  autoUpdater.autoDownload = false;
   autoUpdater.autoInstallOnAppQuit = true;
 
   autoUpdater.on("checking-for-update", () => sendUpdateEvent("checking"));
-  autoUpdater.on("update-available", (info) =>
+  autoUpdater.on("update-available", (info) => {
     sendUpdateEvent("available", {
       version: String(info.version),
       notes: String(info.releaseNotes || ""),
+      manual: manualCheck,
+    });
+    manualCheck = false;
+  });
+  autoUpdater.on("update-not-available", () => {
+    sendUpdateEvent("not-available", { manual: manualCheck });
+    manualCheck = false;
+  });
+  autoUpdater.on("download-progress", (p) =>
+    sendUpdateEvent("progress", {
+      percent: Math.round(p.percent || 0),
+      transferred: p.transferred || 0,
+      total: p.total || 0,
+      speed: p.bytesPerSecond || 0,
     }),
   );
-  autoUpdater.on("update-not-available", () =>
-    sendUpdateEvent("not-available"),
-  );
-  autoUpdater.on("download-progress", (p) =>
-    sendUpdateEvent("progress", Math.round(p.percent || 0)),
-  );
   autoUpdater.on("update-downloaded", () => sendUpdateEvent("downloaded"));
-  autoUpdater.on("error", (err) =>
-    sendUpdateEvent("error", String((err && err.message) || err)),
-  );
+  autoUpdater.on("error", (err) => {
+    sendUpdateEvent("error", {
+      message: String((err && err.message) || err),
+      manual: manualCheck,
+    });
+    manualCheck = false;
+  });
 
   // Auto check shortly after launch (silent on failure).
   setTimeout(() => {
@@ -235,16 +252,33 @@ ipcMain.handle(
   (e) => BrowserWindow.fromWebContents(e.sender)?.isMaximized() ?? false,
 );
 
-// Update IPC: manual check + install (quit & run the downloaded installer).
+// Update IPC: manual check / start download / install (quit & run installer).
 ipcMain.handle("update:check", () => {
   if (!updateEnabled) return { ok: false, reason: "disabled" };
+  manualCheck = true;
   autoUpdater
     .checkForUpdates()
     .then(() => {})
     .catch((err) =>
-      sendUpdateEvent("error", String((err && err.message) || err)),
+      sendUpdateEvent("error", {
+        message: String((err && err.message) || err),
+        manual: true,
+      }),
     );
   return { ok: true };
+});
+ipcMain.handle("update:download", async () => {
+  if (!updateEnabled) return { ok: false, reason: "disabled" };
+  try {
+    await autoUpdater.downloadUpdate();
+    return { ok: true };
+  } catch (err) {
+    sendUpdateEvent("error", {
+      message: String((err && err.message) || err),
+      manual: false,
+    });
+    return { ok: false };
+  }
 });
 ipcMain.on("update:install", () => {
   if (!updateEnabled) return;
