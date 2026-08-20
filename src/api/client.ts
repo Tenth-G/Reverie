@@ -298,12 +298,14 @@ export async function loginStatus(): Promise<UserProfile | null> {
     unknown
   > | null
   if (!profile && !account) return null
+  const accountVip = Number(account?.vipType ?? 0)
+  const profileVip = Number(profile?.vipType ?? 0)
   return {
     userId: Number(profile?.userId ?? account?.id ?? 0),
     nickname: String(profile?.nickname ?? '网易云用户'),
     avatarUrl: String(profile?.avatarUrl ?? ''),
     signature: profile?.signature ? String(profile.signature) : undefined,
-    vipType: Number(account?.vipType ?? profile?.vipType ?? 0),
+    vipType: Math.max(accountVip, profileVip),
   }
 }
 
@@ -334,11 +336,13 @@ export async function getVipInfo(uid: number): Promise<VipInfo> {
     false,
   )
   const d = (res.data ?? {}) as Record<string, unknown>
-  return {
-    vipType: Number(d.vipType ?? d.redVipType ?? 0),
-    vipLevel: Number(d.redVipLevel ?? d.level ?? 0),
-    expireTime: Number(d.redVipExpireTime ?? d.expireTime ?? 0),
-  }
+  const redLevel = Number(d.redVipLevel ?? d.level ?? 0)
+  const vipType = Number(
+    d.vipType ?? d.redVipType ?? d.vipStatus ?? (redLevel > 0 ? 10 : 0),
+  )
+  const vipLevel = redLevel
+  const expireTime = Number(d.redVipExpireTime ?? d.expireTime ?? 0)
+  return { vipType, vipLevel, expireTime }
 }
 
 export async function getSongsByIds(ids: number[]): Promise<Song[]> {

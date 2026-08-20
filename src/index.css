@@ -251,9 +251,9 @@ input {
 .topnav-user {
   display: flex;
   align-items: center;
-  gap: 6px;
-  height: 38px;
-  padding: 3px 12px 3px 3px;
+  gap: 8px;
+  height: 40px;
+  padding: 4px 16px 4px 4px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--bg-3);
@@ -1169,7 +1169,7 @@ input {
 .pb-cover img {
   width: 56px;
   height: 56px;
-  border-radius: 9px;
+  border-radius: 50%;
   object-fit: cover;
   box-shadow: 0 4px 14px var(--shadow);
 }
@@ -1186,7 +1186,6 @@ input {
 }
 .pb-cover.spinning img {
   animation: spin 14s linear infinite;
-  border-radius: 50%;
 }
 @keyframes spin {
   to {
@@ -1461,23 +1460,27 @@ input {
   top: 28%;
   z-index: 5;
   border-radius: 0 0 24px 24px;
-  background: linear-gradient(to bottom, rgba(10, 10, 22, 0.55), rgba(10, 10, 22, 0.88));
-  opacity: 0;
-  transition: opacity 0.4s ease 0.12s;
+  background: linear-gradient(to bottom, rgba(10, 10, 22, 0.2), rgba(10, 10, 22, 0.5));
+  animation: np-lyrics-in 0.4s ease 0.1s both;
 }
-.np-lyrics.np-fade-in {
-  opacity: 1;
+@keyframes np-lyrics-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.np-lyrics .lyrics-panel {
+  position: absolute;
+  inset: 0;
 }
 .np-lyrics .lyrics-scroll {
   padding-top: 8px;
 }
 /* back button fades in with the page */
 .np-back {
-  opacity: 0;
-  transition: opacity 0.4s ease 0.15s;
-}
-.np-back.np-fade-in {
-  opacity: 1;
+  animation: np-lyrics-in 0.4s ease 0.15s both;
 }
 
 /* ============================ Modal ============================ */

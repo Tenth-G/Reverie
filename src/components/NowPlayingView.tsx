@@ -52,11 +52,11 @@ export default function NowPlayingView() {
       const sy = src.height / dst.height
       const tx = src.left + src.width / 2 - (dst.left + dst.width / 2)
       const ty = src.top + src.height / 2 - (dst.top + dst.height / 2)
-      cover.style.transition = `transform 0.4s ${EASE}, opacity 0.3s ease`
+      cover.style.transition = `transform 0.3s ${EASE}, opacity 0.25s ease`
       cover.style.transform = `translate(${tx}px, ${ty}px) scale(${sx}, ${sy})`
       cover.style.opacity = '0'
       setFadedIn(false)
-      setTimeout(() => setPage('browse'), 380)
+      setTimeout(() => setPage('browse'), 280)
     } else {
       setPage('browse')
     }

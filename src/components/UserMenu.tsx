@@ -8,6 +8,12 @@ function vipLabel(vipType?: number): string {
   return 'VIP 会员'
 }
 
+function vipBadgeLabel(vipType: number): string {
+  if (vipType === 11) return '黑胶SVIP'
+  if (vipType === 10) return '黑胶VIP'
+  return 'VIP'
+}
+
 function remainingDays(expireTime?: number): string {
   if (!expireTime || expireTime <= 0) return ''
   const days = Math.ceil((expireTime - Date.now()) / 86400000)
@@ -38,8 +44,10 @@ export default function UserMenu() {
   }
 
   const vipType = Number(vipInfo?.vipType ?? profile?.vipType ?? 0)
-  const isVip = vipType > 0
-  const days = remainingDays(vipInfo?.expireTime)
+  const vipLevel = Number(vipInfo?.vipLevel ?? 0)
+  const expireTime = Number(vipInfo?.expireTime ?? 0)
+  const isVip = vipType > 0 || vipLevel > 0 || expireTime > 0
+  const days = remainingDays(expireTime)
 
   return (
     <div className="user-menu" ref={ref}>
@@ -53,11 +61,7 @@ export default function UserMenu() {
         ) : (
           <span className="user-avatar user-avatar-ph">♪</span>
         )}
-        {isVip ? (
-          <span className="user-badge">VIP</span>
-        ) : (
-          <span className="user-badge user-badge-plain">乐迷</span>
-        )}
+        {isVip && <span className="user-badge">{vipBadgeLabel(vipType)}</span>}
       </button>
       {open && (
         <div className="user-dropdown">
