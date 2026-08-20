@@ -1568,11 +1568,6 @@ input {
   margin-top: 6px;
   flex-wrap: wrap;
 }
-.update-notes-title {
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 4px;
-}
 .update-notes {
   max-height: 200px;
   overflow-y: auto;
@@ -1583,9 +1578,62 @@ input {
   font-size: 12px;
   line-height: 1.8;
   color: var(--text-dim);
-  white-space: pre-wrap;
   word-break: break-word;
   margin-bottom: 18px;
+}
+.update-notes h1,
+.update-notes h2,
+.update-notes h3,
+.update-notes h4,
+.update-notes h5,
+.update-notes h6 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin: 8px 0 4px;
+}
+.update-notes p {
+  margin: 4px 0;
+}
+.update-notes ul,
+.update-notes ol {
+  margin: 4px 0 4px 18px;
+}
+.update-notes li {
+  margin: 2px 0;
+}
+.update-notes code {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0 4px;
+  font-size: 11px;
+  color: var(--text);
+}
+.update-notes pre {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  overflow-x: auto;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text);
+  margin: 6px 0;
+}
+.update-notes a {
+  color: var(--accent-2);
+}
+.update-notes blockquote {
+  border-left: 3px solid var(--border);
+  padding-left: 10px;
+  color: var(--text-dim);
+  margin: 4px 0;
+}
+.update-notes hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 8px 0;
 }
 .update-actions {
   display: flex;

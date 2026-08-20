@@ -14,6 +14,31 @@ let updateEnabled = false;
 /** True while the current check was triggered manually from the settings. */
 let manualCheck = false;
 
+/**
+ * electron-updater's GitHub provider delivers releaseNotes as either a string
+ * or an array of { version, note } (HTML from the GitHub Atom feed). Extract a
+ * single note string for the newest version.
+ */
+function extractReleaseNotes(releaseNotes) {
+  if (Array.isArray(releaseNotes)) {
+    const entries = releaseNotes.filter(
+      (n) => n && typeof n.note === "string" && n.note.trim(),
+    );
+    if (entries.length === 0) return "";
+    entries.sort((a, b) =>
+      String(b.version).localeCompare(String(a.version), undefined, {
+        numeric: true,
+      }),
+    );
+    return entries[0].note;
+  }
+  if (typeof releaseNotes === "string") return releaseNotes;
+  if (releaseNotes && typeof releaseNotes.note === "string") {
+    return releaseNotes.note;
+  }
+  return "";
+}
+
 /** Forward an updater event to every window (renderer drives the UI). */
 function sendUpdateEvent(type, data) {
   for (const w of BrowserWindow.getAllWindows()) {
@@ -40,7 +65,7 @@ function setupUpdater() {
   autoUpdater.on("update-available", (info) => {
     sendUpdateEvent("available", {
       version: String(info.version),
-      notes: String(info.releaseNotes || ""),
+      notes: extractReleaseNotes(info.releaseNotes),
       manual: manualCheck,
     });
     manualCheck = false;

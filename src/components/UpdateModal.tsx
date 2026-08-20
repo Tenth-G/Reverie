@@ -1,4 +1,5 @@
 import { usePlayerStore } from "../store/playerStore";
+import { renderReleaseNotes } from "../utils/notes";
 
 function formatSize(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return "0 MB";
@@ -45,10 +46,12 @@ export default function UpdateModal() {
         </div>
 
         {updateNotes ? (
-          <div className="update-notes">
-            <div className="update-notes-title">更新内容</div>
-            {updateNotes}
-          </div>
+          <div
+            className="update-notes"
+            dangerouslySetInnerHTML={{
+              __html: renderReleaseNotes(updateNotes),
+            }}
+          />
         ) : (
           <p className="sub">新版本已发布，点击「更新」即可下载安装。</p>
         )}
