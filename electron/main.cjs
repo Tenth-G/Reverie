@@ -1,10 +1,21 @@
 "use strict";
 
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
+const fs = require("fs");
 const path = require("path");
 
 const API_PORT = 3939;
 const API_HOST = "127.0.0.1";
+
+// Window icon for dev / unpackaged runs (the packaged exe carries its own).
+// Falls back to the default while no icon file is present in build/.
+const WIN_ICON_ICO = path.join(__dirname, "..", "build", "icon.ico");
+const WIN_ICON_PNG = path.join(__dirname, "..", "build", "icon.png");
+const windowIcon = fs.existsSync(WIN_ICON_ICO)
+  ? WIN_ICON_ICO
+  : fs.existsSync(WIN_ICON_PNG)
+    ? WIN_ICON_PNG
+    : undefined;
 
 /** @type {import('http').Server | null} */
 let apiServer = null;
@@ -88,6 +99,7 @@ function createWindow() {
     frame: false,
     backgroundColor: "#0a0a12",
     title: "Reverie",
+    icon: windowIcon,
     autoHideMenuBar: true,
     show: false,
     webPreferences: {

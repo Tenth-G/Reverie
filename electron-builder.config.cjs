@@ -1,6 +1,7 @@
 "use strict";
 
 const { execFileSync } = require("child_process");
+const fs = require("fs");
 const path = require("path");
 
 const rcedit = path.join(
@@ -10,6 +11,17 @@ const rcedit = path.join(
   "vendor",
   "rcedit.exe",
 );
+
+// App icon: put your icon at build/icon.ico (Windows, preferred) or
+// build/icon.png (≥256×256, auto-converted to ICO at build time). Picked up
+// automatically here; falls back to the Electron default while absent, so a
+// build never breaks just because the icon file has not been added yet.
+const winIcon =
+  (fs.existsSync(path.join(__dirname, "build", "icon.ico")) &&
+    "build/icon.ico") ||
+  (fs.existsSync(path.join(__dirname, "build", "icon.png")) &&
+    "build/icon.png") ||
+  undefined;
 
 /** @type {import('electron-builder').Configuration} */
 module.exports = {
@@ -27,6 +39,7 @@ module.exports = {
   asar: true,
   win: {
     target: ["nsis", "portable"],
+    icon: winIcon,
   },
   nsis: {
     oneClick: false,
