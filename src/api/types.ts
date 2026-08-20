@@ -42,7 +42,7 @@ export interface QrCreateResult {
   qrurl: string;
 }
 
-export type PlayMode = "sequence" | "loop" | "one" | "shuffle";
+export type PlayMode = "sequence" | "one" | "shuffle";
 
 export type View =
   "home" | "chart" | "fm" | "userlist" | "playlist" | "likes" | "recent";
