@@ -56,7 +56,8 @@ export default function SettingsModal() {
   const loggedIn = usePlayerStore((s) => s.loggedIn);
   const logout = usePlayerStore((s) => s.logout);
   const checkUpdate = usePlayerStore((s) => s.checkUpdate);
-  const updateChecking = usePlayerStore((s) => s.updateChecking);
+  const updatePhase = usePlayerStore((s) => s.updatePhase);
+  const checking = updatePhase === "checking";
 
   if (!showSettings) return null;
 
@@ -186,9 +187,9 @@ export default function SettingsModal() {
           <button
             className="btn"
             onClick={() => checkUpdate(true)}
-            disabled={updateChecking}
+            disabled={checking}
           >
-            {updateChecking ? "检查中…" : "检查更新"}
+            {checking ? "检查中…" : "检查更新"}
           </button>
         </div>
 

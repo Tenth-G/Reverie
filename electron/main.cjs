@@ -1,11 +1,59 @@
 "use strict";
 
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
+const { autoUpdater } = require("electron-updater");
 const fs = require("fs");
 const path = require("path");
 
 const API_PORT = 3939;
 const API_HOST = "127.0.0.1";
+
+/** Whether the in-app updater is enabled (packaged builds only). */
+let updateEnabled = false;
+
+/** Forward an updater event to every window (renderer drives the UI). */
+function sendUpdateEvent(type, data) {
+  for (const w of BrowserWindow.getAllWindows()) {
+    w.webContents.send("update:event", { type, data });
+  }
+}
+
+/**
+ * Wire the electron-updater auto update flow:
+ * auto-download the new version, then let the user restart to install.
+ * Only active in packaged builds; skipped for dev / e2e (REVERIE_SKIP_UPDATE=1).
+ */
+function setupUpdater() {
+  if (!app.isPackaged) return;
+  if (process.env.REVERIE_SKIP_UPDATE === "1") return;
+  updateEnabled = true;
+
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on("checking-for-update", () => sendUpdateEvent("checking"));
+  autoUpdater.on("update-available", (info) =>
+    sendUpdateEvent("available", {
+      version: String(info.version),
+      notes: String(info.releaseNotes || ""),
+    }),
+  );
+  autoUpdater.on("update-not-available", () =>
+    sendUpdateEvent("not-available"),
+  );
+  autoUpdater.on("download-progress", (p) =>
+    sendUpdateEvent("progress", Math.round(p.percent || 0)),
+  );
+  autoUpdater.on("update-downloaded", () => sendUpdateEvent("downloaded"));
+  autoUpdater.on("error", (err) =>
+    sendUpdateEvent("error", String((err && err.message) || err)),
+  );
+
+  // Auto check shortly after launch (silent on failure).
+  setTimeout(() => {
+    autoUpdater.checkForUpdates().catch(() => {});
+  }, 5000);
+}
 
 // Window icon for dev / unpackaged runs (the packaged exe carries its own).
 // Falls back to the default while no icon file is present in build/.
@@ -187,6 +235,22 @@ ipcMain.handle(
   (e) => BrowserWindow.fromWebContents(e.sender)?.isMaximized() ?? false,
 );
 
+// Update IPC: manual check + install (quit & run the downloaded installer).
+ipcMain.handle("update:check", () => {
+  if (!updateEnabled) return { ok: false, reason: "disabled" };
+  autoUpdater
+    .checkForUpdates()
+    .then(() => {})
+    .catch((err) =>
+      sendUpdateEvent("error", String((err && err.message) || err)),
+    );
+  return { ok: true };
+});
+ipcMain.on("update:install", () => {
+  if (!updateEnabled) return;
+  autoUpdater.quitAndInstall();
+});
+
 app.whenReady().then(async () => {
   try {
     await startApi();
@@ -194,6 +258,7 @@ app.whenReady().then(async () => {
     console.error("[main] Failed to start NCM API:", err);
   }
   createWindow();
+  setupUpdater();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

@@ -28,8 +28,15 @@ import type {
 } from "../api/types";
 import type { VipInfo } from "../api/client";
 import { parseLyrics, pickRandomLyricLine } from "../utils/lyrics";
-import { checkLatestRelease, compareVersions } from "../utils/updater";
-import type { UpdateInfo } from "../utils/updater";
+
+export type UpdatePhase =
+  | "idle"
+  | "checking"
+  | "available"
+  | "downloading"
+  | "downloaded"
+  | "none"
+  | "error";
 
 export interface ToastMsg {
   id: number;
@@ -184,8 +191,10 @@ interface PlayerState {
   showTranslation: boolean;
 
   // --- update ---
-  updateInfo: UpdateInfo | null;
-  updateChecking: boolean;
+  updatePhase: UpdatePhase;
+  updateVersion: string | null;
+  updateNotes: string;
+  updateProgress: number;
   showUpdate: boolean;
 
   // --- appearance ---
@@ -227,8 +236,10 @@ interface PlayerState {
   setPlayMode: (m: PlayMode) => void;
   cyclePlayMode: () => void;
   setShowTranslation: (v: boolean) => void;
-  checkUpdate: (manual?: boolean) => Promise<void>;
+  checkUpdate: (manual?: boolean) => void;
+  installUpdate: () => void;
   dismissUpdate: () => void;
+  applyUpdateEvent: (type: string, data?: unknown) => void;
   setTheme: (t: ThemePreference) => void;
   setLyricTheme: (t: string) => void;
   setLyricFontSize: (s: number) => void;
@@ -319,8 +330,10 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   showTranslation: readBool("reverie_translation", true),
 
   // --- update ---
-  updateInfo: null,
-  updateChecking: false,
+  updatePhase: "idle",
+  updateVersion: null,
+  updateNotes: "",
+  updateProgress: 0,
   showUpdate: false,
 
   // --- appearance ---
@@ -431,21 +444,60 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     set({ showTranslation: v });
     write("reverie_translation", v ? "1" : "0");
   },
-  checkUpdate: async (manual = false) => {
-    if (get().updateChecking) return;
-    set({ updateChecking: true });
-    const { ok, update } = await checkLatestRelease();
-    if (ok && update && compareVersions(update.version, __APP_VERSION__) > 0) {
-      set({ updateInfo: update, showUpdate: true });
-    } else if (manual) {
-      get().toast(
-        ok ? "当前已是最新版本" : "检查更新失败，请稍后重试",
-        ok ? "success" : "error",
-      );
+  checkUpdate: (manual = false) => {
+    if (!window.ncm?.checkUpdate) {
+      if (manual) get().toast("当前环境不支持自动更新", "error");
+      return;
     }
-    set({ updateChecking: false });
+    if (get().updatePhase === "checking") return;
+    set({ updatePhase: "checking" });
+    window.ncm.checkUpdate().then((r) => {
+      if (!r.ok && manual) {
+        set({ updatePhase: "idle" });
+        get().toast("当前环境不支持自动更新", "error");
+      }
+    });
   },
+  installUpdate: () => window.ncm?.installUpdate(),
   dismissUpdate: () => set({ showUpdate: false }),
+  applyUpdateEvent: (type, data) => {
+    const manual = get().updatePhase === "checking";
+    switch (type) {
+      case "checking":
+        set({ updatePhase: "checking" });
+        break;
+      case "available": {
+        const d = (data ?? {}) as { version?: string; notes?: string };
+        set({
+          updatePhase: "downloading",
+          updateVersion: d.version ?? "",
+          updateNotes: d.notes ?? "",
+          updateProgress: 0,
+          showUpdate: true,
+        });
+        break;
+      }
+      case "progress":
+        set({
+          updatePhase: "downloading",
+          updateProgress: Number(data ?? 0),
+        });
+        break;
+      case "downloaded":
+        set({ updatePhase: "downloaded", showUpdate: true });
+        break;
+      case "not-available":
+        set({ updatePhase: "none" });
+        if (manual) get().toast("当前已是最新版本", "success");
+        break;
+      case "error":
+        set({ updatePhase: "error" });
+        if (manual) get().toast("检查更新失败，请稍后重试", "error");
+        break;
+      default:
+        set({ updatePhase: "idle" });
+    }
+  },
   setTheme: (t) => {
     set({ theme: t });
     write("reverie_theme", t);

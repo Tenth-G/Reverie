@@ -37,6 +37,11 @@ module.exports = {
     "package.json",
   ],
   asar: true,
+  publish: {
+    provider: "github",
+    owner: "Tenth-G",
+    repo: "Reverie",
+  },
   win: {
     target: ["nsis", "portable"],
     icon: winIcon,

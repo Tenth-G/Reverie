@@ -20,4 +20,12 @@ contextBridge.exposeInMainWorld("ncm", {
     ipcRenderer.on("win:maximized", listener);
     return () => ipcRenderer.removeListener("win:maximized", listener);
   },
+  // --- update (electron-updater) ---
+  checkUpdate: () => ipcRenderer.invoke("update:check"),
+  installUpdate: () => ipcRenderer.send("update:install"),
+  onUpdateEvent: (callback) => {
+    const listener = (_event, payload) => callback(payload);
+    ipcRenderer.on("update:event", listener);
+    return () => ipcRenderer.removeListener("update:event", listener);
+  },
 });

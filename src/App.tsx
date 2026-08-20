@@ -45,22 +45,13 @@ export default function App() {
     loadHomeQuote();
   }, [refreshLogin, loadHome, loadHomeQuote]);
 
-  // auto check for updates once per session (short delay, silent on failure)
+  // subscribe to updater events pushed from the main process (electron-updater).
+  // the main process performs the startup check itself in packaged builds.
   useEffect(() => {
-    const t = setTimeout(() => {
-      try {
-        if (
-          window.ncm?.skipUpdate ||
-          localStorage.getItem("reverie_skip_update") === "1"
-        ) {
-          return;
-        }
-      } catch {
-        /* ignore */
-      }
-      usePlayerStore.getState().checkUpdate(false);
-    }, 6000);
-    return () => clearTimeout(t);
+    const off = window.ncm?.onUpdateEvent?.((event) => {
+      usePlayerStore.getState().applyUpdateEvent(event.type, event.data);
+    });
+    return () => off?.();
   }, []);
 
   // theme: follow system / light / dark

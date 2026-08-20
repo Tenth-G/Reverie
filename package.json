@@ -25,6 +25,7 @@
     "test:e2e": "node scripts/e2e-test.mjs"
   },
   "dependencies": {
+    "electron-updater": "^6.8.9",
     "NeteaseCloudMusicApi": "^4.32.0"
   },
   "devDependencies": {

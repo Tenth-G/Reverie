@@ -16,6 +16,23 @@ interface NcmBridge {
   close: () => void;
   isMaximized: () => Promise<boolean>;
   onMaximized: (callback: (maximized: boolean) => void) => () => void;
+  /** Trigger a manual update check (electron-updater). */
+  checkUpdate: () => Promise<{ ok: boolean; reason?: string }>;
+  /** Quit the app and install the downloaded update. */
+  installUpdate: () => void;
+  /** Subscribe to updater events pushed from the main process. */
+  onUpdateEvent: (
+    callback: (event: {
+      type:
+        | "checking"
+        | "available"
+        | "not-available"
+        | "progress"
+        | "downloaded"
+        | "error";
+      data?: unknown;
+    }) => void,
+  ) => () => void;
 }
 
 declare global {
