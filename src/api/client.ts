@@ -346,49 +346,53 @@ function parseEpoch(v: unknown): number {
   return 0
 }
 
-/** Recursively find the membership expire time under any field name. */
-function deepFindExpireMs(obj: unknown, depth = 0): number {
-  if (!obj || typeof obj !== 'object' || depth > 4) return 0
-  const entries = Object.entries(obj as Record<string, unknown>)
-  for (const [k, v] of entries) {
-    if (/vip.*(expire|end)|(expire|end).*vip|red.*(expire|end)/i.test(k)) {
-      const n = parseEpoch(v)
-      if (n) return n
+/** Recursively find the membership expire time under any field name (takes the max). */
+function deepFindExpireMs(obj: unknown): number {
+  if (!obj || typeof obj !== 'object') return 0
+  let best = 0
+  const walk = (o: unknown, depth: number) => {
+    if (!o || typeof o !== 'object' || depth > 4) return
+    for (const [k, v] of Object.entries(o as Record<string, unknown>)) {
+      if (/expire|endtime|end_time|deadline|validto|valid_to/i.test(k)) {
+        const n = parseEpoch(v)
+        if (n > best) best = n
+      }
+      if (v && typeof v === 'object') walk(v, depth + 1)
     }
   }
-  for (const [k, v] of entries) {
-    if (/expire|endtime|end_time|deadline|validto|valid_to/i.test(k)) {
-      const n = parseEpoch(v)
-      if (n) return n
-    }
-  }
-  for (const v of Object.values(obj as Record<string, unknown>)) {
-    if (v && typeof v === 'object') {
-      const r = deepFindExpireMs(v, depth + 1)
-      if (r) return r
-    }
-  }
-  return 0
+  walk(obj, 0)
+  return best
 }
 
-/** Recursively find a badge-like image URL (vip icon / custom badge). */
-function deepFindBadgeUrl(obj: unknown, depth = 0): string {
-  if (!obj || typeof obj !== 'object' || depth > 5) return ''
-  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
-    if (typeof v === 'string' && /^https?:\/\//i.test(v)) {
-      const looksLikeBadge =
-        /vip|icon|badge|label|decorat|ticket|level/i.test(k) &&
-        !/avatar|background|cover|img1v1|default/i.test(k)
-      if (looksLikeBadge) return v
+/** Recursively find the best badge-like image URL (vip icon / custom badge). */
+function deepFindBadgeUrl(obj: unknown): string {
+  if (!obj || typeof obj !== 'object') return ''
+  let best = ''
+  let bestScore = 0
+  const walk = (o: unknown, depth: number) => {
+    if (!o || typeof o !== 'object' || depth > 6) return
+    for (const [k, v] of Object.entries(o as Record<string, unknown>)) {
+      if (typeof v === 'string' && /^https?:\/\//i.test(v)) {
+        if (/avatar|background|cover|img1v1|default/i.test(k)) continue
+        let score = 0
+        if (/dynamicicon/i.test(k)) score = 300 // the animated member badge
+        else if (/identityicon/i.test(k)) score = 120
+        else if (/vipicon/i.test(k)) score = 110
+        else if (/badge/i.test(k)) score = 100
+        else if (/decorat/i.test(k)) score = 90
+        else if (/vip/i.test(k)) score = 60
+        else if (/icon/i.test(k)) score = 40
+        else if (/level/i.test(k)) score = 25
+        if (score > bestScore) {
+          bestScore = score
+          best = v
+        }
+      }
+      if (v && typeof v === 'object') walk(v, depth + 1)
     }
   }
-  for (const v of Object.values(obj as Record<string, unknown>)) {
-    if (v && typeof v === 'object') {
-      const r = deepFindBadgeUrl(v, depth + 1)
-      if (r) return r
-    }
-  }
-  return ''
+  walk(obj, 0)
+  return best
 }
 
 export async function getVipInfo(uid: number): Promise<VipInfo> {

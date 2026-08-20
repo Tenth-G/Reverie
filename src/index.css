@@ -253,7 +253,7 @@ input {
   align-items: center;
   gap: 8px;
   height: 40px;
-  padding: 4px 16px 4px 4px;
+  padding: 4px 18px 4px 4px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--bg-3);
@@ -293,11 +293,15 @@ input {
 .user-nick {
   font-size: 12px;
   font-weight: 500;
-  max-width: 76px;
+  max-width: 110px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--text);
+}
+.user-caret {
+  color: var(--text-faint);
+  flex: none;
 }
 /* official member badge fetched from the API (animated webp/apng plays directly) */
 .user-badge-api {
@@ -449,11 +453,9 @@ input {
 .user-dropdown {
   position: absolute;
   top: calc(100% + 8px);
-  right: 0;
-  left: auto;
+  left: 0;
+  right: auto;
   width: 100%;
-  min-width: 170px;
-  max-width: 260px;
   background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -490,19 +492,21 @@ input {
 }
 .user-dropdown-row {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 7px 8px;
-  font-size: 12px;
-  color: var(--text-dim);
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 10px;
+}
+.user-dropdown-row span:first-child {
+  font-size: 10px;
+  color: var(--text-faint);
 }
 .user-dropdown-row span:last-child {
-  max-width: 60%;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--text);
 }
 .user-dropdown-item {
   display: block;

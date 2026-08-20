@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { usePlayerStore } from '../store/playerStore'
+import { IconChevronDown } from './icons'
 
 function vipLabel(vipType?: number): string {
   if (!vipType || vipType === 0) return '普通用户'
@@ -73,6 +74,7 @@ export default function UserMenu() {
         {isVip && badgeUrl && (
           <img className="user-badge-api" src={badgeUrl} alt="会员" />
         )}
+        <IconChevronDown className="user-caret" width={13} height={13} />
       </button>
       {open && (
         <div className="user-dropdown">
