@@ -299,10 +299,6 @@ input {
   text-overflow: ellipsis;
   color: var(--text);
 }
-.user-caret {
-  color: var(--text-faint);
-  flex: none;
-}
 /* official member badge fetched from the API (animated webp plays directly) */
 .user-badge-api {
   height: 20px;
@@ -484,11 +480,6 @@ input {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-.uh-info .vip {
-  font-size: 11px;
-  color: #e6a23c;
-  margin-top: 2px;
 }
 .user-dropdown-row {
   display: flex;

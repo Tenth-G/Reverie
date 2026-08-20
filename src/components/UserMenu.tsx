@@ -1,19 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { usePlayerStore } from '../store/playerStore'
-import { IconChevronDown } from './icons'
 
 function vipLabel(vipType?: number): string {
   if (!vipType || vipType === 0) return '普通用户'
   if (vipType === 11) return '黑胶 SVIP'
   if (vipType === 10) return '黑胶 VIP'
   return 'VIP 会员'
-}
-
-function remainingDays(expireTime?: number): string {
-  if (!expireTime || expireTime <= 0) return ''
-  const days = Math.ceil((expireTime - Date.now()) / 86400000)
-  if (days <= 0) return '已过期'
-  return `剩余 ${days} 天`
 }
 
 function formatExpire(expireTime?: number): string {
@@ -56,7 +48,6 @@ export default function UserMenu() {
   const expireTime = Number(vipInfo?.expireTime ?? 0)
   const isVip = vipType > 0 || vipLevel > 0 || expireTime > 0
   const badgeUrl = vipInfo?.badgeUrl || profile?.badgeUrl
-  const days = remainingDays(expireTime)
 
   return (
     <div className="user-menu" ref={ref}>
@@ -74,7 +65,6 @@ export default function UserMenu() {
         {isVip && badgeUrl && (
           <img className="user-badge-api" src={badgeUrl} alt="会员" />
         )}
-        <IconChevronDown className="user-caret" width={13} height={13} />
       </button>
       {open && (
         <div className="user-dropdown">
@@ -86,7 +76,6 @@ export default function UserMenu() {
             )}
             <div className="uh-info">
               <div className="nm">{profile?.nickname}</div>
-              <div className="vip">{vipLabel(vipType)}</div>
             </div>
           </div>
           <div className="user-dropdown-row">
