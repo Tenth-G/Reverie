@@ -70,6 +70,9 @@ const UPDATE_SOURCES = [
 
 let checkInFlight = false;
 
+/** Set while a failed source is being retried on the other one. */
+let retryingSource = false;
+
 /** Race the sources and pick the first one that responds (network aware). */
 async function pickUpdateSource() {
   const results = await Promise.all(
@@ -95,22 +98,31 @@ async function pickUpdateSource() {
 async function smartCheck(manual) {
   if (checkInFlight) return;
   checkInFlight = true;
+  // Held for the whole run: resetting it per event loses the manual flag when
+  // the first source fails and the second one succeeds.
+  manualCheck = manual;
   try {
     const primary = await pickUpdateSource();
+    const fallback = UPDATE_SOURCES.find((s) => s !== primary);
     try {
+      // A failure here is retried on the other source, so it must not surface
+      // as an "update check failed" toast.
+      retryingSource = Boolean(fallback);
       autoUpdater.setFeedURL(primary.config);
       await autoUpdater.checkForUpdates();
+      retryingSource = false;
     } catch (err) {
-      // autoUpdater already emits the "error" event with the manual flag;
-      // just retry with the other source.
-      const fallback = UPDATE_SOURCES.find((s) => s !== primary);
+      retryingSource = false;
+      if (!fallback) throw err;
       autoUpdater.setFeedURL(fallback.config);
       await autoUpdater.checkForUpdates();
     }
   } catch {
     // covered by the autoUpdater "error" event
   } finally {
+    retryingSource = false;
     checkInFlight = false;
+    manualCheck = false;
   }
 }
 
@@ -136,11 +148,9 @@ function setupUpdater() {
       notes: extractReleaseNotes(info.releaseNotes),
       manual: manualCheck,
     });
-    manualCheck = false;
   });
   autoUpdater.on("update-not-available", () => {
     sendUpdateEvent("not-available", { manual: manualCheck });
-    manualCheck = false;
   });
   autoUpdater.on("download-progress", (p) =>
     sendUpdateEvent("progress", {
@@ -152,11 +162,12 @@ function setupUpdater() {
   );
   autoUpdater.on("update-downloaded", () => sendUpdateEvent("downloaded"));
   autoUpdater.on("error", (err) => {
+    // The other source is about to be tried; report only if that fails too.
+    if (retryingSource) return;
     sendUpdateEvent("error", {
       message: String((err && err.message) || err),
       manual: manualCheck,
     });
-    manualCheck = false;
   });
 
   // Auto check shortly after launch (silent on failure).
@@ -234,6 +245,7 @@ async function startApi() {
     console.log(
       `[main] NCM API server listening @ http://${API_HOST}:${API_PORT}`,
     );
+    return true;
   } catch (err) {
     console.error("[main] Failed to start NCM API:", err && err.message);
     try {
@@ -245,6 +257,7 @@ async function startApi() {
       /* ignore */
     }
     app.quit();
+    return false;
   }
 }
 
@@ -348,7 +361,7 @@ ipcMain.handle(
 // Update IPC: manual check / start download / install (quit & run installer).
 ipcMain.handle("update:check", () => {
   if (!updateEnabled) return { ok: false, reason: "disabled" };
-  manualCheck = true;
+  if (checkInFlight) return { ok: false, reason: "busy" };
   smartCheck(true).catch(() => {});
   return { ok: true };
 });
@@ -371,11 +384,15 @@ ipcMain.on("update:install", () => {
 });
 
 app.whenReady().then(async () => {
+  let apiReady = false;
   try {
-    await startApi();
+    apiReady = await startApi();
   } catch (err) {
     console.error("[main] Failed to start NCM API:", err);
   }
+  // startApi already showed the error box and called quit(); opening a window
+  // now would only flash an empty frame before the app exits.
+  if (!apiReady) return;
   createWindow();
   setupUpdater();
 

@@ -17,7 +17,6 @@ import {
 
 const MODE_LABEL: Record<PlayMode, string> = {
   sequence: "顺序播放",
-  loop: "列表循环",
   one: "单曲循环",
   shuffle: "随机播放",
 };

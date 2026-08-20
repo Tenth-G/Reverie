@@ -46,10 +46,17 @@ export interface ToastMsg {
 
 export type ThemePreference = "system" | "light" | "dark";
 
+/** Where the current queue came from; "fm" keeps roaming auto-advancing. */
+export type QueueSource = "list" | "fm";
+
 /* ------------------------- persistence helpers ------------------------- */
 function readNum(key: string, def: number): number {
   try {
-    const v = Number(localStorage.getItem(key));
+    const raw = localStorage.getItem(key);
+    // Number(null) / Number("") are 0 and pass Number.isFinite, so the default
+    // has to be picked before the conversion, not after it.
+    if (raw === null || raw.trim() === "") return def;
+    const v = Number(raw);
     return Number.isFinite(v) ? v : def;
   } catch {
     return def;
@@ -75,6 +82,48 @@ function write(key: string, v: string) {
     localStorage.setItem(key, v);
   } catch {
     /* ignore */
+  }
+}
+
+/** Fisher-Yates shuffle; `sort(() => Math.random() - 0.5)` is heavily biased. */
+function shuffle<T>(items: T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/** Roaming pool: prefer free tracks, VIP ones cannot be streamed. */
+function roamingPool(songs: Song[]): Song[] {
+  const free = songs.filter((s) => s.fee === 0);
+  return shuffle(free.length >= 5 ? free : songs);
+}
+
+function readPlayMode(): PlayMode {
+  const v = readStr("reverie_playmode", "sequence");
+  // "loop" existed in older builds but was never reachable from the UI.
+  return v === "one" || v === "shuffle" ? v : "sequence";
+}
+
+const LIKED_AT_KEY = "reverie_liked_at";
+
+/** Local "liked at" timestamps, used to sort the liked list newest-first. */
+function readLikedAt(): Record<number, number> {
+  try {
+    const raw = localStorage.getItem(LIKED_AT_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    if (!parsed || typeof parsed !== "object") return {};
+    const out: Record<number, number> = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      const id = Number(k);
+      if (Number.isFinite(id) && typeof v === "number") out[id] = v;
+    }
+    return out;
+  } catch {
+    return {};
   }
 }
 
@@ -159,6 +208,12 @@ clearLegacyKeys();
 
 let toastSeq = 0;
 
+/** Monotonic token so a slow url lookup cannot override a newer play request. */
+let playToken = 0;
+
+/** Consecutive unplayable tracks; bounds the auto-skip so it cannot loop. */
+let failStreak = 0;
+
 interface PlayerState {
   // --- auth ---
   loggedIn: boolean;
@@ -185,9 +240,12 @@ interface PlayerState {
   // --- queue ---
   queue: Song[];
   index: number;
+  queueSource: QueueSource;
 
   // --- lyrics ---
   lyricLines: LyricLine[];
+  /** Song the current lyricLines belong to; null when nothing is loaded. */
+  lyricSongId: number | null;
   showTranslation: boolean;
 
   // --- update ---
@@ -239,6 +297,8 @@ interface PlayerState {
   setPlayMode: (m: PlayMode) => void;
   cyclePlayMode: () => void;
   setShowTranslation: (v: boolean) => void;
+  loadLyrics: (song: Song) => Promise<void>;
+  ensureLyrics: () => void;
   checkUpdate: (manual?: boolean) => void;
   startUpdate: () => void;
   installUpdate: () => void;
@@ -259,7 +319,9 @@ interface PlayerState {
   loadUserPlaylists: () => Promise<void>;
   openPlaylist: (id: number, name: string) => Promise<void>;
   closePlaylist: () => void;
-  playSong: (song: Song, queue?: Song[]) => Promise<void>;
+  playSong: (song: Song, queue?: Song[], source?: QueueSource) => Promise<void>;
+  failCurrent: (message: string) => void;
+  notePlaybackOk: () => void;
   playQueueAt: (i: number) => Promise<void>;
   fmNext: () => Promise<void>;
   fmDislike: () => Promise<void>;
@@ -273,15 +335,6 @@ interface PlayerState {
   applyLogin: (cookie: string) => Promise<boolean>;
   logout: () => void;
   refreshLogin: () => Promise<void>;
-}
-
-function loadLyricsFor(song: Song, set: (p: Partial<PlayerState>) => void) {
-  set({ lyricLines: [{ time: 0, text: "加载歌词中…" }] });
-  getLyric(song.id)
-    .then(({ lrc, tlyric }) => {
-      set({ lyricLines: parseLyrics(lrc, tlyric) });
-    })
-    .catch(() => set({ lyricLines: [{ time: 0, text: "暂无歌词" }] }));
 }
 
 async function resolveUrl(song: Song): Promise<string | null> {
@@ -308,7 +361,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   profile: null,
   likedIds: [],
   likedSongs: [],
-  likedAt: {},
+  likedAt: readLikedAt(),
   vipInfo: null,
   recentSongs: readRecentSongs(),
   homeQuote: null,
@@ -323,14 +376,16 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   duration: restoredSession.currentSong?.duration ?? 0,
   volume: readNum("reverie_volume", 0.9),
   muted: false,
-  playMode: (readStr("reverie_playmode", "sequence") as PlayMode) || "sequence",
+  playMode: readPlayMode(),
 
   // --- queue ---
   queue: restoredSession.queue,
   index: restoredSession.index,
+  queueSource: "list",
 
   // --- lyrics ---
   lyricLines: [],
+  lyricSongId: null,
   showTranslation: readBool("reverie_translation", true),
 
   // --- update ---
@@ -381,6 +436,10 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   setAudioEl: (el) => {
     if (!el) return;
     if (get().audioEl === el) return;
+    // The element defaults to 1.0; without this the restored volume only takes
+    // effect once the user touches the slider.
+    const { muted, volume } = get();
+    el.volume = muted ? 0 : volume;
     set({ audioEl: el });
   },
 
@@ -420,8 +479,11 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   },
   seek: (ms) => {
     const el = get().audioEl;
+    // Without a seekable element the progress bar would jump and snap back on
+    // the next timeupdate.
+    if (!el || !Number.isFinite(el.duration)) return;
     set({ progress: ms });
-    if (el && Number.isFinite(el.duration)) el.currentTime = ms / 1000;
+    el.currentTime = ms / 1000;
   },
   setVolume: (v) => {
     const vol = Math.min(1, Math.max(0, v));
@@ -433,8 +495,11 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   toggleMute: () => {
     const { muted, volume, audioEl } = get();
     const next = !muted;
-    set({ muted: next });
-    if (audioEl) audioEl.volume = next ? 0 : volume;
+    // Unmuting while the slider sits at 0 would stay silent; restore a level.
+    const vol = !next && volume === 0 ? 0.5 : volume;
+    set({ muted: next, volume: vol });
+    if (vol !== volume) write("reverie_volume", String(vol));
+    if (audioEl) audioEl.volume = next ? 0 : vol;
   },
   setPlayMode: (m) => {
     set({ playMode: m });
@@ -451,6 +516,34 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     set({ showTranslation: v });
     write("reverie_translation", v ? "1" : "0");
   },
+  /**
+   * Fetch the lyrics for a song. Tagged with lyricSongId so a slow response
+   * cannot land on top of a song the user has already switched away from.
+   */
+  loadLyrics: async (song) => {
+    set({
+      lyricSongId: song.id,
+      lyricLines: [{ time: 0, text: "加载歌词中…" }],
+    });
+    try {
+      const { lrc, tlyric } = await getLyric(song.id);
+      if (get().lyricSongId !== song.id) return;
+      set({ lyricLines: parseLyrics(lrc, tlyric) });
+    } catch {
+      if (get().lyricSongId !== song.id) return;
+      set({ lyricLines: [{ time: 0, text: "暂无歌词" }] });
+    }
+  },
+  /**
+   * The lyric view opened for a song whose lyrics were never fetched. Playing a
+   * song loads them, but a session restored on startup never went through
+   * playSong, so its lyrics would stay empty until the user pressed play.
+   */
+  ensureLyrics: () => {
+    const { currentSong, lyricSongId } = get();
+    if (!currentSong || lyricSongId === currentSong.id) return;
+    get().loadLyrics(currentSong);
+  },
   checkUpdate: (manual = false) => {
     if (!window.ncm?.checkUpdate) {
       if (manual) get().toast("当前环境不支持自动更新", "error");
@@ -459,10 +552,11 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     if (get().updatePhase === "checking") return;
     set({ updatePhase: "checking" });
     window.ncm.checkUpdate().then((r) => {
-      if (!r.ok && manual) {
-        set({ updatePhase: "idle" });
-        get().toast("当前环境不支持自动更新", "error");
-      }
+      if (r.ok) return;
+      set({ updatePhase: "idle" });
+      if (!manual) return;
+      if (r.reason === "busy") get().toast("正在检查更新，请稍候", "info");
+      else get().toast("当前环境不支持自动更新", "error");
     });
   },
   startUpdate: () => {
@@ -645,12 +739,10 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     }
     set({ activeView: "fm" });
     try {
-      const songs = await getTopSongs(0, 60);
-      const free = songs.filter((s) => s.fee === 0);
-      const pool = free.length >= 5 ? free : songs;
-      const shuffled = [...pool].sort(() => Math.random() - 0.5);
-      set({ fmSongs: shuffled, playMode: "shuffle" });
-      if (shuffled.length) get().playSong(shuffled[0], shuffled);
+      const shuffled = roamingPool(await getTopSongs(0, 60));
+      // The pool is already shuffled, so don't clobber the user's play mode.
+      set({ fmSongs: shuffled });
+      if (shuffled.length) get().playSong(shuffled[0], shuffled, "fm");
       else get().toast("暂无内容", "info");
     } catch {
       get().toast("加载随机歌曲失败", "error");
@@ -696,7 +788,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   },
 
   // --- core play ---
-  playSong: async (song, queue) => {
+  playSong: async (song, queue, source) => {
     const st = get();
     let targetQueue = queue;
     let targetIndex = queue
@@ -708,9 +800,12 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     }
     if (targetIndex < 0) targetIndex = 0;
 
+    const token = ++playToken;
+
     set({
       queue: targetQueue,
       index: targetIndex,
+      queueSource: source ?? (queue ? "list" : st.queueSource),
       currentSong: song,
       loadingUrl: true,
       playing: false,
@@ -718,27 +813,49 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       duration: song.duration || 0,
     });
     writeSession({ queue: targetQueue, index: targetIndex, currentSong: song });
-    loadLyricsFor(song, set);
+    get().loadLyrics(song);
     get().trackRecent(song);
 
     const url = await resolveUrl(song);
+    // A newer play request started while this url was resolving: drop this one
+    // instead of playing a song the user already moved on from.
+    if (token !== playToken) return;
     if (!url) {
       set({ loadingUrl: false, currentUrl: null, playing: false });
-      get().toast(
+      get().failCurrent(
         song.fee === 1
           ? "该歌曲为 VIP 歌曲，请登录并开通会员后播放"
           : "无法获取播放地址（可能需要登录）",
-        "error",
       );
       return;
     }
     set({ currentUrl: url, loadingUrl: false, playing: true });
   },
+  /**
+   * The current track cannot be played. Move on to the next one, but stop once
+   * the whole queue has failed (capped at 10 tries) so an all-VIP list cannot
+   * spin forever. The streak is cleared as soon as audio actually plays.
+   */
+  failCurrent: (message) => {
+    const { queue, currentSong } = get();
+    if (!currentSong) return;
+    failStreak++;
+    if (queue.length > 1 && failStreak < Math.min(queue.length, 10)) {
+      if (failStreak === 1) get().toast("无法播放，正在自动跳过…", "info");
+      get().next();
+      return;
+    }
+    failStreak = 0;
+    get().toast(message, "error");
+  },
+  notePlaybackOk: () => {
+    failStreak = 0;
+  },
   playQueueAt: async (i) => {
-    const { queue } = get();
+    const { queue, queueSource } = get();
     const song = queue[i];
     if (!song) return;
-    await get().playSong(song, queue);
+    await get().playSong(song, queue, queueSource);
   },
   fmNext: async () => {
     // 漫游：播完一批后换一批新的随机歌曲
@@ -749,10 +866,15 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       return;
     }
     try {
-      const songs = await getTopSongs(0, 60);
-      const shuffled = [...songs].sort(() => Math.random() - 0.5);
+      // Same free-track filter as the first batch: without it every later batch
+      // runs straight into unplayable VIP tracks.
+      const shuffled = roamingPool(await getTopSongs(0, 60));
       set({ fmSongs: shuffled });
-      await get().playSong(shuffled[0], shuffled);
+      if (!shuffled.length) {
+        get().toast("暂无内容", "info");
+        return;
+      }
+      await get().playSong(shuffled[0], shuffled, "fm");
     } catch {
       get().toast("加载下一批失败", "error");
     }
@@ -793,6 +915,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
               Object.entries(s.likedAt).filter(([k]) => Number(k) !== id),
             ),
       }));
+      write(LIKED_AT_KEY, JSON.stringify(get().likedAt));
       get().loadLikedSongs();
       get().toast(next ? "已添加到我喜欢" : "已取消喜欢", "success");
     } catch {
@@ -863,7 +986,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   },
   loadHomeQuote: async () => {
     const pool = [186016, 347230, 509781655, 3414449762, 168160, 193535];
-    const candidates = [...pool].sort(() => Math.random() - 0.5);
+    const candidates = shuffle(pool);
     for (const id of candidates) {
       try {
         const songs = await getSongsByIds([id]);
@@ -894,16 +1017,28 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     try {
       const profile = await loginStatus();
       if (profile && profile.userId > 0) {
-        set({ loggedIn: true, profile });
+        // Switching accounts: wipe the previous account's cached data first,
+        // otherwise its likes / recommendations stay on screen.
+        set({
+          loggedIn: true,
+          profile,
+          likedIds: [],
+          likedSongs: [],
+          likedAt: {},
+          vipInfo: null,
+          userPlaylists: [],
+          recommendSongs: [],
+        });
+        write(LIKED_AT_KEY, "{}");
         get().toast(`欢迎，${profile.nickname}`, "success");
-        get().loadLiked();
-        get().loadLikedSongs();
+        // loadLikedSongs reads likedIds, so it has to wait for loadLiked.
+        get()
+          .loadLiked()
+          .then(() => get().loadLikedSongs());
         get().loadVipInfo();
-        if (!get().recommendSongs.length) {
-          getRecommendSongs()
-            .then((songs) => set({ recommendSongs: songs }))
-            .catch(() => {});
-        }
+        getRecommendSongs()
+          .then((songs) => set({ recommendSongs: songs }))
+          .catch(() => {});
         return true;
       }
       clearCookie();
@@ -926,7 +1061,12 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       loggedIn: false,
       profile: null,
       likedIds: [],
+      likedSongs: [],
+      likedAt: {},
+      vipInfo: null,
       userPlaylists: [],
+      playlistSongs: [],
+      playlistName: "",
       recommendSongs: [],
       fmSongs: [],
       currentSong: null,
@@ -936,10 +1076,13 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       duration: 0,
       queue: [],
       index: -1,
+      queueSource: "list",
       lyricLines: [],
+      lyricSongId: null,
     });
     try {
       localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(LIKED_AT_KEY);
     } catch {
       /* ignore */
     }
@@ -955,8 +1098,10 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       const profile = await loginStatus();
       if (profile && profile.userId > 0) {
         set({ loggedIn: true, profile });
-        get().loadLiked();
-        get().loadLikedSongs();
+        // loadLikedSongs reads likedIds, so it has to wait for loadLiked.
+        get()
+          .loadLiked()
+          .then(() => get().loadLikedSongs());
         get().loadVipInfo();
         if (!get().recommendSongs.length) {
           getRecommendSongs()

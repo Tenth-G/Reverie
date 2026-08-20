@@ -123,13 +123,13 @@ export default function App() {
 
   const handleEnded = () => {
     const st = usePlayerStore.getState();
-    const { queue, index, playMode: mode, fmSongs } = st;
+    const { queue, index, playMode: mode, queueSource } = st;
     if (mode === "one") {
       st.seek(0);
       audioRef.current?.play().catch(() => {});
       return;
     }
-    if (queue.length > 0 && queue === fmSongs) {
+    if (queueSource === "fm" && queue.length > 0) {
       st.fmNext();
       return;
     }
@@ -183,7 +183,6 @@ export default function App() {
 
       <audio
         ref={audioRef}
-        crossOrigin="anonymous"
         onTimeUpdate={(e) => {
           const el = e.currentTarget;
           usePlayerStore.setState({
@@ -202,9 +201,10 @@ export default function App() {
           }
         }}
         onEnded={handleEnded}
+        onPlaying={() => usePlayerStore.getState().notePlaybackOk()}
         onError={() => {
           usePlayerStore.setState({ playing: false });
-          usePlayerStore.getState().toast("音频加载失败", "error");
+          usePlayerStore.getState().failCurrent("音频加载失败");
         }}
         style={{ display: "none" }}
       />

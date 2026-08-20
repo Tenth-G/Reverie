@@ -17,24 +17,37 @@ export default function LoginModal() {
   const [status, setStatus] = useState<QrState>("loading");
   const keyRef = useRef("");
   const timerRef = useRef<number | null>(null);
+  const refreshRef = useRef<number | null>(null);
   const aliveRef = useRef(true);
+  const pollRef = useRef<() => void>(() => {});
 
   const stopPolling = () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
+    if (refreshRef.current) {
+      clearTimeout(refreshRef.current);
+      refreshRef.current = null;
+    }
   };
 
   const startQr = useCallback(async () => {
+    // Polling must not continue against the previous key: an expired one keeps
+    // answering 800, which would queue a new refresh on every tick.
+    stopPolling();
     setStatus("loading");
     try {
       const key = await qrKey();
       keyRef.current = key;
       const { qrimg: img, qrurl: url } = await qrCreate(key);
+      if (!aliveRef.current) return;
       setQrimg(img);
       setQrurl(url);
       setStatus("waiting");
+      timerRef.current = window.setInterval(() => {
+        if (aliveRef.current) pollRef.current();
+      }, 2200);
     } catch {
       setStatus("error");
       toast("获取二维码失败，请检查网络", "error");
@@ -58,9 +71,12 @@ export default function LoginModal() {
           toast("登录信息校验失败，请重试", "error");
         }
       } else if (code === 800) {
+        stopPolling();
         setStatus("expired");
         // auto-refresh
-        setTimeout(() => startQr(), 1200);
+        refreshRef.current = window.setTimeout(() => {
+          if (aliveRef.current) startQr();
+        }, 1200);
       } else if (code === 802) {
         setStatus("scanned");
       } else if (code === 801) {
@@ -72,20 +88,22 @@ export default function LoginModal() {
   }, [applyLogin, startQr, toast, setShowLogin]);
 
   useEffect(() => {
-    if (showLogin) {
-      aliveRef.current = true;
-      startQr();
-      timerRef.current = window.setInterval(() => {
-        if (aliveRef.current) poll();
-      }, 2200);
-    } else {
+    pollRef.current = poll;
+  }, [poll]);
+
+  useEffect(() => {
+    if (!showLogin) {
       stopPolling();
+      return;
     }
+    // startQr installs the polling interval once it holds a fresh key.
+    aliveRef.current = true;
+    startQr();
     return () => {
       aliveRef.current = false;
       stopPolling();
     };
-  }, [showLogin, poll, startQr]);
+  }, [showLogin, startQr]);
 
   if (!showLogin) return null;
 

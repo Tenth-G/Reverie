@@ -4,6 +4,8 @@ import { usePlayerStore } from "../store/playerStore";
 
 export default function LyricsPanel() {
   const lyricLines = usePlayerStore((s) => s.lyricLines);
+  const currentSongId = usePlayerStore((s) => s.currentSong?.id ?? null);
+  const ensureLyrics = usePlayerStore((s) => s.ensureLyrics);
   const progress = usePlayerStore((s) => s.progress);
   const showTranslation = usePlayerStore((s) => s.showTranslation);
   const lyricTheme = usePlayerStore((s) => s.lyricTheme);
@@ -13,6 +15,12 @@ export default function LyricsPanel() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const active = findActiveIndex(lyricLines, progress);
   const prevActive = useRef(-1);
+
+  // Covers the restored-session case: the song is on screen but nothing ever
+  // fetched its lyrics.
+  useEffect(() => {
+    ensureLyrics();
+  }, [ensureLyrics, currentSongId]);
 
   // Keep the active line centered inside the lyric window.
   useEffect(() => {
