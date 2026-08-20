@@ -34,6 +34,7 @@ export interface UserProfile {
   avatarUrl: string
   signature?: string
   vipType: number
+  badgeUrl?: string
 }
 
 export interface QrCreateResult {

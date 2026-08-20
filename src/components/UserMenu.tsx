@@ -54,7 +54,7 @@ export default function UserMenu() {
   const vipLevel = Number(vipInfo?.vipLevel ?? 0)
   const expireTime = Number(vipInfo?.expireTime ?? 0)
   const isVip = vipType > 0 || vipLevel > 0 || expireTime > 0
-  const badgeUrl = vipInfo?.badgeUrl
+  const badgeUrl = vipInfo?.badgeUrl || profile?.badgeUrl
   const days = remainingDays(expireTime)
 
   return (

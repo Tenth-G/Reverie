@@ -306,6 +306,7 @@ export async function loginStatus(): Promise<UserProfile | null> {
     avatarUrl: String(profile?.avatarUrl ?? ''),
     signature: profile?.signature ? String(profile.signature) : undefined,
     vipType: Math.max(accountVip, profileVip),
+    badgeUrl: deepFindBadgeUrl(res.data ?? res) || undefined,
   }
 }
 
@@ -374,12 +375,11 @@ function deepFindExpireMs(obj: unknown, depth = 0): number {
 function deepFindBadgeUrl(obj: unknown, depth = 0): string {
   if (!obj || typeof obj !== 'object' || depth > 5) return ''
   for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
-    if (
-      typeof v === 'string' &&
-      /^https?:\/\/.+\.(png|webp|apng|gif|jpg|jpeg)(\?|$)/i.test(v) &&
-      /vip|icon|badge|label|decorat|ticket/i.test(k)
-    ) {
-      return v
+    if (typeof v === 'string' && /^https?:\/\//i.test(v)) {
+      const looksLikeBadge =
+        /vip|icon|badge|label|decorat|ticket|level/i.test(k) &&
+        !/avatar|background|cover|img1v1|default/i.test(k)
+      if (looksLikeBadge) return v
     }
   }
   for (const v of Object.values(obj as Record<string, unknown>)) {
