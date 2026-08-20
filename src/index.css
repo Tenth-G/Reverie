@@ -289,20 +289,15 @@ input {
   font-size: 18px;
   flex: none;
 }
-.user-badge {
-  font-size: 10px;
-  font-weight: 700;
-  color: #7a5300;
-  background: linear-gradient(135deg, #ffe082, #ffb300);
-  border-radius: 8px;
-  padding: 1px 6px;
-  line-height: 1.4;
+.user-badge-img {
+  height: 18px;
+  width: auto;
+  border-radius: 4px;
   flex: none;
+  object-fit: contain;
 }
-.user-badge-plain {
-  color: var(--text-dim);
-  background: var(--bg-2);
-  border: 1px solid var(--border);
+.user-badge-img.svip {
+  height: 22px;
 }
 .topnav-login {
   display: inline-flex;
@@ -1423,7 +1418,7 @@ input {
 /* the album cover is the centered anchor; lyrics overlay on top of it */
 .np-stage {
   position: relative;
-  width: min(480px, 84vw);
+  width: min(560px, 88vw);
   aspect-ratio: 1;
 }
 .np-cover {
@@ -1451,7 +1446,7 @@ input {
   color: var(--text-faint);
   font-size: 64px;
 }
-/* lyrics float over the lower part of the cover */
+/* lyrics float over the lower part of the cover (no dark layer) */
 .np-lyrics {
   position: absolute;
   left: 0;
@@ -1460,7 +1455,7 @@ input {
   top: 28%;
   z-index: 5;
   border-radius: 0 0 24px 24px;
-  background: linear-gradient(to bottom, rgba(10, 10, 22, 0.2), rgba(10, 10, 22, 0.5));
+  background: transparent;
   animation: np-lyrics-in 0.4s ease 0.1s both;
 }
 @keyframes np-lyrics-in {

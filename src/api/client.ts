@@ -355,4 +355,12 @@ export async function getSongsByIds(ids: number[]): Promise<Song[]> {
     .filter((s): s is Song => s !== null)
 }
 
+/** 听歌等级 (from /user/level) */
+export async function getUserLevel(uid: number): Promise<number> {
+  const res = await request<{
+    data?: { levelInfo?: { currentLevel?: number } }
+  }>('/user/level', { uid }, false)
+  return Number(res.data?.levelInfo?.currentLevel ?? 0)
+}
+
 export { API_BASE }

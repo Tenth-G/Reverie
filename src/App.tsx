@@ -152,15 +152,18 @@ export default function App() {
 
   return (
     <div className="app">
-      {currentPage !== 'nowplaying' && <TitleBar />}
-      {currentPage !== 'nowplaying' && <TopNav />}
-      {currentPage === 'nowplaying' ? (
-        <NowPlayingView />
-      ) : (
+      {/* browse layer stays mounted (hidden in now-playing) so returning is instant */}
+      <div
+        className="browse-layer"
+        style={{ display: currentPage === 'nowplaying' ? 'none' : 'contents' }}
+      >
+        <TitleBar />
+        <TopNav />
         <main className="page-content">
           <LoginGate>{renderPage()}</LoginGate>
         </main>
-      )}
+      </div>
+      {currentPage === 'nowplaying' && <NowPlayingView />}
       <PlayerBar />
       <LoginModal />
       <SettingsModal />

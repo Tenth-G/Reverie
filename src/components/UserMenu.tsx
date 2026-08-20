@@ -1,17 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { usePlayerStore } from '../store/playerStore'
+import badgeVip from '../assets/badge-vip.png'
+import badgeSvip from '../assets/badge-svip.png'
 
 function vipLabel(vipType?: number): string {
   if (!vipType || vipType === 0) return '普通用户'
   if (vipType === 11) return '黑胶 SVIP'
   if (vipType === 10) return '黑胶 VIP'
   return 'VIP 会员'
-}
-
-function vipBadgeLabel(vipType: number): string {
-  if (vipType === 11) return '黑胶SVIP'
-  if (vipType === 10) return '黑胶VIP'
-  return 'VIP'
 }
 
 function remainingDays(expireTime?: number): string {
@@ -21,10 +17,24 @@ function remainingDays(expireTime?: number): string {
   return `剩余 ${days} 天`
 }
 
+function formatExpire(expireTime?: number): string {
+  if (!expireTime || expireTime <= 0) return '—'
+  try {
+    return new Date(expireTime).toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+  } catch {
+    return '—'
+  }
+}
+
 export default function UserMenu() {
   const [open, setOpen] = useState(false)
   const profile = usePlayerStore((s) => s.profile)
   const vipInfo = usePlayerStore((s) => s.vipInfo)
+  const userLevel = usePlayerStore((s) => s.userLevel)
   const logout = usePlayerStore((s) => s.logout)
   const setShowLogin = usePlayerStore((s) => s.setShowLogin)
   const ref = useRef<HTMLDivElement>(null)
@@ -61,7 +71,12 @@ export default function UserMenu() {
         ) : (
           <span className="user-avatar user-avatar-ph">♪</span>
         )}
-        {isVip && <span className="user-badge">{vipBadgeLabel(vipType)}</span>}
+        {isVip &&
+          (vipType === 11 ? (
+            <img className="user-badge-img svip" src={badgeSvip} alt="黑胶SVIP" />
+          ) : (
+            <img className="user-badge-img" src={badgeVip} alt="黑胶VIP" />
+          ))}
       </button>
       {open && (
         <div className="user-dropdown">
@@ -81,8 +96,20 @@ export default function UserMenu() {
             <span>{vipLabel(vipType)}</span>
           </div>
           <div className="user-dropdown-row">
+            <span>会员等级</span>
+            <span>{vipLevel > 0 ? `Lv.${vipLevel}` : '—'}</span>
+          </div>
+          <div className="user-dropdown-row">
+            <span>会员到期</span>
+            <span>{isVip ? formatExpire(expireTime) : '—'}</span>
+          </div>
+          <div className="user-dropdown-row">
             <span>会员状态</span>
             <span>{isVip ? days || '生效中' : '普通用户'}</span>
+          </div>
+          <div className="user-dropdown-row">
+            <span>听歌等级</span>
+            <span>{userLevel > 0 ? `Lv.${userLevel}` : '—'}</span>
           </div>
           <button className="user-dropdown-item" onClick={switchAccount}>
             切换账号
