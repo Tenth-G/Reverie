@@ -61,7 +61,7 @@ async function request<T = unknown>(
   if (cacheBust) q.set("timestamp", String(Date.now()));
 
   const url = `${API_BASE}${path}?${q.toString()}`;
-  const res = await fetch(url, { headers: { "Cache-Control": "no-cache" } });
+  const res = await fetch(url);
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${path}`);
   return (await res.json()) as T;
 }

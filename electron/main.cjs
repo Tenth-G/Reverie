@@ -1,7 +1,6 @@
 "use strict";
 
 const { app, BrowserWindow, ipcMain, shell, dialog } = require("electron");
-const { autoUpdater } = require("electron-updater");
 const fs = require("fs");
 const path = require("path");
 
@@ -13,6 +12,15 @@ let updateEnabled = false;
 
 /** True while the current check was triggered manually from the settings. */
 let manualCheck = false;
+
+// Lazy load autoUpdater to avoid issues in dev mode
+let autoUpdater = null;
+function getAutoUpdater() {
+  if (!autoUpdater && app.isPackaged) {
+    autoUpdater = require("electron-updater").autoUpdater;
+  }
+  return autoUpdater;
+}
 
 /**
  * electron-updater's GitHub provider delivers releaseNotes as either a string
@@ -101,6 +109,9 @@ async function smartCheck(manual) {
   // Held for the whole run: resetting it per event loses the manual flag when
   // the first source fails and the second one succeeds.
   manualCheck = manual;
+  const updater = getAutoUpdater();
+  if (!updater) return;
+
   try {
     const primary = await pickUpdateSource();
     const fallback = UPDATE_SOURCES.find((s) => s !== primary);
@@ -108,14 +119,14 @@ async function smartCheck(manual) {
       // A failure here is retried on the other source, so it must not surface
       // as an "update check failed" toast.
       retryingSource = Boolean(fallback);
-      autoUpdater.setFeedURL(primary.config);
-      await autoUpdater.checkForUpdates();
+      updater.setFeedURL(primary.config);
+      await updater.checkForUpdates();
       retryingSource = false;
     } catch (err) {
       retryingSource = false;
       if (!fallback) throw err;
-      autoUpdater.setFeedURL(fallback.config);
-      await autoUpdater.checkForUpdates();
+      updater.setFeedURL(fallback.config);
+      await updater.checkForUpdates();
     }
   } catch {
     // covered by the autoUpdater "error" event
@@ -137,22 +148,25 @@ function setupUpdater() {
   if (process.env.REVERIE_SKIP_UPDATE === "1") return;
   updateEnabled = true;
 
-  // Never download without the user clicking 更新 in the dialog.
-  autoUpdater.autoDownload = false;
-  autoUpdater.autoInstallOnAppQuit = true;
+  const updater = getAutoUpdater();
+  if (!updater) return;
 
-  autoUpdater.on("checking-for-update", () => sendUpdateEvent("checking"));
-  autoUpdater.on("update-available", (info) => {
+  // Never download without the user clicking 更新 in the dialog.
+  updater.autoDownload = false;
+  updater.autoInstallOnAppQuit = true;
+
+  updater.on("checking-for-update", () => sendUpdateEvent("checking"));
+  updater.on("update-available", (info) => {
     sendUpdateEvent("available", {
       version: String(info.version),
       notes: extractReleaseNotes(info.releaseNotes),
       manual: manualCheck,
     });
   });
-  autoUpdater.on("update-not-available", () => {
+  updater.on("update-not-available", () => {
     sendUpdateEvent("not-available", { manual: manualCheck });
   });
-  autoUpdater.on("download-progress", (p) =>
+  updater.on("download-progress", (p) =>
     sendUpdateEvent("progress", {
       percent: Math.round(p.percent || 0),
       transferred: p.transferred || 0,
@@ -160,8 +174,8 @@ function setupUpdater() {
       speed: p.bytesPerSecond || 0,
     }),
   );
-  autoUpdater.on("update-downloaded", () => sendUpdateEvent("downloaded"));
-  autoUpdater.on("error", (err) => {
+  updater.on("update-downloaded", () => sendUpdateEvent("downloaded"));
+  updater.on("error", (err) => {
     // The other source is about to be tried; report only if that fails too.
     if (retryingSource) return;
     sendUpdateEvent("error", {
@@ -214,6 +228,7 @@ async function startApi() {
       host: API_HOST,
       checkVersion: false,
     });
+
     apiServer = expressApp.server;
     if (apiServer) {
       // serveNcmApi resolves even when the port is taken; the EADDRINUSE comes
@@ -367,8 +382,10 @@ ipcMain.handle("update:check", () => {
 });
 ipcMain.handle("update:download", async () => {
   if (!updateEnabled) return { ok: false, reason: "disabled" };
+  const updater = getAutoUpdater();
+  if (!updater) return { ok: false, reason: "not-packaged" };
   try {
-    await autoUpdater.downloadUpdate();
+    await updater.downloadUpdate();
     return { ok: true };
   } catch (err) {
     sendUpdateEvent("error", {
@@ -380,7 +397,9 @@ ipcMain.handle("update:download", async () => {
 });
 ipcMain.on("update:install", () => {
   if (!updateEnabled) return;
-  autoUpdater.quitAndInstall();
+  const updater = getAutoUpdater();
+  if (!updater) return;
+  updater.quitAndInstall();
 });
 
 app.whenReady().then(async () => {
