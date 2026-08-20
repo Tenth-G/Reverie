@@ -1,6 +1,6 @@
 'use strict'
 
-const { app, BrowserWindow, ipcMain, shell } = require('electron')
+const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron')
 const path = require('path')
 
 const API_PORT = 3939
@@ -9,19 +9,67 @@ const API_HOST = '127.0.0.1'
 /** @type {import('http').Server | null} */
 let apiServer = null
 
+/** Is something already serving our API on `base`? (JSON reply => likely our server) */
+async function probeApi(base) {
+  try {
+    const res = await fetch(`${base}/login/status?timestamp=${Date.now()}`, {
+      signal: AbortSignal.timeout(3000),
+    })
+    const text = await res.text()
+    return text.trimStart().startsWith('{')
+  } catch {
+    return false
+  }
+}
+
 /**
  * Start the embedded NeteaseCloudMusicApi server in-process.
  * The renderer talks to http://127.0.0.1:3939 directly.
  */
 async function startApi() {
   const { serveNcmApi } = require('NeteaseCloudMusicApi')
-  const expressApp = await serveNcmApi({
-    port: API_PORT,
-    host: API_HOST,
-    checkVersion: false,
-  })
-  apiServer = expressApp.server
-  console.log(`[main] NCM API server listening @ http://${API_HOST}:${API_PORT}`)
+  try {
+    const expressApp = await serveNcmApi({
+      port: API_PORT,
+      host: API_HOST,
+      checkVersion: false,
+    })
+    apiServer = expressApp.server
+    if (apiServer) {
+      // serveNcmApi resolves even when the port is taken; the EADDRINUSE comes
+      // later as an async 'error' event. Handle it instead of crashing.
+      apiServer.on('error', async (err) => {
+        if (err && err.code === 'EADDRINUSE') {
+          console.error(`[main] Port ${API_PORT} already in use:`, err.message)
+          const ours = await probeApi(`http://${API_HOST}:${API_PORT}`)
+          if (ours) {
+            console.warn(`[main] Port ${API_PORT} already serving the music API — reusing it.`)
+            return
+          }
+          try {
+            dialog.showErrorBox(
+              'Reverie 启动失败',
+              `无法启动本地音乐服务：端口 ${API_PORT} 已被其他程序占用。\n\n请关闭占用该端口的程序（例如另一个 Reverie 实例）后重试。`,
+            )
+          } catch {
+            /* ignore */
+          }
+          app.quit()
+        } else if (err) {
+          console.error('[main] API server error:', err)
+        }
+      })
+    }
+    console.log(`[main] NCM API server listening @ http://${API_HOST}:${API_PORT}`)
+  } catch (err) {
+    console.error('[main] Failed to start NCM API:', err && err.message)
+    try {
+      dialog.showErrorBox('Reverie 启动失败', `无法启动本地音乐服务：${err && err.message}`)
+    } catch {
+      /* ignore */
+    }
+    app.quit()
+  }
 }
 
 function createWindow() {
