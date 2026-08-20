@@ -293,11 +293,19 @@ input {
 .user-nick {
   font-size: 12px;
   font-weight: 500;
-  max-width: 110px;
+  max-width: 150px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   color: var(--text);
+}
+/* VIP label text inside the capsule (lengthens it) */
+.user-vip-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e6a23c;
+  white-space: nowrap;
+  flex: none;
 }
 .user-caret {
   color: var(--text-faint);

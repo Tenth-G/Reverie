@@ -74,6 +74,7 @@ export default function UserMenu() {
         {isVip && badgeUrl && (
           <img className="user-badge-api" src={badgeUrl} alt="会员" />
         )}
+        {isVip && <span className="user-vip-text">{vipLabel(vipType)}</span>}
         <IconChevronDown className="user-caret" width={13} height={13} />
       </button>
       {open && (
