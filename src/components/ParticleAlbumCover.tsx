@@ -42,12 +42,20 @@ function srgbToLinear(c: number): number {
 
 /** Sustained frame time above this (≈36fps) means the level is too high. */
 const OVERLOAD_FRAME_MS = 28;
-/** Wall-clock warmup, excluding shader compile and the texture upload. */
+/** Foreground-only warmup, excluding shader compile and the texture upload. */
 const WATCHDOG_WARMUP_MS = 1500;
-/** Wall-clock sampling window after the warmup. */
+/** Foreground-only sampling window after the warmup. */
 const WATCHDOG_WINDOW_MS = 2500;
 /** Fewer frames than this inside the window is itself proof of overload. */
 const WATCHDOG_MIN_FRAMES = 6;
+/**
+ * A gap longer than this is a stall, not a slow frame, and must not be
+ * measured. Even software rasterisation of the largest cloud lands near 400ms,
+ * while a minimised window, an occluded one, or a sleeping machine produces
+ * multi-second gaps. macOS in particular throttles a minimised window without
+ * ever setting document.hidden, so the visibility check alone is not enough.
+ */
+const WATCHDOG_MAX_GAP_MS = 1000;
 
 export default function ParticleAlbumCover({
   imageUrl,
@@ -233,11 +241,21 @@ export default function ParticleAlbumCover({
     // driver, so measure what the machine actually achieves and step down if
     // the chosen level does not hold up.
     // Counting frames would never conclude on the machines that need this
-    // most: at 2fps a 180-frame window takes 90 seconds. Judge by wall clock.
-    const watchdogStart = performance.now();
+    // most: at 2fps a 180-frame window takes 90 seconds. So judge by time —
+    // but only time the window actually spent on screen. A backgrounded window
+    // is throttled or stopped outright, and letting that count would read as
+    // "no frames arrived" and demote a perfectly capable GPU.
     const watchdogGaps: number[] = [];
+    let watchdogVisibleMs = 0;
     let watchdogFired = false;
-    let watchdogLast = watchdogStart;
+    let watchdogLast = performance.now();
+    // The first gap after mounting, and after every visibility change, spans a
+    // pause rather than a rendered frame.
+    let watchdogSkipGap = true;
+    const onVisibilityChange = () => {
+      watchdogSkipGap = true;
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     let frameId = 0;
     let spin = 0;
@@ -294,17 +312,28 @@ export default function ParticleAlbumCover({
         const now = performance.now();
         const gap = now - watchdogLast;
         watchdogLast = now;
-        const elapsed = now - watchdogStart;
-        if (elapsed > WATCHDOG_WARMUP_MS) watchdogGaps.push(gap);
-        if (elapsed > WATCHDOG_WARMUP_MS + WATCHDOG_WINDOW_MS) {
-          watchdogFired = true;
-          if (watchdogGaps.length < WATCHDOG_MIN_FRAMES) {
-            // Too few frames to even form a sample: unambiguously too slow.
-            onOverloadRef.current?.();
-          } else {
-            const sorted = [...watchdogGaps].sort((a, b) => a - b);
-            const median = sorted[Math.floor(sorted.length / 2)];
-            if (median > OVERLOAD_FRAME_MS) onOverloadRef.current?.();
+        if (document.hidden || gap > WATCHDOG_MAX_GAP_MS) {
+          // Throttled or stalled: this frame says nothing about the GPU.
+          watchdogSkipGap = true;
+        } else if (watchdogSkipGap) {
+          watchdogSkipGap = false;
+        } else {
+          watchdogVisibleMs += gap;
+          if (watchdogVisibleMs > WATCHDOG_WARMUP_MS) watchdogGaps.push(gap);
+          if (watchdogVisibleMs > WATCHDOG_WARMUP_MS + WATCHDOG_WINDOW_MS) {
+            watchdogFired = true;
+            const sortedAll = [...watchdogGaps].sort((a, b) => a - b);
+            console.log(
+              `[watchdog] frames=${watchdogGaps.length} median=${(sortedAll[Math.floor(sortedAll.length / 2)] ?? -1).toFixed(1)}ms grid=${GRID}`,
+            );
+            if (watchdogGaps.length < WATCHDOG_MIN_FRAMES) {
+              // Too few frames to even form a sample: unambiguously too slow.
+              onOverloadRef.current?.();
+            } else {
+              const sorted = [...watchdogGaps].sort((a, b) => a - b);
+              const median = sorted[Math.floor(sorted.length / 2)];
+              if (median > OVERLOAD_FRAME_MS) onOverloadRef.current?.();
+            }
           }
         }
       }
@@ -326,6 +355,7 @@ export default function ParticleAlbumCover({
     return () => {
       cancelAnimationFrame(frameId);
       window.removeEventListener("resize", handleResize);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       el.removeEventListener("pointerdown", onPointerDown);
       el.removeEventListener("pointermove", onPointerMove);
       el.removeEventListener("pointerup", finishDrag);
