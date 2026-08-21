@@ -25,7 +25,6 @@ export default class CoverErrorBoundary extends Component<
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("[cover] falling back to the static image:", error, info);
     this.props.onError?.(error);
   }
 

@@ -322,10 +322,6 @@ export default function ParticleAlbumCover({
           if (watchdogVisibleMs > WATCHDOG_WARMUP_MS) watchdogGaps.push(gap);
           if (watchdogVisibleMs > WATCHDOG_WARMUP_MS + WATCHDOG_WINDOW_MS) {
             watchdogFired = true;
-            const sortedAll = [...watchdogGaps].sort((a, b) => a - b);
-            console.log(
-              `[watchdog] frames=${watchdogGaps.length} median=${(sortedAll[Math.floor(sortedAll.length / 2)] ?? -1).toFixed(1)}ms grid=${GRID}`,
-            );
             if (watchdogGaps.length < WATCHDOG_MIN_FRAMES) {
               // Too few frames to even form a sample: unambiguously too slow.
               onOverloadRef.current?.();
