@@ -1,12 +1,6 @@
 import { useEffect, useState } from "react";
 import { usePlayerStore } from "../store/playerStore";
-import {
-  IconClose,
-  IconMaximize,
-  IconMinimize,
-  IconRestore,
-  IconSettings,
-} from "./icons";
+import { Copy, Minus, Settings, Square, X } from "lucide-react";
 
 /** macOS draws its own close/minimize/zoom buttons; only Windows needs ours. */
 const isMac =
@@ -28,14 +22,16 @@ export default function TitleBar() {
   return (
     <header className="titlebar">
       <div className="titlebar-drag" />
-      <div className="titlebar-name">Reverie</div>
+      <div className="titlebar-name" data-text="Reverie">
+        Reverie
+      </div>
       <div className="titlebar-controls">
         <button
           className="tb-btn"
           onClick={() => setShowSettings(true)}
           title="设置"
         >
-          <IconSettings width={15} height={15} />
+          <Settings size={15} />
         </button>
         {!isMac && (
           <>
@@ -44,25 +40,21 @@ export default function TitleBar() {
               onClick={() => window.ncm?.minimize()}
               title="最小化"
             >
-              <IconMinimize width={15} height={15} />
+              <Minus size={15} />
             </button>
             <button
               className="tb-btn"
               onClick={() => window.ncm?.maximize()}
               title={maximized ? "还原" : "最大化"}
             >
-              {maximized ? (
-                <IconRestore width={13} height={13} />
-              ) : (
-                <IconMaximize width={13} height={13} />
-              )}
+              {maximized ? <Copy size={13} /> : <Square size={13} />}
             </button>
             <button
               className="tb-btn tb-close"
               onClick={() => window.ncm?.close()}
               title="关闭"
             >
-              <IconClose width={15} height={15} />
+              <X size={15} />
             </button>
           </>
         )}

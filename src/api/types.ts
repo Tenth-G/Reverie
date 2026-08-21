@@ -4,6 +4,7 @@ export interface Song {
   /** Joined artist names, e.g. "周杰伦" */
   artists: string;
   artistNames: string[];
+  artistIds?: number[];
   album: string;
   albumId: number;
   picUrl: string;
@@ -26,6 +27,80 @@ export interface PlaylistInfo {
   coverImgUrl: string;
   trackCount: number;
   description?: string;
+  creatorId?: number;
+  creatorName?: string;
+  subscribed?: boolean;
+  privacy?: number;
+}
+
+export interface ArtistInfo {
+  id: number;
+  name: string;
+  picUrl: string;
+  alias: string[];
+  briefDesc: string;
+  followed: boolean;
+  musicSize: number;
+  albumSize: number;
+}
+
+export interface AlbumInfo {
+  id: number;
+  name: string;
+  picUrl: string;
+  artistNames: string;
+  artistIds: number[];
+  description: string;
+  publishTime: number;
+  size: number;
+  subscribed: boolean;
+}
+
+export interface CommentInfo {
+  id: number;
+  content: string;
+  time: number;
+  liked: boolean;
+  likedCount: number;
+  userId: number;
+  nickname: string;
+  avatarUrl: string;
+}
+
+export interface RadioInfo {
+  id: number;
+  name: string;
+  picUrl: string;
+  description: string;
+  programCount: number;
+  subscriberCount: number;
+  subscribed: boolean;
+  category: string;
+  djName: string;
+}
+
+export interface SocialUser {
+  userId: number;
+  nickname: string;
+  avatarUrl: string;
+  signature: string;
+  followed: boolean;
+  follows: number;
+  followeds: number;
+}
+
+export interface SocialEvent {
+  id: number;
+  type: number;
+  time: number;
+  text: string;
+  user: SocialUser;
+  commentCount: number;
+  forwardCount: number;
+  likedCount: number;
+  resourceTitle?: string;
+  resourceType?: "song" | "album" | "playlist" | "other";
+  resourceId?: number;
 }
 
 export interface UserProfile {
@@ -45,7 +120,19 @@ export interface QrCreateResult {
 export type PlayMode = "sequence" | "one" | "shuffle";
 
 export type View =
-  "home" | "chart" | "fm" | "userlist" | "playlist" | "likes" | "recent";
+  | "home"
+  | "chart"
+  | "fm"
+  | "userlist"
+  | "playlist"
+  | "likes"
+  | "recent"
+  | "album"
+  | "artist"
+  | "comments"
+  | "radio"
+  | "radioDetail"
+  | "social";
 
 export interface SearchResponse {
   result?: { songs?: unknown[]; songCount?: number };

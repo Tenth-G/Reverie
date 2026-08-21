@@ -9,7 +9,10 @@ type UpdateEvent = Parameters<NativeBridge["onUpdateEvent"]>[0] extends (
   ? T
   : never;
 
-const appWindow = getCurrentWindow();
+const hasTauriRuntime =
+  (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ !==
+  undefined;
+const appWindow = hasTauriRuntime ? getCurrentWindow() : null;
 const updateListeners = new Set<(event: UpdateEvent) => void>();
 let pendingUpdate: Update | null = null;
 let checking = false;
@@ -36,14 +39,16 @@ export const ncm: NativeBridge = {
     webview: webviewVersion(),
   },
 
-  minimize: () => appWindow.minimize(),
+  minimize: () => appWindow?.minimize(),
   maximize: async () => {
+    if (!appWindow) return;
     if (await appWindow.isMaximized()) await appWindow.unmaximize();
     else await appWindow.maximize();
   },
-  close: () => appWindow.close(),
-  isMaximized: () => appWindow.isMaximized(),
+  close: () => appWindow?.close(),
+  isMaximized: () => appWindow?.isMaximized() ?? Promise.resolve(false),
   onMaximized: (callback) => {
+    if (!appWindow) return () => {};
     let disposed = false;
     let unlisten: (() => void) | undefined;
     void appWindow

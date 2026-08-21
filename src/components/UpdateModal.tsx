@@ -1,5 +1,6 @@
 import { usePlayerStore } from "../store/playerStore";
 import { renderReleaseNotes } from "../utils/notes";
+import { ArrowRight } from "lucide-react";
 
 function formatSize(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes <= 0) return "0 MB";
@@ -41,7 +42,9 @@ export default function UpdateModal() {
 
         <div className="update-versions">
           <span className="ver-old">v{__APP_VERSION__}</span>
-          <span className="ver-arrow">→</span>
+          <span className="ver-arrow">
+            <ArrowRight size={16} />
+          </span>
           <span className="ver-new">v{updateVersion}</span>
         </div>
 

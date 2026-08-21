@@ -1,23 +1,24 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../store/playerStore";
 import type { ThemePreference } from "../store/playerStore";
 import type { View } from "../api/types";
 import type { ReactElement } from "react";
+import {
+  BarChart3,
+  Disc3,
+  Heart,
+  History,
+  House,
+  ListMusic,
+  Monitor,
+  Moon,
+  Podcast,
+  Search,
+  Sun,
+  Users,
+} from "lucide-react";
 import UserMenu from "./UserMenu";
 import { sizedImage } from "../utils/image";
-import {
-  IconChart,
-  IconClock,
-  IconClose,
-  IconHeart,
-  IconHome,
-  IconMonitor,
-  IconMoon,
-  IconMusic,
-  IconSearch,
-  IconShuffle,
-  IconSun,
-} from "./icons";
 
 interface NavItem {
   view: View;
@@ -27,19 +28,44 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { view: "home", label: "首页", icon: <IconHome /> },
-  { view: "chart", label: "排行榜", icon: <IconChart /> },
-  { view: "userlist", label: "我的歌单", icon: <IconMusic />, auth: true },
-  { view: "fm", label: "漫游", icon: <IconShuffle />, auth: true },
+  { view: "home", label: "首页", icon: <House size={17} /> },
+  { view: "chart", label: "排行榜", icon: <BarChart3 size={17} /> },
+  {
+    view: "userlist",
+    label: "我的歌单",
+    icon: <ListMusic size={17} />,
+    auth: true,
+  },
+  { view: "radio", label: "播客", icon: <Podcast size={16} />, auth: true },
+  { view: "social", label: "动态", icon: <Users size={16} />, auth: true },
 ];
 
 const THEME_ORDER: ThemePreference[] = ["system", "light", "dark"];
 const THEME_ICON = {
-  system: <IconMonitor />,
-  light: <IconSun />,
-  dark: <IconMoon />,
+  system: <Monitor size={17} />,
+  light: <Sun size={17} />,
+  dark: <Moon size={17} />,
 };
 const THEME_LABEL = { system: "跟随系统", light: "浅色", dark: "深色" };
+
+const preloadView = (view: View) => {
+  switch (view) {
+    case "chart":
+      return import("./ChartPage");
+    case "userlist":
+      return import("./UserListPage");
+    case "radio":
+      return import("./RadioPage");
+    case "social":
+      return import("./SocialPage");
+    case "likes":
+      return import("./LikesPage");
+    case "recent":
+      return import("./RecentPage");
+    default:
+      return Promise.resolve();
+  }
+};
 
 export default function TopNav() {
   const activeView = usePlayerStore((s) => s.activeView);
@@ -57,17 +83,47 @@ export default function TopNav() {
   const doSearch = usePlayerStore((s) => s.doSearch);
   const setShowLogin = usePlayerStore((s) => s.setShowLogin);
   const loadTopSongs = usePlayerStore((s) => s.loadTopSongs);
-  const loadPersonalFm = usePlayerStore((s) => s.loadPersonalFm);
   const loadUserPlaylists = usePlayerStore((s) => s.loadUserPlaylists);
   const loadHome = usePlayerStore((s) => s.loadHome);
   const playSong = usePlayerStore((s) => s.playSong);
 
   const searchRef = useRef<HTMLInputElement>(null);
   const navRef = useRef<HTMLElement>(null);
+  const searchTimerRef = useRef(0);
+  const [condensed, setCondensed] = useState(false);
 
   useEffect(() => {
     if (searchOpen) searchRef.current?.focus();
   }, [searchOpen]);
+
+  useEffect(() => {
+    const onPageScroll = (event: Event) => {
+      const { scrollTop = 0 } = (
+        event as CustomEvent<{ scrollTop?: number }>
+      ).detail;
+      setCondensed((current) => {
+        if (current) return scrollTop >= 4;
+        return scrollTop > 18;
+      });
+    };
+    window.addEventListener("reverie:page-scroll", onPageScroll);
+    return () =>
+      window.removeEventListener("reverie:page-scroll", onPageScroll);
+  }, []);
+
+  useEffect(() => {
+    window.clearTimeout(searchTimerRef.current);
+    if (!searchOpen) return;
+    const keyword = searchKeyword.trim();
+    if (!keyword) {
+      usePlayerStore.setState({ searchResults: [], searching: false });
+      return;
+    }
+    searchTimerRef.current = window.setTimeout(() => {
+      void doSearch(keyword);
+    }, 180);
+    return () => window.clearTimeout(searchTimerRef.current);
+  }, [searchKeyword, searchOpen, doSearch]);
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
@@ -94,11 +150,12 @@ export default function TopNav() {
       case "chart":
         loadTopSongs();
         break;
-      case "fm":
-        loadPersonalFm();
-        break;
       case "userlist":
         loadUserPlaylists();
+        break;
+      case "radio":
+      case "social":
+        setActiveView(view);
         break;
       default:
         setActiveView(view);
@@ -111,12 +168,13 @@ export default function TopNav() {
   };
 
   return (
-    <nav className="topnav" ref={navRef}>
+    <nav className={`topnav ${condensed ? "is-condensed" : ""}`} ref={navRef}>
       <div className="topnav-items">
         {NAV.map((item) => (
           <button
             key={item.view}
             className={`topnav-item ${activeView === item.view && !searchOpen ? "active" : ""}`}
+            onPointerEnter={() => void preloadView(item.view)}
             onClick={() => handleNav(item.view, item.auth)}
           >
             {item.icon}
@@ -129,7 +187,7 @@ export default function TopNav() {
         {searchOpen ? (
           <div className="search-wrap">
             <div className="search-capsule">
-              <IconSearch width={15} height={15} />
+              <Search size={15} />
               <input
                 ref={searchRef}
                 placeholder="搜索歌曲 / 歌手 / 专辑…"
@@ -138,7 +196,10 @@ export default function TopNav() {
                   usePlayerStore.setState({ searchKeyword: e.target.value })
                 }
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") doSearch(e.currentTarget.value);
+                  if (e.key === "Enter") {
+                    window.clearTimeout(searchTimerRef.current);
+                    void doSearch(e.currentTarget.value);
+                  }
                   if (e.key === "Escape") {
                     setSearchOpen(false);
                     usePlayerStore.setState({
@@ -148,18 +209,6 @@ export default function TopNav() {
                   }
                 }}
               />
-              <button
-                className="search-close"
-                onClick={() => {
-                  setSearchOpen(false);
-                  usePlayerStore.setState({
-                    searchKeyword: "",
-                    searchResults: [],
-                  });
-                }}
-              >
-                <IconClose width={13} height={13} />
-              </button>
             </div>
             {searching ||
             searchResults.length > 0 ||
@@ -184,7 +233,9 @@ export default function TopNav() {
                       {song.picUrl ? (
                         <img src={sizedImage(song.picUrl, 80)} alt="" />
                       ) : (
-                        <span className="song-ph">♪</span>
+                        <span className="song-ph">
+                          <Disc3 size={16} />
+                        </span>
                       )}
                       <div className="meta">
                         <div className="t">{song.name}</div>
@@ -211,12 +262,13 @@ export default function TopNav() {
             }}
             title="搜索"
           >
-            <IconSearch />
+            <Search size={17} />
           </button>
         )}
 
         <button
           className="topnav-icon-btn"
+          onPointerEnter={() => void preloadView("likes")}
           onClick={cycleTheme}
           title={`主题：${THEME_LABEL[theme]}`}
         >
@@ -225,13 +277,14 @@ export default function TopNav() {
 
         <button
           className="topnav-icon-btn"
+          onPointerEnter={() => void preloadView("recent")}
           onClick={() => {
             setPage("browse");
             setActiveView("likes");
           }}
           title="我的喜欢"
         >
-          <IconHeart />
+          <Heart size={17} />
         </button>
 
         <button
@@ -242,13 +295,17 @@ export default function TopNav() {
           }}
           title="最近播放"
         >
-          <IconClock />
+          <History size={17} />
         </button>
 
         {loggedIn ? (
           <UserMenu />
         ) : (
-          <button className="topnav-login" onClick={() => setShowLogin(true)}>
+          <button
+            className="topnav-login"
+            onPointerEnter={() => void import("./LoginModal")}
+            onClick={() => setShowLogin(true)}
+          >
             登录
           </button>
         )}

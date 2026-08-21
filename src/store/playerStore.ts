@@ -3,6 +3,7 @@ import {
   clearCookie,
   fmTrash,
   getCookie,
+  getLegacySongUrl,
   getLikedIds,
   getLyric,
   getPlaylistDetail,
@@ -27,6 +28,7 @@ import type {
   View,
 } from "../api/types";
 import type { VipInfo } from "../api/client";
+import { getPersonalFm } from "../api/extended";
 import { parseLyrics, pickRandomLyricLine } from "../utils/lyrics";
 import {
   benchmarkCoverQuality,
@@ -58,6 +60,17 @@ export type QueueSource = "list" | "fm";
 
 const COVER_QUALITY_KEY = "reverie_cover_quality";
 const COVER_BENCH_KEY = "reverie_cover_benchmarked";
+const PROFILE_CACHE_KEY = "reverie_profile_cache";
+const HOME_PLAYLISTS_CACHE_KEY = "reverie_home_playlists";
+const HOME_TOP_CACHE_KEY = "reverie_home_top_songs";
+const HOME_QUOTE_CACHE_KEY = "reverie_home_quote";
+const HOME_PLAYLISTS_CACHE_AT_KEY = "reverie_home_playlists_at";
+const HOME_TOP_CACHE_AT_KEY = "reverie_home_top_songs_at";
+const HOME_QUOTE_CACHE_AT_KEY = "reverie_home_quote_at";
+const VIP_CACHE_PREFIX = "reverie_vip_";
+const HOME_DATA_CACHE_TTL = 30 * 60 * 1000;
+const HOME_RECOMMEND_CACHE_TTL = 10 * 60 * 1000;
+const HOME_QUOTE_CACHE_TTL = 12 * 60 * 60 * 1000;
 
 function readCoverQuality(): CoverQuality {
   const v = readStr(COVER_QUALITY_KEY, "");
@@ -103,6 +116,65 @@ function write(key: string, v: string) {
   }
 }
 
+function readJson<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as T) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeJson(key: string, value: unknown) {
+  write(key, JSON.stringify(value));
+}
+
+function readCachedProfile(): UserProfile | null {
+  if (!getCookie()) return null;
+  const profile = readJson<UserProfile | null>(PROFILE_CACHE_KEY, null);
+  return profile && profile.userId > 0 ? profile : null;
+}
+
+function recommendCacheKey(userId: number) {
+  return `reverie_recommend_${userId}`;
+}
+
+function recommendCacheAtKey(userId: number) {
+  return `${recommendCacheKey(userId)}_at`;
+}
+
+function likedIdsCacheKey(userId: number) {
+  return `reverie_liked_ids_${userId}`;
+}
+
+function vipCacheKey(userId: number) {
+  return `${VIP_CACHE_PREFIX}${userId}`;
+}
+
+function isCacheFresh(key: string, ttl: number): boolean {
+  const cachedAt = readNum(key, 0);
+  return cachedAt > 0 && Date.now() - cachedAt < ttl;
+}
+
+function touchCache(key: string) {
+  write(key, String(Date.now()));
+}
+
+async function loginStatusWithRetry(): Promise<UserProfile | null> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 14; attempt++) {
+    try {
+      return await loginStatus();
+    } catch (error) {
+      lastError = error;
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.min(120 + attempt * 80, 600)),
+      );
+    }
+  }
+  throw lastError;
+}
+
 /** Fisher-Yates shuffle; `sort(() => Math.random() - 0.5)` is heavily biased. */
 function shuffle<T>(items: T[]): T[] {
   const out = [...items];
@@ -114,11 +186,6 @@ function shuffle<T>(items: T[]): T[] {
 }
 
 /** Roaming pool: prefer free tracks, VIP ones cannot be streamed. */
-function roamingPool(songs: Song[]): Song[] {
-  const free = songs.filter((s) => s.fee === 0);
-  return shuffle(free.length >= 5 ? free : songs);
-}
-
 function readParticleEffect(): ParticleEffect {
   const v = readStr("reverie_particle", "spin");
   return v === "none" || v === "wave" || v === "audio" ? v : "spin";
@@ -227,9 +294,44 @@ function clearLegacyKeys() {
 }
 
 const restoredSession = readSession();
+const cachedProfile = readCachedProfile();
+const cachedHotPlaylists = readJson<PlaylistInfo[]>(
+  HOME_PLAYLISTS_CACHE_KEY,
+  [],
+);
+const cachedTopSongs = readJson<Song[]>(HOME_TOP_CACHE_KEY, []);
+const cachedHomeQuote = readJson<{ text: string; source: string } | null>(
+  HOME_QUOTE_CACHE_KEY,
+  null,
+);
+const cachedRecommendSongs = cachedProfile
+  ? readJson<Song[]>(recommendCacheKey(cachedProfile.userId), [])
+  : [];
+const cachedLikedIds = cachedProfile
+  ? readJson<number[]>(likedIdsCacheKey(cachedProfile.userId), [])
+  : [];
+const cachedVipInfo = cachedProfile
+  ? readJson<VipInfo | null>(vipCacheKey(cachedProfile.userId), null)
+  : null;
 clearLegacyKeys();
 
 let toastSeq = 0;
+let homeLoadPromise: Promise<void> | null = null;
+let homeQuoteLoadPromise: Promise<void> | null = null;
+let fmBatchPromise: Promise<Song[]> | null = null;
+let fmRetryStreak = 0;
+let searchToken = 0;
+const searchCache = new Map<string, { at: number; songs: Song[] }>();
+const SEARCH_CACHE_TTL = 5 * 60 * 1000;
+
+function requestPersonalFmBatch(): Promise<Song[]> {
+  if (!fmBatchPromise) {
+    fmBatchPromise = getPersonalFm().finally(() => {
+      fmBatchPromise = null;
+    });
+  }
+  return fmBatchPromise;
+}
 
 /** Monotonic token so a slow url lookup cannot override a newer play request. */
 let playToken = 0;
@@ -239,6 +341,7 @@ let failStreak = 0;
 
 interface PlayerState {
   // --- auth ---
+  authReady: boolean;
   loggedIn: boolean;
   profile: UserProfile | null;
   likedIds: number[];
@@ -300,17 +403,28 @@ interface PlayerState {
   searchKeyword: string;
   searchResults: Song[];
   searching: boolean;
+  viewScrollPositions: Partial<Record<View, number>>;
   topSongs: Song[];
   topSongsLoading: boolean;
   hotPlaylists: PlaylistInfo[];
   hotPlaylistsLoading: boolean;
   userPlaylists: PlaylistInfo[];
+  userPlaylistsLoading: boolean;
   playlistSongs: Song[];
+  playlistLoading: boolean;
+  playlistId: number;
   playlistName: string;
+  playlistCover: string;
+  playlistDescription: string;
+  playlistCreatorId: number;
+  playlistSubscribed: boolean;
   recommendSongs: Song[];
+  recommendSongsLoading: boolean;
+  likedSongsLoading: boolean;
   fmSongs: Song[];
   showLogin: boolean;
   showSettings: boolean;
+  showPlayerComments: boolean;
   toasts: ToastMsg[];
 
   // --- actions ---
@@ -344,10 +458,12 @@ interface PlayerState {
   detectCoverQuality: (manual?: boolean) => Promise<void>;
   setShowLogin: (v: boolean) => void;
   setShowSettings: (v: boolean) => void;
+  setShowPlayerComments: (v: boolean) => void;
   setActiveView: (v: View) => void;
   setPage: (p: "browse" | "nowplaying") => void;
   setSearchOpen: (v: boolean) => void;
-  loadHome: () => Promise<void>;
+  saveViewScroll: (view: View, top: number) => void;
+  loadHome: (refreshPlaylists?: boolean) => Promise<void>;
   doSearch: (kw: string) => Promise<void>;
   loadTopSongs: () => Promise<void>;
   loadPersonalFm: () => Promise<void>;
@@ -387,19 +503,26 @@ async function resolveUrl(song: Song): Promise<string | null> {
       /* try next level */
     }
   }
+  try {
+    const { url } = await getLegacySongUrl(song.id);
+    if (url) return url;
+  } catch {
+    /* final fallback exhausted */
+  }
   return null;
 }
 
 export const usePlayerStore = create<PlayerState>()((set, get) => ({
   // --- auth ---
-  loggedIn: false,
-  profile: null,
-  likedIds: [],
+  authReady: !getCookie() || cachedProfile !== null,
+  loggedIn: cachedProfile !== null,
+  profile: cachedProfile,
+  likedIds: cachedLikedIds,
   likedSongs: [],
   likedAt: readLikedAt(),
-  vipInfo: null,
+  vipInfo: cachedVipInfo,
   recentSongs: readRecentSongs(),
-  homeQuote: null,
+  homeQuote: cachedHomeQuote,
 
   // --- audio ---
   audioEl: null,
@@ -450,17 +573,28 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   searchKeyword: "",
   searchResults: [],
   searching: false,
-  topSongs: [],
+  viewScrollPositions: {},
+  topSongs: cachedTopSongs,
   topSongsLoading: false,
-  hotPlaylists: [],
+  hotPlaylists: cachedHotPlaylists,
   hotPlaylistsLoading: false,
   userPlaylists: [],
+  userPlaylistsLoading: false,
   playlistSongs: [],
+  playlistLoading: false,
+  playlistId: 0,
   playlistName: "",
-  recommendSongs: [],
+  playlistCover: "",
+  playlistDescription: "",
+  playlistCreatorId: 0,
+  playlistSubscribed: false,
+  recommendSongs: cachedRecommendSongs,
+  recommendSongsLoading: false,
+  likedSongsLoading: false,
   fmSongs: [],
   showLogin: false,
   showSettings: false,
+  showPlayerComments: false,
   toasts: [],
 
   // --- toast ---
@@ -493,8 +627,12 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     set({ playing: !playing });
   },
   next: () => {
-    const { queue, index, playMode } = get();
+    const { queue, index, playMode, queueSource } = get();
     if (!queue.length) return;
+    if (queueSource === "fm") {
+      void get().fmNext();
+      return;
+    }
     let ni = index;
     if (playMode === "shuffle") {
       ni = Math.floor(Math.random() * queue.length);
@@ -760,38 +898,101 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   },
   setShowLogin: (v) => set({ showLogin: v }),
   setShowSettings: (v) => set({ showSettings: v }),
+  setShowPlayerComments: (v) => set({ showPlayerComments: v }),
   setActiveView: (v) => set({ activeView: v }),
   setPage: (p) => set({ currentPage: p }),
-  setSearchOpen: (v) => set({ searchOpen: v }),
+  setSearchOpen: (v) => {
+    if (!v) searchToken++;
+    set({ searchOpen: v, ...(v ? {} : { searching: false }) });
+  },
+  saveViewScroll: (view, top) =>
+    set((state) => ({
+      viewScrollPositions: {
+        ...state.viewScrollPositions,
+        [view]: Math.max(0, top),
+      },
+    })),
 
   // --- home dashboard ---
-  loadHome: async () => {
+  loadHome: async (refreshPlaylists = false) => {
     set({ activeView: "home" });
-    if (!get().hotPlaylists.length) {
+    if (homeLoadPromise) {
+      await homeLoadPromise;
+      return get().loadHome(refreshPlaylists);
+    }
+
+    const tasks: Promise<unknown>[] = [];
+    if (
+      refreshPlaylists ||
+      !get().hotPlaylists.length ||
+      !isCacheFresh(HOME_PLAYLISTS_CACHE_AT_KEY, HOME_DATA_CACHE_TTL)
+    ) {
       set({ hotPlaylistsLoading: true });
-      getHotPlaylists(12)
-        .then((lists) =>
-          set({ hotPlaylists: lists, hotPlaylistsLoading: false }),
+      tasks.push(
+        getHotPlaylists(
+          12,
+          refreshPlaylists ? Math.floor(Math.random() * 8) * 12 : 0,
         )
-        .catch(() => set({ hotPlaylistsLoading: false }));
+          .then((lists) => {
+            set({ hotPlaylists: lists });
+            writeJson(HOME_PLAYLISTS_CACHE_KEY, lists);
+            touchCache(HOME_PLAYLISTS_CACHE_AT_KEY);
+          })
+          .finally(() => set({ hotPlaylistsLoading: false })),
+      );
     }
-    if (!get().topSongs.length) {
+    if (
+      !get().topSongs.length ||
+      !isCacheFresh(HOME_TOP_CACHE_AT_KEY, HOME_DATA_CACHE_TTL)
+    ) {
       set({ topSongsLoading: true });
-      getTopSongs(0, 10)
-        .then((songs) => set({ topSongs: songs, topSongsLoading: false }))
-        .catch(() => set({ topSongsLoading: false }));
+      tasks.push(
+        getTopSongs(0, 10)
+          .then((songs) => {
+            set({ topSongs: songs });
+            writeJson(HOME_TOP_CACHE_KEY, songs);
+            touchCache(HOME_TOP_CACHE_AT_KEY);
+          })
+          .finally(() => set({ topSongsLoading: false })),
+      );
     }
-    if (get().loggedIn && !get().recommendSongs.length) {
-      getRecommendSongs()
-        .then((songs) => set({ recommendSongs: songs }))
-        .catch(() => {});
+    const profile = get().profile;
+    if (
+      get().loggedIn &&
+      profile &&
+      (!get().recommendSongs.length ||
+        !isCacheFresh(
+          recommendCacheAtKey(profile.userId),
+          HOME_RECOMMEND_CACHE_TTL,
+        ))
+    ) {
+      set({ recommendSongsLoading: true });
+      tasks.push(
+        getRecommendSongs()
+          .then((songs) => {
+            set({ recommendSongs: songs });
+            writeJson(recommendCacheKey(profile.userId), songs);
+            touchCache(recommendCacheAtKey(profile.userId));
+          })
+          .finally(() => set({ recommendSongsLoading: false })),
+      );
+    }
+    if (!tasks.length) return;
+
+    const run = Promise.allSettled(tasks).then(() => {});
+    homeLoadPromise = run;
+    try {
+      await run;
+    } finally {
+      if (homeLoadPromise === run) homeLoadPromise = null;
     }
   },
 
   // --- discovery ---
   doSearch: async (kw) => {
     const key = kw.trim();
-    set({ searchKeyword: key, searchOpen: true, searching: true });
+    const token = ++searchToken;
+    set({ searchOpen: true, searching: true });
     if (!key) {
       set({ searching: false, searchResults: [] });
       return;
@@ -801,11 +1002,20 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       set({ searching: false, searchResults: [] });
       return;
     }
+    const cacheKey = key.toLocaleLowerCase("zh-CN");
+    const cached = searchCache.get(cacheKey);
+    if (cached && Date.now() - cached.at < SEARCH_CACHE_TTL) {
+      set({ searchResults: cached.songs, searching: false });
+      return;
+    }
     try {
-      const results = await searchSongs(key, 100);
+      const results = await searchSongs(key, 40);
+      if (token !== searchToken || !get().searchOpen) return;
+      searchCache.set(cacheKey, { at: Date.now(), songs: results });
       set({ searchResults: results, searching: false });
       if (!results.length) get().toast("没有找到相关歌曲", "info");
     } catch {
+      if (token !== searchToken) return;
       set({ searching: false });
       get().toast("搜索失败，请检查网络", "error");
     }
@@ -821,21 +1031,19 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     }
   },
   loadPersonalFm: async () => {
-    // 漫游：随机播放歌曲
     if (!get().loggedIn) {
       get().toast("请先登录", "info");
       set({ showLogin: true });
       return;
     }
-    set({ activeView: "fm" });
     try {
-      const shuffled = roamingPool(await getTopSongs(0, 60));
-      // The pool is already shuffled, so don't clobber the user's play mode.
-      set({ fmSongs: shuffled });
-      if (shuffled.length) get().playSong(shuffled[0], shuffled, "fm");
+      const songs = await requestPersonalFmBatch();
+      fmRetryStreak = 0;
+      set({ fmSongs: songs });
+      if (songs.length) get().playSong(songs[0], songs, "fm");
       else get().toast("暂无内容", "info");
     } catch {
-      get().toast("加载随机歌曲失败", "error");
+      get().toast("加载私人漫游失败", "error");
     }
   },
   loadUserPlaylists: async () => {
@@ -845,12 +1053,14 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       set({ showLogin: true });
       return;
     }
-    set({ activeView: "userlist" });
+    set({ activeView: "userlist", userPlaylistsLoading: true });
     try {
       const lists = await getUserPlaylists(uid);
       set({ userPlaylists: lists });
     } catch {
       get().toast("加载我的歌单失败", "error");
+    } finally {
+      set({ userPlaylistsLoading: false });
     }
   },
   openPlaylist: async (id, name) => {
@@ -858,21 +1068,37 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       activeView: "playlist",
       playlistName: name,
       prevView: get().activeView,
+      playlistSongs: [],
+      playlistLoading: true,
     });
     try {
-      const { songs } = await getPlaylistDetail(id);
-      set({ playlistSongs: songs });
-      if (songs.length)
-        get().toast(`已载入歌单「${name}」共 ${songs.length} 首`, "success");
-      else get().toast("歌单为空", "info");
+      const detail = await getPlaylistDetail(id);
+      const { songs } = detail;
+      set({
+        playlistSongs: songs,
+        playlistId: detail.id,
+        playlistName: detail.name,
+        playlistCover: detail.coverImgUrl,
+        playlistDescription: detail.description,
+        playlistCreatorId: detail.creatorId,
+        playlistSubscribed: detail.subscribed,
+      });
+      if (!songs.length) get().toast("歌单为空", "info");
     } catch {
       get().toast("载入歌单失败", "error");
+    } finally {
+      set({ playlistLoading: false });
     }
   },
   closePlaylist: () => {
     set({
       playlistSongs: [],
+      playlistId: 0,
       playlistName: "",
+      playlistCover: "",
+      playlistDescription: "",
+      playlistCreatorId: 0,
+      playlistSubscribed: false,
       activeView: get().prevView || "home",
     });
   },
@@ -902,6 +1128,24 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       progress: 0,
       duration: song.duration || 0,
     });
+    const activeSource = source ?? (queue ? "list" : st.queueSource);
+    if (
+      activeSource === "fm" &&
+      targetQueue &&
+      targetIndex >= targetQueue.length - 2
+    ) {
+      void requestPersonalFmBatch()
+        .then((incoming) => {
+          const state = get();
+          if (state.queueSource !== "fm") return;
+          const known = new Set(state.queue.map((item) => item.id));
+          const fresh = incoming.filter((item) => !known.has(item.id));
+          if (!fresh.length) return;
+          const extendedQueue = [...state.queue, ...fresh];
+          set({ queue: extendedQueue, fmSongs: extendedQueue });
+        })
+        .catch(() => {});
+    }
     writeSession({ queue: targetQueue, index: targetIndex, currentSong: song });
     get().loadLyrics(song);
     get().trackRecent(song);
@@ -927,9 +1171,14 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
    * spin forever. The streak is cleared as soon as audio actually plays.
    */
   failCurrent: (message) => {
-    const { queue, currentSong } = get();
+    const { queue, currentSong, queueSource } = get();
     if (!currentSong) return;
     failStreak++;
+    if (queueSource === "fm" && failStreak < 30) {
+      if (failStreak === 1) get().toast("该歌曲暂时无法播放，继续漫游", "info");
+      void get().fmNext();
+      return;
+    }
     if (queue.length > 1 && failStreak < Math.min(queue.length, 10)) {
       if (failStreak === 1) get().toast("无法播放，正在自动跳过…", "info");
       get().next();
@@ -948,25 +1197,38 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     await get().playSong(song, queue, queueSource);
   },
   fmNext: async () => {
-    // 漫游：播完一批后换一批新的随机歌曲
-    const { queue, index } = get();
+    const { queue, index, queueSource } = get();
+    if (queueSource !== "fm") return;
     const nextIdx = index + 1;
     if (nextIdx < queue.length) {
       await get().playQueueAt(nextIdx);
       return;
     }
     try {
-      // Same free-track filter as the first batch: without it every later batch
-      // runs straight into unplayable VIP tracks.
-      const shuffled = roamingPool(await getTopSongs(0, 60));
-      set({ fmSongs: shuffled });
-      if (!shuffled.length) {
-        get().toast("暂无内容", "info");
+      const incoming = await requestPersonalFmBatch();
+      const latest = get();
+      if (latest.index + 1 < latest.queue.length) {
+        await get().playQueueAt(latest.index + 1);
         return;
       }
-      await get().playSong(shuffled[0], shuffled, "fm");
+      const known = new Set(latest.queue.map((song) => song.id));
+      const songs = incoming.filter((song) => !known.has(song.id));
+      if (!songs.length) {
+        fmRetryStreak++;
+        const delay = Math.min(1000 * fmRetryStreak, 5000);
+        window.setTimeout(() => void get().fmNext(), delay);
+        return;
+      }
+      fmRetryStreak = 0;
+      const extendedQueue = [...latest.queue, ...songs];
+      set({ fmSongs: extendedQueue });
+      await get().playSong(songs[0], extendedQueue, "fm");
     } catch {
-      get().toast("加载下一批失败", "error");
+      fmRetryStreak++;
+      if (fmRetryStreak === 1)
+        get().toast("漫游网络波动，正在自动重试", "info");
+      const delay = Math.min(1500 * fmRetryStreak, 6000);
+      window.setTimeout(() => void get().fmNext(), delay);
     }
   },
   fmDislike: async () => {
@@ -1006,6 +1268,8 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
             ),
       }));
       write(LIKED_AT_KEY, JSON.stringify(get().likedAt));
+      const uid = get().profile?.userId;
+      if (uid) writeJson(likedIdsCacheKey(uid), get().likedIds);
       get().loadLikedSongs();
       get().toast(next ? "已添加到我喜欢" : "已取消喜欢", "success");
     } catch {
@@ -1018,6 +1282,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     try {
       const ids = await getLikedIds(uid);
       set({ likedIds: ids });
+      writeJson(likedIdsCacheKey(uid), ids);
     } catch {
       /* ignore */
     }
@@ -1025,9 +1290,10 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   loadLikedSongs: async () => {
     const { likedIds, likedAt } = get();
     if (!likedIds.length) {
-      set({ likedSongs: [] });
+      set({ likedSongs: [], likedSongsLoading: false });
       return;
     }
+    set({ likedSongsLoading: true });
     try {
       const songs: Song[] = [];
       for (let i = 0; i < likedIds.length; i += 200) {
@@ -1041,6 +1307,8 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       set({ likedSongs: songs });
     } catch {
       /* ignore */
+    } finally {
+      set({ likedSongsLoading: false });
     }
   },
   loadVipInfo: async () => {
@@ -1049,6 +1317,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     try {
       const info = await getVipInfo(uid);
       set({ vipInfo: info });
+      writeJson(vipCacheKey(uid), info);
     } catch {
       /* ignore */
     }
@@ -1075,28 +1344,48 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     get().toast("已清空最近播放", "info");
   },
   loadHomeQuote: async () => {
-    const pool = [186016, 347230, 509781655, 3414449762, 168160, 193535];
-    const candidates = shuffle(pool);
-    for (const id of candidates) {
-      try {
-        const songs = await getSongsByIds([id]);
-        const song = songs[0];
-        // skip multi-artist (duet) songs so no singer names leak into the quote
-        if (!song || song.artistNames.length !== 1) continue;
-        const { lrc } = await getLyric(id);
-        const line = pickRandomLyricLine(lrc);
-        if (line) {
-          set({
-            homeQuote: {
+    if (
+      get().homeQuote &&
+      isCacheFresh(HOME_QUOTE_CACHE_AT_KEY, HOME_QUOTE_CACHE_TTL)
+    ) {
+      return;
+    }
+    if (homeQuoteLoadPromise) {
+      await homeQuoteLoadPromise;
+      return;
+    }
+
+    const run = (async () => {
+      const pool = [186016, 347230, 509781655, 3414449762, 168160, 193535];
+      const candidates = shuffle(pool);
+      for (const id of candidates) {
+        try {
+          const songs = await getSongsByIds([id]);
+          const song = songs[0];
+          // skip multi-artist (duet) songs so no singer names leak into the quote
+          if (!song || song.artistNames.length !== 1) continue;
+          const { lrc } = await getLyric(id);
+          const line = pickRandomLyricLine(lrc);
+          if (line) {
+            const quote = {
               text: line,
               source: `《${song.name}》· ${song.artists}`,
-            },
-          });
-          return;
+            };
+            set({ homeQuote: quote });
+            writeJson(HOME_QUOTE_CACHE_KEY, quote);
+            touchCache(HOME_QUOTE_CACHE_AT_KEY);
+            return;
+          }
+        } catch {
+          /* try next */
         }
-      } catch {
-        /* try next */
       }
+    })();
+    homeQuoteLoadPromise = run;
+    try {
+      await run;
+    } finally {
+      if (homeQuoteLoadPromise === run) homeQuoteLoadPromise = null;
     }
   },
 
@@ -1104,38 +1393,43 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   applyLogin: async (c) => {
     if (!c) return false;
     setCookie(c);
+    set({ authReady: false });
     try {
-      const profile = await loginStatus();
+      const profile = await loginStatusWithRetry();
       if (profile && profile.userId > 0) {
         // Switching accounts: wipe the previous account's cached data first,
         // otherwise its likes / recommendations stay on screen.
         set({
           loggedIn: true,
+          authReady: true,
           profile,
-          likedIds: [],
+          likedIds: readJson<number[]>(likedIdsCacheKey(profile.userId), []),
           likedSongs: [],
           likedAt: {},
-          vipInfo: null,
+          vipInfo: readJson<VipInfo | null>(vipCacheKey(profile.userId), null),
           userPlaylists: [],
-          recommendSongs: [],
+          recommendSongs: readJson<Song[]>(
+            recommendCacheKey(profile.userId),
+            [],
+          ),
         });
+        writeJson(PROFILE_CACHE_KEY, profile);
         write(LIKED_AT_KEY, "{}");
         get().toast(`欢迎，${profile.nickname}`, "success");
-        // loadLikedSongs reads likedIds, so it has to wait for loadLiked.
-        get()
-          .loadLiked()
-          .then(() => get().loadLikedSongs())
-          .catch(() => {});
-        get().loadVipInfo();
-        getRecommendSongs()
-          .then((songs) => set({ recommendSongs: songs }))
-          .catch(() => {});
+        void get().loadLiked();
+        void get().loadVipInfo();
+        void get().loadHome();
         return true;
       }
       clearCookie();
-      set({ loggedIn: false, profile: null });
+      localStorage.removeItem(PROFILE_CACHE_KEY);
+      if (get().profile?.userId) {
+        localStorage.removeItem(vipCacheKey(get().profile!.userId));
+      }
+      set({ loggedIn: false, authReady: true, profile: null });
       return false;
     } catch {
+      set({ authReady: true });
       return false;
     }
   },
@@ -1150,15 +1444,20 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     }
     set({
       loggedIn: false,
+      authReady: true,
       profile: null,
       likedIds: [],
       likedSongs: [],
       likedAt: {},
       vipInfo: null,
       userPlaylists: [],
+      userPlaylistsLoading: false,
       playlistSongs: [],
+      playlistLoading: false,
       playlistName: "",
       recommendSongs: [],
+      recommendSongsLoading: false,
+      likedSongsLoading: false,
       fmSongs: [],
       currentSong: null,
       currentUrl: null,
@@ -1170,10 +1469,12 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       queueSource: "list",
       lyricLines: [],
       lyricSongId: null,
+      showPlayerComments: false,
     });
     try {
       localStorage.removeItem(SESSION_KEY);
       localStorage.removeItem(LIKED_AT_KEY);
+      localStorage.removeItem(PROFILE_CACHE_KEY);
     } catch {
       /* ignore */
     }
@@ -1182,30 +1483,48 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   refreshLogin: async () => {
     const c = getCookie();
     if (!c) {
-      set({ loggedIn: false, profile: null });
+      set({ loggedIn: false, authReady: true, profile: null });
       return;
     }
+    if (!get().profile) set({ authReady: false });
     try {
-      const profile = await loginStatus();
+      const profile = await loginStatusWithRetry();
       if (profile && profile.userId > 0) {
-        set({ loggedIn: true, profile });
-        // loadLikedSongs reads likedIds, so it has to wait for loadLiked.
-        get()
-          .loadLiked()
-          .then(() => get().loadLikedSongs())
-          .catch(() => {});
-        get().loadVipInfo();
-        if (!get().recommendSongs.length) {
-          getRecommendSongs()
-            .then((songs) => set({ recommendSongs: songs }))
-            .catch(() => {});
-        }
+        const accountChanged = get().profile?.userId !== profile.userId;
+        set({
+          loggedIn: true,
+          authReady: true,
+          profile,
+          ...(accountChanged
+            ? {
+                likedIds: readJson<number[]>(
+                  likedIdsCacheKey(profile.userId),
+                  [],
+                ),
+                likedSongs: [],
+                vipInfo: readJson<VipInfo | null>(
+                  vipCacheKey(profile.userId),
+                  null,
+                ),
+                recommendSongs: readJson<Song[]>(
+                  recommendCacheKey(profile.userId),
+                  [],
+                ),
+              }
+            : {}),
+        });
+        writeJson(PROFILE_CACHE_KEY, profile);
+        void get().loadLiked();
+        void get().loadVipInfo();
       } else {
         clearCookie();
-        set({ loggedIn: false, profile: null });
+        localStorage.removeItem(PROFILE_CACHE_KEY);
+        set({ loggedIn: false, authReady: true, profile: null });
       }
     } catch {
-      /* keep current state */
+      // Keep a cached profile visible when the local sidecar/network is slow.
+      // A later authenticated request will still surface an actionable error.
+      set({ authReady: true });
     }
   },
 }));

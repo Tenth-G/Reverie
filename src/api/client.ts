@@ -48,7 +48,7 @@ export function clearCookie(): void {
   }
 }
 
-async function request<T = unknown>(
+export async function request<T = unknown>(
   path: string,
   params: Record<string, string | number> = {},
   cacheBust = true,
@@ -61,7 +61,23 @@ async function request<T = unknown>(
   if (cacheBust) q.set("timestamp", String(Date.now()));
 
   const url = `${API_BASE}${path}?${q.toString()}`;
-  const res = await fetch(url);
+  let res: Response | null = null;
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 8; attempt++) {
+    try {
+      res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+      break;
+    } catch (error) {
+      lastError = error;
+      if (attempt === 7) throw error;
+      // The desktop sidecar is spawned just before the WebView loads. On a
+      // cold start it can need a moment before the local port begins listening.
+      await new Promise((resolve) =>
+        setTimeout(resolve, Math.min(120 + attempt * 90, 600)),
+      );
+    }
+  }
+  if (!res) throw lastError;
   if (!res.ok) throw new Error(`HTTP ${res.status} for ${path}`);
   return (await res.json()) as T;
 }
@@ -70,7 +86,7 @@ async function request<T = unknown>(
 /*  Search & enrich                                                    */
 /* ------------------------------------------------------------------ */
 
-function normalizeSong(raw: unknown): Song | null {
+export function normalizeSong(raw: unknown): Song | null {
   const s = raw as Record<string, unknown>;
   if (!s || typeof s.id !== "number") return null;
 
@@ -92,6 +108,7 @@ function normalizeSong(raw: unknown): Song | null {
   const album = s.album as Record<string, unknown> | undefined;
 
   const picUrl = String(al?.picUrl || album?.picUrl || "");
+  const artistSource = Array.isArray(ar) && ar.length ? ar : artists;
 
   const duration = Number(s.dt ?? s.duration ?? 0);
   const fee = Number(s.fee ?? 0);
@@ -101,6 +118,9 @@ function normalizeSong(raw: unknown): Song | null {
     name: String(s.name ?? "未知歌曲"),
     artists: artistNames.join(" / ") || "未知歌手",
     artistNames,
+    artistIds: Array.isArray(artistSource)
+      ? artistSource.map((a) => Number(a?.id ?? 0)).filter((id) => id > 0)
+      : [],
     album: String(al?.name ?? album?.name ?? "未知专辑"),
     albumId: Number(al?.id ?? album?.id ?? 0),
     picUrl,
@@ -133,21 +153,63 @@ export async function searchSongs(
   keyword: string,
   limit = 40,
 ): Promise<Song[]> {
-  const res = await request<SearchResponse>("/search", {
-    keywords: keyword,
-    limit,
-    type: 1,
-  });
+  let res: SearchResponse;
+  try {
+    res = await request<SearchResponse>("/cloudsearch", {
+      keywords: keyword,
+      limit,
+      type: 1,
+    });
+  } catch {
+    res = await request<SearchResponse>("/search", {
+      keywords: keyword,
+      limit,
+      type: 1,
+    });
+  }
   const raws = (res.result?.songs ?? []) as unknown[];
-  // Try to enrich so every song has a cover image.
-  const ids = raws
-    .map((r) => normalizeSong(r)?.id)
-    .filter((x): x is number => typeof x === "number");
-  const enriched = await enrichSongs(ids);
-  return raws
+  const normalized = raws
     .map((r) => normalizeSong(r))
-    .filter((s): s is Song => s !== null)
-    .map((s) => enriched.get(s.id) ?? s);
+    .filter((s): s is Song => s !== null);
+
+  // Search responses usually include album art. Only fetch details for the
+  // missing covers instead of delaying every result behind a second request.
+  const missingCoverIds = normalized
+    .filter((song) => !song.picUrl)
+    .slice(0, 20)
+    .map((song) => song.id);
+  const enriched = await enrichSongs(missingCoverIds).catch(
+    () => new Map<number, Song>(),
+  );
+  const songs = normalized.map((song) => enriched.get(song.id) ?? song);
+
+  const normalizeTerm = (value: string) =>
+    value.toLocaleLowerCase("zh-CN").replace(/[\s·・_\-—/\\]+/g, "");
+  const query = normalizeTerm(keyword);
+  const scoreField = (
+    value: string,
+    exact: number,
+    prefix: number,
+    contains: number,
+  ) => {
+    const term = normalizeTerm(value);
+    if (!term || !query) return 0;
+    if (term === query) return exact;
+    if (term.startsWith(query)) return prefix;
+    return term.includes(query) ? contains : 0;
+  };
+
+  return songs
+    .map((song, index) => ({
+      song,
+      index,
+      score:
+        scoreField(song.name, 1200, 760, 420) +
+        scoreField(song.artists, 620, 380, 220) +
+        scoreField(song.album, 340, 210, 120),
+    }))
+    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .map(({ song }) => song);
 }
 
 /* ------------------------------------------------------------------ */
@@ -159,6 +221,17 @@ export async function getSongUrl(
   level: "standard" | "higher" | "exhigh" | "lossless" = "exhigh",
 ): Promise<{ url: string | null; br: number }> {
   const res = await request<SongUrlResponse>("/song/url/v1", { id, level });
+  const d = res.data?.[0];
+  return { url: d?.url ?? null, br: d?.br ?? 0 };
+}
+
+export async function getLegacySongUrl(
+  id: number,
+): Promise<{ url: string | null; br: number }> {
+  const res = await request<SongUrlResponse>("/song/url", {
+    id,
+    br: 320000,
+  });
   const d = res.data?.[0];
   return { url: d?.url ?? null, br: d?.br ?? 0 };
 }
@@ -189,8 +262,13 @@ export async function getTopSongs(type = 0, limit = 100): Promise<Song[]> {
 }
 
 export async function getPlaylistDetail(id: number): Promise<{
+  id: number;
   name: string;
   coverImgUrl: string;
+  description: string;
+  creatorId: number;
+  creatorName: string;
+  subscribed: boolean;
   songs: Song[];
 }> {
   const res = await request<{
@@ -198,30 +276,44 @@ export async function getPlaylistDetail(id: number): Promise<{
     playlist?: Record<string, unknown>;
   }>("/playlist/detail", { id });
   const pl = res.playlist ?? {};
+  const creator = (pl.creator ?? {}) as Record<string, unknown>;
   const tracks = (pl.tracks ?? []) as unknown[];
   return {
+    id: Number(pl.id ?? id),
     name: String(pl.name ?? "歌单"),
     coverImgUrl: String(pl.coverImgUrl ?? ""),
+    description: String(pl.description ?? ""),
+    creatorId: Number(creator.userId ?? 0),
+    creatorName: String(creator.nickname ?? ""),
+    subscribed: Boolean(pl.subscribed),
     songs: tracks
       .map((r) => normalizeSong(r))
       .filter((s): s is Song => s !== null),
   };
 }
 
-export async function getHotPlaylists(limit = 30): Promise<PlaylistInfo[]> {
+export async function getHotPlaylists(
+  limit = 30,
+  offset = 0,
+): Promise<PlaylistInfo[]> {
   const res = await request<{ code?: number; playlists?: unknown[] }>(
     "/top/playlist",
-    { limit, order: "hot", cat: "全部" },
+    { limit, offset, order: "hot", cat: "全部" },
   );
   return (res.playlists ?? [])
     .map((p) => {
       const o = p as Record<string, unknown>;
+      const creator = (o.creator ?? {}) as Record<string, unknown>;
       return {
         id: Number(o.id),
         name: String(o.name ?? ""),
         coverImgUrl: String(o.coverImgUrl ?? ""),
         trackCount: Number(o.trackCount ?? 0),
         description: String(o.description ?? ""),
+        creatorId: Number(creator.userId ?? 0),
+        creatorName: String(creator.nickname ?? ""),
+        subscribed: Boolean(o.subscribed),
+        privacy: Number(o.privacy ?? 0),
       };
     })
     .filter((p) => p.id > 0);
@@ -248,12 +340,17 @@ export async function getUserPlaylists(uid: number): Promise<PlaylistInfo[]> {
   return (res.playlist ?? [])
     .map((p) => {
       const o = p as Record<string, unknown>;
+      const creator = (o.creator ?? {}) as Record<string, unknown>;
       return {
         id: Number(o.id),
         name: String(o.name ?? ""),
         coverImgUrl: String(o.coverImgUrl ?? ""),
         trackCount: Number(o.trackCount ?? 0),
         description: String(o.description ?? ""),
+        creatorId: Number(creator.userId ?? 0),
+        creatorName: String(creator.nickname ?? ""),
+        subscribed: Boolean(o.subscribed),
+        privacy: Number(o.privacy ?? 0),
       };
     })
     .filter((p) => p.id > 0);

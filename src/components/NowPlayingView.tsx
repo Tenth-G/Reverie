@@ -3,9 +3,11 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
+import { ChevronDown, Disc3, SlidersHorizontal } from "lucide-react";
 import { usePlayerStore } from "../store/playerStore";
 // three.js is ~530 kB of the bundle and only the particle cover needs it.
 // Loading it lazily keeps it out of the first paint entirely, and a machine on
@@ -15,7 +17,8 @@ import CoverErrorBoundary from "./CoverErrorBoundary";
 import { QUALITY_GRID } from "../utils/gpuBenchmark";
 import Lyrics3D from "./Lyrics3D";
 import { sizedImage } from "../utils/image";
-import { IconChevronDown } from "./icons";
+import { readCoverOrigin } from "../utils/sharedCoverTransition";
+import PlaybackVisualPanel from "./PlaybackVisualPanel";
 
 const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 
@@ -27,9 +30,14 @@ export default function NowPlayingView() {
   const ensureLyrics = usePlayerStore((s) => s.ensureLyrics);
   const particleEffect = usePlayerStore((s) => s.particleEffect);
   const coverQuality = usePlayerStore((s) => s.coverQuality);
-  const coverRef = useRef<HTMLDivElement>(null);
+  const transitionCoverRef = useRef<HTMLImageElement>(null);
   const [fadedIn, setFadedIn] = useState(false);
   const closingRef = useRef(false);
+  const [transitionPhase, setTransitionPhase] = useState<
+    "opening" | "idle" | "closing"
+  >("opening");
+  const [visualOpen, setVisualOpen] = useState(false);
+  const [visualClosing, setVisualClosing] = useState(false);
   const [currentLyricLine, setCurrentLyricLine] = useState("");
   const [nextLyricLine, setNextLyricLine] = useState("");
   const [rotation, setRotation] = useState({ x: 0, y: 0 });
@@ -70,54 +78,84 @@ export default function NowPlayingView() {
     }
   }, [lyricLines, progress]);
 
-  // Opening: the cover expands upward from the player bar cover (FLIP).
-  useEffect(() => {
-    const src = document.querySelector(".pb-cover")?.getBoundingClientRect();
-    const dst = coverRef.current?.getBoundingClientRect();
-    const cover = coverRef.current;
-    if (src && dst && cover) {
-      const sx = src.width / dst.width;
-      const sy = src.height / dst.height;
-      const tx = src.left + src.width / 2 - (dst.left + dst.width / 2);
-      const ty = src.top + src.height / 2 - (dst.top + dst.height / 2);
-      cover.style.transition = "none";
-      cover.style.transform = `translate(${tx}px, ${ty}px) scale(${sx}, ${sy})`;
-      cover.style.opacity = "1";
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          cover.style.transition = `transform 0.5s ${EASE}`;
-          cover.style.transform = "translate(0, 0) scale(1)";
-          setFadedIn(true);
-        });
-      });
-    } else {
+  // A lightweight shared image performs the source-to-destination transition.
+  // The full-screen WebGL scene can initialize behind it without being scaled.
+  useLayoutEffect(() => {
+    const cover = transitionCoverRef.current;
+    const origin = readCoverOrigin();
+    if (!cover || !origin || !currentSong?.picUrl) {
       setFadedIn(true);
+      setTransitionPhase("idle");
+      return;
     }
-    return () => {
-      closingRef.current = false;
+
+    const targetSize = Math.min(window.innerWidth * 0.34, 380);
+    const targetLeft = (window.innerWidth - targetSize) / 2;
+    const targetTop = (window.innerHeight - targetSize) / 2 - 20;
+    const from = {
+      left: `${origin.left}px`,
+      top: `${origin.top}px`,
+      width: `${origin.width}px`,
+      height: `${origin.height}px`,
+      borderRadius: "50%",
+      opacity: 1,
     };
-  }, []);
+    const center = {
+      left: `${targetLeft}px`,
+      top: `${targetTop}px`,
+      width: `${targetSize}px`,
+      height: `${targetSize}px`,
+      borderRadius: "28px",
+    };
+
+    if (transitionPhase === "opening") {
+      setFadedIn(true);
+      const animation = cover.animate(
+        [
+          from,
+          { ...center, opacity: 1, offset: 0.78 },
+          { ...center, opacity: 0 },
+        ],
+        { duration: 520, easing: EASE, fill: "forwards" },
+      );
+      void animation.finished.then(() => setTransitionPhase("idle"));
+      return () => animation.cancel();
+    }
+
+    if (transitionPhase === "closing") {
+      const animation = cover.animate(
+        [
+          { ...center, opacity: 0 },
+          { ...center, opacity: 1, offset: 0.18 },
+          from,
+        ],
+        { duration: 420, easing: EASE, fill: "forwards" },
+      );
+      void animation.finished.then(() => setPage("browse"));
+      return () => animation.cancel();
+    }
+  }, [currentSong?.picUrl, setPage, transitionPhase]);
 
   // Closing: collapse the cover back to the player bar cover, then navigate.
   const handleClose = () => {
     if (closingRef.current) return;
     closingRef.current = true;
-    const src = document.querySelector(".pb-cover")?.getBoundingClientRect();
-    const dst = coverRef.current?.getBoundingClientRect();
-    const cover = coverRef.current;
-    if (src && dst && cover) {
-      const sx = src.width / dst.width;
-      const sy = src.height / dst.height;
-      const tx = src.left + src.width / 2 - (dst.left + dst.width / 2);
-      const ty = src.top + src.height / 2 - (dst.top + dst.height / 2);
-      cover.style.transition = `transform 0.3s ${EASE}, opacity 0.25s ease`;
-      cover.style.transform = `translate(${tx}px, ${ty}px) scale(${sx}, ${sy})`;
-      cover.style.opacity = "0";
-      setFadedIn(false);
-      setTimeout(() => setPage("browse"), 280);
+    setVisualOpen(false);
+    setFadedIn(false);
+    if (currentSong?.picUrl && readCoverOrigin()) {
+      setTransitionPhase("closing");
     } else {
       setPage("browse");
     }
+  };
+
+  const closeVisualPanel = () => {
+    if (visualClosing) return;
+    setVisualClosing(true);
+    window.setTimeout(() => {
+      setVisualOpen(false);
+      setVisualClosing(false);
+    }, 180);
   };
 
   // Must keep a stable identity: this view re-renders on every playback tick,
@@ -133,23 +171,53 @@ export default function NowPlayingView() {
       alt=""
     />
   ) : (
-    <div className="np-cover-ph">♪</div>
+    <div className="np-cover-ph">
+      <Disc3 size={56} />
+    </div>
   );
 
   return (
-    <div className="now-playing now-playing-3d">
+    <div
+      className={`now-playing now-playing-3d ${fadedIn ? "np-scene-ready" : "np-scene-leaving"}`}
+    >
       <button
         className={`np-btn np-back ${fadedIn ? "np-fade-in" : ""}`}
         onClick={handleClose}
         title="返回"
       >
-        <IconChevronDown width={20} height={20} />
+        <ChevronDown size={20} />
       </button>
 
+      <button
+        className={`np-btn np-visual-trigger ${fadedIn ? "np-fade-in" : ""}`}
+        onClick={() => setVisualOpen(true)}
+        title="歌词与封面"
+      >
+        <SlidersHorizontal size={18} />
+      </button>
+
+      {visualOpen && (
+        <PlaybackVisualPanel
+          closing={visualClosing}
+          onClose={closeVisualPanel}
+        />
+      )}
+
+      {transitionPhase !== "idle" && currentSong?.picUrl && (
+        <img
+          ref={transitionCoverRef}
+          className="np-shared-cover"
+          src={sizedImage(currentSong.picUrl, 760)}
+          alt=""
+        />
+      )}
+
       <div className="np-stage-3d">
-        <div className="np-cover-3d" ref={coverRef}>
+        <div className="np-cover-3d">
           {!currentSong?.picUrl ? (
-            <div className="np-cover-ph">♪</div>
+            <div className="np-cover-ph">
+              <Disc3 size={56} />
+            </div>
           ) : coverQuality === "image" ? (
             staticCover
           ) : (

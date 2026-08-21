@@ -1,19 +1,24 @@
+import { useState } from "react";
 import { usePlayerStore } from "../store/playerStore";
 import { formatTime } from "../utils/lyrics";
 import { sizedImage } from "../utils/image";
+import { captureCoverOrigin } from "../utils/sharedCoverTransition";
 import type { PlayMode } from "../api/types";
 import {
-  IconHeart,
-  IconList,
-  IconMute,
-  IconNext,
-  IconPause,
-  IconPlay,
-  IconPrev,
-  IconRepeatOne,
-  IconShuffle,
-  IconVolume,
-} from "./icons";
+  Disc3,
+  Heart,
+  ListMusic,
+  MessageCircle,
+  Pause,
+  Play,
+  Radio,
+  Repeat1,
+  Shuffle,
+  SkipBack,
+  SkipForward,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 
 const MODE_LABEL: Record<PlayMode, string> = {
   sequence: "顺序播放",
@@ -22,12 +27,13 @@ const MODE_LABEL: Record<PlayMode, string> = {
 };
 
 function ModeIcon({ mode }: { mode: PlayMode }) {
-  if (mode === "shuffle") return <IconShuffle />;
-  if (mode === "one") return <IconRepeatOne />;
-  return <IconList />;
+  if (mode === "shuffle") return <Shuffle size={18} />;
+  if (mode === "one") return <Repeat1 size={18} />;
+  return <ListMusic size={18} />;
 }
 
 export default function PlayerBar() {
+  const [failedCover, setFailedCover] = useState("");
   const currentSong = usePlayerStore((s) => s.currentSong);
   const playing = usePlayerStore((s) => s.playing);
   const loadingUrl = usePlayerStore((s) => s.loadingUrl);
@@ -37,6 +43,9 @@ export default function PlayerBar() {
   const muted = usePlayerStore((s) => s.muted);
   const playMode = usePlayerStore((s) => s.playMode);
   const likedIds = usePlayerStore((s) => s.likedIds);
+  const queueSource = usePlayerStore((s) => s.queueSource);
+  const coverQuality = usePlayerStore((s) => s.coverQuality);
+  const showPlayerComments = usePlayerStore((s) => s.showPlayerComments);
 
   const togglePlay = usePlayerStore((s) => s.togglePlay);
   const next = usePlayerStore((s) => s.next);
@@ -47,9 +56,16 @@ export default function PlayerBar() {
   const cyclePlayMode = usePlayerStore((s) => s.cyclePlayMode);
   const setPage = usePlayerStore((s) => s.setPage);
   const toggleLike = usePlayerStore((s) => s.toggleLike);
+  const loadPersonalFm = usePlayerStore((s) => s.loadPersonalFm);
+  const setShowPlayerComments = usePlayerStore((s) => s.setShowPlayerComments);
+  const toast = usePlayerStore((s) => s.toast);
 
   const pct = duration > 0 ? Math.min(100, (progress / duration) * 100) : 0;
   const liked = currentSong ? likedIds.includes(currentSong.id) : false;
+  const coverUrl = currentSong?.picUrl ?? "";
+  const showCover = Boolean(
+    currentSong && coverUrl && failedCover !== coverUrl,
+  );
 
   return (
     <footer className="player-bar">
@@ -71,15 +87,29 @@ export default function PlayerBar() {
       <div className="pb-row">
         <div className="pb-left">
           <div
-            className={`pb-cover ${playing ? "spinning" : ""}`}
-            onClick={() => setPage("nowplaying")}
+            className={`pb-cover ${playing ? "spinning" : "paused"}`}
+            onPointerEnter={() => {
+              void import("./NowPlayingView");
+              if (coverQuality !== "image") void import("./ParticleAlbumCover");
+            }}
+            onClick={(event) => {
+              captureCoverOrigin(event.currentTarget);
+              setPage("nowplaying");
+            }}
             title="打开播放页"
             style={{ cursor: "pointer" }}
           >
-            {currentSong ? (
-              <img src={sizedImage(currentSong.picUrl, 120)} alt="" />
+            {showCover && currentSong ? (
+              <img
+                key={currentSong.id}
+                src={sizedImage(coverUrl, 120)}
+                alt=""
+                onError={() => setFailedCover(coverUrl)}
+              />
             ) : (
-              <div className="pb-cover-ph">♪</div>
+              <div className="pb-cover-ph">
+                <Disc3 size={21} />
+              </div>
             )}
           </div>
           <div className="pb-info">
@@ -92,7 +122,7 @@ export default function PlayerBar() {
 
         <div className="pb-controls">
           <button className="icon-btn" onClick={prev} title="上一首">
-            <IconPrev />
+            <SkipBack size={19} />
           </button>
           <button
             className="icon-btn primary"
@@ -102,13 +132,13 @@ export default function PlayerBar() {
             {loadingUrl ? (
               <span className="spin-dot" />
             ) : playing ? (
-              <IconPause />
+              <Pause size={19} fill="currentColor" />
             ) : (
-              <IconPlay />
+              <Play size={19} fill="currentColor" />
             )}
           </button>
           <button className="icon-btn" onClick={next} title="下一首">
-            <IconNext />
+            <SkipForward size={19} />
           </button>
           <button
             className="icon-btn active"
@@ -121,26 +151,65 @@ export default function PlayerBar() {
 
         <div className="pb-right">
           <button
+            className={`icon-btn ${queueSource === "fm" ? "active" : ""}`}
+            onClick={() => void loadPersonalFm()}
+            title="私人漫游"
+          >
+            <Radio size={17} />
+          </button>
+          <button
+            className={`icon-btn ${showPlayerComments ? "active" : ""}`}
+            onPointerEnter={() => void import("./PlayerCommentsDrawer")}
+            onClick={() => {
+              if (!currentSong) {
+                toast("请先播放一首歌曲", "info");
+                return;
+              }
+              setShowPlayerComments(!showPlayerComments);
+            }}
+            title="歌曲评论"
+          >
+            <MessageCircle size={17} />
+          </button>
+          <button
             className={`icon-btn ${liked ? "active" : ""}`}
             onClick={toggleLike}
             title={liked ? "取消喜欢" : "喜欢"}
             style={liked ? { color: "#ec4141" } : undefined}
           >
-            <IconHeart />
+            <Heart size={18} fill={liked ? "currentColor" : "none"} />
           </button>
-          <div className="vol-wrap">
+          <div
+            className="vol-wrap"
+            onWheel={(e) => {
+              e.preventDefault();
+              const current = muted ? 0 : volume;
+              setVolume(current + (e.deltaY < 0 ? 0.02 : -0.02));
+            }}
+          >
             <button className="icon-btn" onClick={toggleMute} title="静音">
-              {muted || volume === 0 ? <IconMute /> : <IconVolume />}
+              {muted || volume === 0 ? (
+                <VolumeX size={18} />
+              ) : (
+                <Volume2 size={18} />
+              )}
             </button>
-            <input
-              className="slider"
-              type="range"
-              min={0}
-              max={100}
-              value={Math.round((muted ? 0 : volume) * 100)}
-              style={{ ["--val" as never]: `${(muted ? 0 : volume) * 100}%` }}
-              onChange={(e) => setVolume(Number(e.target.value) / 100)}
-            />
+            <div className="volume-popover" aria-label="音量调节">
+              <span className="volume-value">
+                {Math.round((muted ? 0 : volume) * 100)}
+              </span>
+              <input
+                className="slider volume-slider"
+                type="range"
+                min={0}
+                max={100}
+                value={Math.round((muted ? 0 : volume) * 100)}
+                style={{
+                  ["--val" as never]: `${(muted ? 0 : volume) * 100}%`,
+                }}
+                onChange={(e) => setVolume(Number(e.target.value) / 100)}
+              />
+            </div>
           </div>
         </div>
       </div>
