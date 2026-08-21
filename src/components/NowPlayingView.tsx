@@ -1,6 +1,18 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { usePlayerStore } from "../store/playerStore";
-import ParticleAlbumCover from "./ParticleAlbumCover";
+// three.js is ~530 kB of the bundle and only the particle cover needs it.
+// Loading it lazily keeps it out of the first paint entirely, and a machine on
+// the "image" tier never downloads or parses it at all.
+const ParticleAlbumCover = lazy(() => import("./ParticleAlbumCover"));
+import CoverErrorBoundary from "./CoverErrorBoundary";
+import { QUALITY_GRID } from "../utils/gpuBenchmark";
 import Lyrics3D from "./Lyrics3D";
 import { sizedImage } from "../utils/image";
 import { IconChevronDown } from "./icons";
@@ -14,6 +26,7 @@ export default function NowPlayingView() {
   const setPage = usePlayerStore((s) => s.setPage);
   const ensureLyrics = usePlayerStore((s) => s.ensureLyrics);
   const particleEffect = usePlayerStore((s) => s.particleEffect);
+  const coverQuality = usePlayerStore((s) => s.coverQuality);
   const coverRef = useRef<HTMLDivElement>(null);
   const [fadedIn, setFadedIn] = useState(false);
   const closingRef = useRef(false);
@@ -113,6 +126,16 @@ export default function NowPlayingView() {
     setRotation({ x: 0, y: 0 });
   }, []);
 
+  const staticCover = currentSong?.picUrl ? (
+    <img
+      className="np-cover-img"
+      src={sizedImage(currentSong.picUrl, 1120)}
+      alt=""
+    />
+  ) : (
+    <div className="np-cover-ph">♪</div>
+  );
+
   return (
     <div className="now-playing now-playing-3d">
       <button
@@ -125,14 +148,34 @@ export default function NowPlayingView() {
 
       <div className="np-stage-3d">
         <div className="np-cover-3d" ref={coverRef}>
-          {currentSong?.picUrl ? (
-            <ParticleAlbumCover
-              imageUrl={sizedImage(currentSong.picUrl, 1120)}
-              effect={particleEffect}
-              onDoubleClick={handleDoubleClick}
-            />
-          ) : (
+          {!currentSong?.picUrl ? (
             <div className="np-cover-ph">♪</div>
+          ) : coverQuality === "image" ? (
+            staticCover
+          ) : (
+            // Any WebGL failure degrades to the plain cover instead of taking
+            // the whole app down with it; Suspense shows the same cover while
+            // the three.js chunk loads.
+            <CoverErrorBoundary
+              fallback={staticCover}
+              onError={() =>
+                usePlayerStore
+                  .getState()
+                  .setCoverQuality("image", "封面渲染失败，已切换为静态封面")
+              }
+            >
+              <Suspense fallback={staticCover}>
+                <ParticleAlbumCover
+                  imageUrl={sizedImage(currentSong.picUrl, 1120)}
+                  effect={particleEffect}
+                  grid={QUALITY_GRID[coverQuality]}
+                  onOverload={() =>
+                    usePlayerStore.getState().degradeCoverQuality()
+                  }
+                  onDoubleClick={handleDoubleClick}
+                />
+              </Suspense>
+            </CoverErrorBoundary>
           )}
         </div>
         {/* 3D lyrics overlay */}

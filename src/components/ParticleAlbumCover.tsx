@@ -11,12 +11,16 @@ import { PARTICLE_FRAGMENT, PARTICLE_VERTEX } from "./particleShaders";
 interface ParticleAlbumCoverProps {
   imageUrl: string;
   effect: ParticleEffect;
+  /** Sampling grid side; the cloud holds grid² particles. */
+  grid: number;
+  /** Called once when this machine clearly cannot sustain the current level. */
+  onOverload?: () => void;
   onDoubleClick?: () => void;
 }
 
-/** 240x240 sampling grid: dense enough that the cover reads as an image. */
-const GRID = 240;
-const PARTICLE_COUNT = GRID * GRID;
+/** Below this the bloom pass costs more than the cloud it decorates. */
+const BLOOM_MIN_GRID = 130;
+
 /** World size of the particle plane. */
 const PLANE = 4;
 
@@ -36,9 +40,20 @@ function srgbToLinear(c: number): number {
   return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
 }
 
+/** Sustained frame time above this (≈36fps) means the level is too high. */
+const OVERLOAD_FRAME_MS = 28;
+/** Wall-clock warmup, excluding shader compile and the texture upload. */
+const WATCHDOG_WARMUP_MS = 1500;
+/** Wall-clock sampling window after the warmup. */
+const WATCHDOG_WINDOW_MS = 2500;
+/** Fewer frames than this inside the window is itself proof of overload. */
+const WATCHDOG_MIN_FRAMES = 6;
+
 export default function ParticleAlbumCover({
   imageUrl,
   effect,
+  grid,
+  onOverload,
   onDoubleClick,
 }: ParticleAlbumCoverProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -47,6 +62,10 @@ export default function ParticleAlbumCover({
   // texture decode, and the parent re-renders on every playback tick.
   const onDoubleClickRef = useRef(onDoubleClick);
   const effectRef = useRef(effect);
+  const onOverloadRef = useRef(onOverload);
+  useEffect(() => {
+    onOverloadRef.current = onOverload;
+  }, [onOverload]);
   useEffect(() => {
     onDoubleClickRef.current = onDoubleClick;
   }, [onDoubleClick]);
@@ -57,9 +76,15 @@ export default function ParticleAlbumCover({
   useEffect(() => {
     if (!containerRef.current) return;
     const container = containerRef.current;
+    const GRID = Math.max(16, Math.floor(grid));
+    const PARTICLE_COUNT = GRID * GRID;
+    const useBloom = GRID >= BLOOM_MIN_GRID;
     let width = container.clientWidth;
     let height = container.clientHeight;
-    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    // Fill rate, not particle count, is what sinks a weak GPU: the render
+    // area scales with the square of the pixel ratio. Cap it by tier.
+    const maxRatio = GRID >= 190 ? 2 : GRID >= 130 ? 1.5 : 1;
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, maxRatio);
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
@@ -69,7 +94,7 @@ export default function ParticleAlbumCover({
     const projScale = () =>
       height / (2 * Math.tan(((camera.fov / 2) * Math.PI) / 180));
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: useBloom });
     renderer.setPixelRatio(pixelRatio);
     renderer.setSize(width, height);
     renderer.setClearColor(0x000000, 1);
@@ -126,18 +151,21 @@ export default function ParticleAlbumCover({
     scene.add(particles);
 
     // --- restrained bloom: a highlight, not a second exposure of the cover
-    const composer = new EffectComposer(renderer);
-    composer.setPixelRatio(pixelRatio);
-    composer.setSize(width, height);
-    composer.addPass(new RenderPass(scene, camera));
+    // Without bloom there is nothing to post-process, and going through the
+    // composer would still cost a full-screen render target plus an OutputPass
+    // blit every frame.
+    const composer = useBloom ? new EffectComposer(renderer) : null;
+    composer?.setPixelRatio(pixelRatio);
+    composer?.setSize(width, height);
+    composer?.addPass(new RenderPass(scene, camera));
     const bloom = new UnrealBloomPass(
       new THREE.Vector2(width, height),
       0.16, // strength
       0.28, // radius
       0.82, // threshold: preserve detail in bright parts of the artwork
     );
-    composer.addPass(bloom);
-    composer.addPass(new OutputPass());
+    if (useBloom) composer?.addPass(bloom);
+    composer?.addPass(new OutputPass());
 
     // --- colours from the cover
     const img = new Image();
@@ -152,9 +180,12 @@ export default function ParticleAlbumCover({
       const { data } = ctx.getImageData(0, 0, GRID, GRID);
       for (let i = 0; i < PARTICLE_COUNT; i++) {
         const px = i * 4;
-        colors[i * 3] = srgbToLinear(data[px] / 255);
-        colors[i * 3 + 1] = srgbToLinear(data[px + 1] / 255);
-        colors[i * 3 + 2] = srgbToLinear(data[px + 2] / 255);
+        // OutputPass converts linear->sRGB on the way out; the direct path
+        // has no such step, so feed it the sRGB values unchanged.
+        const conv = useBloom ? srgbToLinear : (c: number) => c;
+        colors[i * 3] = conv(data[px] / 255);
+        colors[i * 3 + 1] = conv(data[px + 1] / 255);
+        colors[i * 3 + 2] = conv(data[px + 2] / 255);
       }
       geometry.attributes.aColor.needsUpdate = true;
     };
@@ -198,6 +229,16 @@ export default function ParticleAlbumCover({
     el.addEventListener("dblclick", onDblClick);
 
     // --- animation
+    // The benchmark predicts; this checks. A static probe cannot model every
+    // driver, so measure what the machine actually achieves and step down if
+    // the chosen level does not hold up.
+    // Counting frames would never conclude on the machines that need this
+    // most: at 2fps a 180-frame window takes 90 seconds. Judge by wall clock.
+    const watchdogStart = performance.now();
+    const watchdogGaps: number[] = [];
+    let watchdogFired = false;
+    let watchdogLast = watchdogStart;
+
     let frameId = 0;
     let spin = 0;
     let pulse = 0;
@@ -238,7 +279,7 @@ export default function ParticleAlbumCover({
       uniforms.uFreq.value += (preset.freq - uniforms.uFreq.value) * 0.06;
       uniforms.uPulse.value = pulse;
       uniforms.uShimmer.value = shimmer;
-      bloom.strength = 0.14 + pulse * 0.16;
+      if (useBloom) bloom.strength = 0.14 + pulse * 0.16;
 
       if (eff === "spin") spin += 0.0022;
       rotation.x += (target.x - rotation.x) * 0.1;
@@ -246,7 +287,27 @@ export default function ParticleAlbumCover({
       particles.rotation.x = rotation.x;
       particles.rotation.y = rotation.y + spin;
 
-      composer.render();
+      if (composer) composer.render();
+      else renderer.render(scene, camera);
+
+      if (!watchdogFired) {
+        const now = performance.now();
+        const gap = now - watchdogLast;
+        watchdogLast = now;
+        const elapsed = now - watchdogStart;
+        if (elapsed > WATCHDOG_WARMUP_MS) watchdogGaps.push(gap);
+        if (elapsed > WATCHDOG_WARMUP_MS + WATCHDOG_WINDOW_MS) {
+          watchdogFired = true;
+          if (watchdogGaps.length < WATCHDOG_MIN_FRAMES) {
+            // Too few frames to even form a sample: unambiguously too slow.
+            onOverloadRef.current?.();
+          } else {
+            const sorted = [...watchdogGaps].sort((a, b) => a - b);
+            const median = sorted[Math.floor(sorted.length / 2)];
+            if (median > OVERLOAD_FRAME_MS) onOverloadRef.current?.();
+          }
+        }
+      }
     };
     animate();
 
@@ -256,8 +317,8 @@ export default function ParticleAlbumCover({
       camera.aspect = width / height;
       camera.updateProjectionMatrix();
       renderer.setSize(width, height);
-      composer.setSize(width, height);
-      bloom.setSize(width, height);
+      composer?.setSize(width, height);
+      if (useBloom) bloom.setSize(width, height);
       uniforms.uProjScale.value = projScale();
     };
     window.addEventListener("resize", handleResize);
@@ -273,13 +334,14 @@ export default function ParticleAlbumCover({
       container.removeChild(el);
       geometry.dispose();
       material.dispose();
-      composer.dispose();
+      composer?.dispose();
       // dispose() alone leaves the GL context alive; browsers cap how many a
       // page may hold, so release it explicitly.
       renderer.forceContextLoss();
       renderer.dispose();
     };
-  }, [imageUrl]);
+    // grid changes the buffer layout, so rebuilding on it is correct.
+  }, [imageUrl, grid]);
 
   return <div ref={containerRef} className="particle-album-cover" />;
 }
