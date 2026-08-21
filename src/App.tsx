@@ -40,6 +40,11 @@ export default function App() {
     if (audioRef.current) setAudioEl(audioRef.current);
   }, [setAudioEl]);
 
+  // First launch only: size the particle cover to this machine's GPU.
+  useEffect(() => {
+    usePlayerStore.getState().detectCoverQuality();
+  }, []);
+
   // restore login session + load home + random lyric quote on startup
   useEffect(() => {
     refreshLogin();

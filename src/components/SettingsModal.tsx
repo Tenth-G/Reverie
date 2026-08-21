@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { usePlayerStore } from "../store/playerStore";
 import type { ParticleEffect, ThemePreference } from "../store/playerStore";
+import type { CoverQuality } from "../utils/gpuBenchmark";
+import { particleCount, QUALITY_LABEL } from "../utils/gpuBenchmark";
 import type { PlayMode } from "../api/types";
 import { IconClose } from "./icons";
 
@@ -17,6 +19,14 @@ const APP_THEMES: Array<{ id: ThemePreference; name: string }> = [
   { id: "system", name: "跟随系统" },
   { id: "light", name: "浅色" },
   { id: "dark", name: "深色" },
+];
+
+const COVER_QUALITIES: CoverQuality[] = [
+  "image",
+  "low",
+  "medium",
+  "high",
+  "ultra",
 ];
 
 const PARTICLE_EFFECTS: Array<{
@@ -59,6 +69,11 @@ export default function SettingsModal() {
   const setPlayMode = usePlayerStore((s) => s.setPlayMode);
   const lyricTheme = usePlayerStore((s) => s.lyricTheme);
   const setLyricTheme = usePlayerStore((s) => s.setLyricTheme);
+  const coverQuality = usePlayerStore((s) => s.coverQuality);
+  const setCoverQuality = usePlayerStore((s) => s.setCoverQuality);
+  const coverQualityReason = usePlayerStore((s) => s.coverQualityReason);
+  const coverBenchmarking = usePlayerStore((s) => s.coverBenchmarking);
+  const detectCoverQuality = usePlayerStore((s) => s.detectCoverQuality);
   const particleEffect = usePlayerStore((s) => s.particleEffect);
   const setParticleEffect = usePlayerStore((s) => s.setParticleEffect);
   const lyricFontSize = usePlayerStore((s) => s.lyricFontSize);
@@ -139,6 +154,55 @@ export default function SettingsModal() {
         </div>
 
         <div className="setting-row">
+          <label>
+            封面画质
+            <span className="setting-hint">
+              {coverQuality === "image"
+                ? "只显示静态专辑图，不渲染粒子"
+                : `${particleCount(coverQuality).toLocaleString()} 个粒子`}
+            </span>
+          </label>
+          <div className="opt-group">
+            {COVER_QUALITIES.map((q) => (
+              <button
+                key={q}
+                className={`opt-btn ${coverQuality === q ? "active" : ""}`}
+                onClick={() => setCoverQuality(q, "手动设置")}
+                title={
+                  q === "image"
+                    ? "低性能模式"
+                    : `${particleCount(q).toLocaleString()} 个粒子`
+                }
+              >
+                {QUALITY_LABEL[q]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {coverQualityReason && (
+          <div className="setting-row">
+            <label>
+              性能检测
+              <span className="setting-hint">{coverQualityReason}</span>
+            </label>
+            <button
+              className="btn"
+              onClick={() => detectCoverQuality(true)}
+              disabled={coverBenchmarking}
+            >
+              {coverBenchmarking ? "检测中…" : "重新检测"}
+            </button>
+          </div>
+        )}
+
+        <div
+          className="setting-row"
+          style={{
+            opacity: coverQuality === "image" ? 0.45 : 1,
+            pointerEvents: coverQuality === "image" ? "none" : undefined,
+          }}
+        >
           <label>
             封面粒子效果
             <span className="setting-hint">
