@@ -28,6 +28,13 @@ import type {
 } from "../api/types";
 import type { VipInfo } from "../api/client";
 import { parseLyrics, pickRandomLyricLine } from "../utils/lyrics";
+import {
+  benchmarkCoverQuality,
+  hasWebGL,
+  QUALITY_GRID,
+  QUALITY_LABEL,
+} from "../utils/gpuBenchmark";
+import type { CoverQuality } from "../utils/gpuBenchmark";
 
 export type UpdatePhase =
   | "idle"
@@ -48,6 +55,17 @@ export type ThemePreference = "system" | "light" | "dark";
 
 /** Where the current queue came from; "fm" keeps roaming auto-advancing. */
 export type QueueSource = "list" | "fm";
+
+const COVER_QUALITY_KEY = "reverie_cover_quality";
+const COVER_BENCH_KEY = "reverie_cover_benchmarked";
+
+function readCoverQuality(): CoverQuality {
+  const v = readStr(COVER_QUALITY_KEY, "");
+  return v in QUALITY_GRID ? (v as CoverQuality) : "medium";
+}
+
+/** Motion applied to the 3D particle album cover on the now-playing page. */
+export type ParticleEffect = "none" | "spin" | "wave" | "audio";
 
 /* ------------------------- persistence helpers ------------------------- */
 function readNum(key: string, def: number): number {
@@ -99,6 +117,11 @@ function shuffle<T>(items: T[]): T[] {
 function roamingPool(songs: Song[]): Song[] {
   const free = songs.filter((s) => s.fee === 0);
   return shuffle(free.length >= 5 ? free : songs);
+}
+
+function readParticleEffect(): ParticleEffect {
+  const v = readStr("reverie_particle", "spin");
+  return v === "none" || v === "wave" || v === "audio" ? v : "spin";
 }
 
 function readPlayMode(): PlayMode {
@@ -262,6 +285,12 @@ interface PlayerState {
   theme: ThemePreference;
   lyricTheme: string;
   lyricFontSize: number;
+  particleEffect: ParticleEffect;
+  /** Cover render level; "image" disables the particle system entirely. */
+  coverQuality: CoverQuality;
+  /** Why the current level was chosen, shown in settings. */
+  coverQualityReason: string;
+  coverBenchmarking: boolean;
 
   // --- ui / data ---
   activeView: View;
@@ -307,6 +336,12 @@ interface PlayerState {
   setTheme: (t: ThemePreference) => void;
   setLyricTheme: (t: string) => void;
   setLyricFontSize: (s: number) => void;
+  setParticleEffect: (e: ParticleEffect) => void;
+  setCoverQuality: (q: CoverQuality, reason?: string) => void;
+  /** Step one level down after sustained dropped frames. */
+  degradeCoverQuality: () => void;
+  /** Run the GPU benchmark; on first launch this picks the level. */
+  detectCoverQuality: (manual?: boolean) => Promise<void>;
   setShowLogin: (v: boolean) => void;
   setShowSettings: (v: boolean) => void;
   setActiveView: (v: View) => void;
@@ -402,6 +437,10 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   theme: readThemePref(),
   lyricTheme: readStr("reverie_lyrictheme", "neon"),
   lyricFontSize: readNum("reverie_lyricfont", 22),
+  particleEffect: readParticleEffect(),
+  coverQuality: readCoverQuality(),
+  coverQualityReason: readStr("reverie_cover_reason", ""),
+  coverBenchmarking: false,
 
   // --- ui / data ---
   activeView: "home",
@@ -667,6 +706,48 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   setLyricFontSize: (s) => {
     set({ lyricFontSize: s });
     write("reverie_lyricfont", String(s));
+  },
+  setParticleEffect: (e) => {
+    set({ particleEffect: e });
+    write("reverie_particle", e);
+  },
+  setCoverQuality: (q, reason = "") => {
+    set({ coverQuality: q, coverQualityReason: reason });
+    write(COVER_QUALITY_KEY, q);
+    write("reverie_cover_reason", reason);
+  },
+  degradeCoverQuality: () => {
+    const order: CoverQuality[] = ["ultra", "high", "medium", "low", "image"];
+    const i = order.indexOf(get().coverQuality);
+    if (i < 0 || i >= order.length - 1) return;
+    const next = order[i + 1];
+    get().setCoverQuality(
+      next,
+      `实际渲染帧率过低，已自动降到「${QUALITY_LABEL[next]}」`,
+    );
+    get().toast(`封面渲染卡顿，已自动降为「${QUALITY_LABEL[next]}」`, "info");
+  },
+  detectCoverQuality: async (manual = false) => {
+    if (get().coverBenchmarking) return;
+    // Only ever runs itself once; the settings panel can force a re-run.
+    if (!manual && readBool(COVER_BENCH_KEY, false)) return;
+    if (!hasWebGL()) {
+      get().setCoverQuality("image", "此设备不支持 WebGL，已使用静态封面");
+      write(COVER_BENCH_KEY, "1");
+      return;
+    }
+    set({ coverBenchmarking: true });
+    try {
+      const result = await benchmarkCoverQuality();
+      get().setCoverQuality(result.quality, result.reason);
+      write(COVER_BENCH_KEY, "1");
+      if (manual) get().toast(result.reason, "success");
+    } catch {
+      get().setCoverQuality("image", "性能检测失败，已使用静态封面");
+      write(COVER_BENCH_KEY, "1");
+    } finally {
+      set({ coverBenchmarking: false });
+    }
   },
   setShowLogin: (v) => set({ showLogin: v }),
   setShowSettings: (v) => set({ showSettings: v }),

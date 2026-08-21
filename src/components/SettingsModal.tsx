@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { usePlayerStore } from "../store/playerStore";
-import type { ThemePreference } from "../store/playerStore";
+import type { ParticleEffect, ThemePreference } from "../store/playerStore";
+import type { CoverQuality } from "../utils/gpuBenchmark";
+import { particleCount, QUALITY_LABEL } from "../utils/gpuBenchmark";
 import type { PlayMode } from "../api/types";
 import { IconClose } from "./icons";
 
@@ -17,6 +19,25 @@ const APP_THEMES: Array<{ id: ThemePreference; name: string }> = [
   { id: "system", name: "跟随系统" },
   { id: "light", name: "浅色" },
   { id: "dark", name: "深色" },
+];
+
+const COVER_QUALITIES: CoverQuality[] = [
+  "image",
+  "low",
+  "medium",
+  "high",
+  "ultra",
+];
+
+const PARTICLE_EFFECTS: Array<{
+  id: ParticleEffect;
+  name: string;
+  hint: string;
+}> = [
+  { id: "none", name: "静止", hint: "不做动画，拖拽仍可旋转" },
+  { id: "spin", name: "自转", hint: "封面缓慢持续旋转" },
+  { id: "wave", name: "波动", hint: "粒子随正弦波起伏呼吸" },
+  { id: "audio", name: "音乐律动", hint: "粒子随音乐频谱起伏与脉动" },
 ];
 
 const PLAY_MODES: Array<{ id: PlayMode; name: string }> = [
@@ -48,6 +69,13 @@ export default function SettingsModal() {
   const setPlayMode = usePlayerStore((s) => s.setPlayMode);
   const lyricTheme = usePlayerStore((s) => s.lyricTheme);
   const setLyricTheme = usePlayerStore((s) => s.setLyricTheme);
+  const coverQuality = usePlayerStore((s) => s.coverQuality);
+  const setCoverQuality = usePlayerStore((s) => s.setCoverQuality);
+  const coverQualityReason = usePlayerStore((s) => s.coverQualityReason);
+  const coverBenchmarking = usePlayerStore((s) => s.coverBenchmarking);
+  const detectCoverQuality = usePlayerStore((s) => s.detectCoverQuality);
+  const particleEffect = usePlayerStore((s) => s.particleEffect);
+  const setParticleEffect = usePlayerStore((s) => s.setParticleEffect);
   const lyricFontSize = usePlayerStore((s) => s.lyricFontSize);
   const setLyricFontSize = usePlayerStore((s) => s.setLyricFontSize);
   const showTranslation = usePlayerStore((s) => s.showTranslation);
@@ -121,6 +149,75 @@ export default function SettingsModal() {
                 title={t.name}
                 onClick={() => setLyricTheme(t.id)}
               />
+            ))}
+          </div>
+        </div>
+
+        <div className="setting-row">
+          <label>
+            封面画质
+            <span className="setting-hint">
+              {coverQuality === "image"
+                ? "只显示静态专辑图，不渲染粒子"
+                : `${particleCount(coverQuality).toLocaleString()} 个粒子`}
+            </span>
+          </label>
+          <div className="opt-group">
+            {COVER_QUALITIES.map((q) => (
+              <button
+                key={q}
+                className={`opt-btn ${coverQuality === q ? "active" : ""}`}
+                onClick={() => setCoverQuality(q, "手动设置")}
+                title={
+                  q === "image"
+                    ? "低性能模式"
+                    : `${particleCount(q).toLocaleString()} 个粒子`
+                }
+              >
+                {QUALITY_LABEL[q]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {coverQualityReason && (
+          <div className="setting-row">
+            <label>
+              性能检测
+              <span className="setting-hint">{coverQualityReason}</span>
+            </label>
+            <button
+              className="btn"
+              onClick={() => detectCoverQuality(true)}
+              disabled={coverBenchmarking}
+            >
+              {coverBenchmarking ? "检测中…" : "重新检测"}
+            </button>
+          </div>
+        )}
+
+        <div
+          className="setting-row"
+          style={{
+            opacity: coverQuality === "image" ? 0.45 : 1,
+            pointerEvents: coverQuality === "image" ? "none" : undefined,
+          }}
+        >
+          <label>
+            封面粒子效果
+            <span className="setting-hint">
+              {PARTICLE_EFFECTS.find((e) => e.id === particleEffect)?.hint}
+            </span>
+          </label>
+          <div className="opt-group">
+            {PARTICLE_EFFECTS.map((e) => (
+              <button
+                key={e.id}
+                className={`opt-btn ${particleEffect === e.id ? "active" : ""}`}
+                onClick={() => setParticleEffect(e.id)}
+              >
+                {e.name}
+              </button>
             ))}
           </div>
         </div>

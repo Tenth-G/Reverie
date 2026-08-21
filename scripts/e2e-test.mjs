@@ -56,10 +56,26 @@ async function main() {
     "标题栏居中显示 Reverie",
     (await win.locator(".titlebar-name").textContent()) === "Reverie",
   );
+  // macOS uses its native traffic lights, so only the settings button is drawn;
+  // Windows/Linux draw all four.
+  const isMac = process.platform === "darwin";
+  const expectedTbBtns = isMac ? 1 : 4;
+  const tbBtns = await win.locator(".tb-btn").count();
   record(
-    "窗口控制按钮 (4个: 设置/最小化/最大化/关闭)",
-    (await win.locator(".tb-btn").count()) === 4,
+    isMac
+      ? "窗口控制按钮 (mac: 仅设置，窗口按钮交给系统)"
+      : "窗口控制按钮 (4个: 设置/最小化/最大化/关闭)",
+    tbBtns === expectedTbBtns,
+    `${tbBtns} 个`,
   );
+  if (isMac) {
+    record(
+      "mac 标记 data-platform=darwin",
+      (await win.evaluate(() =>
+        document.documentElement.getAttribute("data-platform"),
+      )) === "darwin",
+    );
+  }
   record("顶部导航栏渲染", (await win.locator(".topnav").count()) === 1);
   record("左侧导航已移除", (await win.locator(".sidebar").count()) === 0);
   record("悬浮播放栏渲染", (await win.locator(".player-bar").count()) === 1);
@@ -158,16 +174,19 @@ async function main() {
   record("播放页打开", (await win.locator(".now-playing").count()) === 1);
   record("播放页隐藏顶部导航", await win.locator(".topnav").isHidden());
   record("播放页隐藏标题栏", await win.locator(".titlebar").isHidden());
-  record("播放页封面容器存在", (await win.locator(".np-cover").count()) === 1);
+  record(
+    "播放页封面容器存在",
+    (await win.locator(".np-cover-3d").count()) === 1,
+  );
   record(
     "播放页歌词容器在封面上方",
-    (await win.locator(".np-lyrics").count()) === 1,
+    (await win.locator(".np-lyrics-3d").count()) === 1,
   );
   record(
     "歌词层级高于封面",
     await win.evaluate(() => {
-      const cover = document.querySelector(".np-cover");
-      const lyrics = document.querySelector(".np-lyrics");
+      const cover = document.querySelector(".np-cover-3d");
+      const lyrics = document.querySelector(".np-lyrics-3d");
       if (!cover || !lyrics) return false;
       return (
         Number(getComputedStyle(lyrics).zIndex) >
@@ -176,8 +195,12 @@ async function main() {
     }),
   );
   record(
-    "无歌曲时歌词显示空状态",
-    (await win.locator(".np-lyrics .empty").count()) === 1,
+    "无歌曲时歌词为空",
+    await win.evaluate(() => {
+      const cur = document.querySelector(".lyrics-3d-current");
+      const next = document.querySelector(".lyrics-3d-next");
+      return !!cur && !cur.textContent.trim() && !next.textContent.trim();
+    }),
   );
   await win.screenshot({ path: `${OUT_DIR}/e2e-04-nowplaying.png` });
   await win.locator(".np-back").click();

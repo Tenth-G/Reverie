@@ -170,6 +170,23 @@ input {
   color: #fff;
 }
 
+.setting-hint {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-faint);
+}
+
+/* macOS draws its traffic lights over the top-left corner of the web view, so
+   keep the drag filler and the now-playing back button clear of them. */
+[data-platform="darwin"] .titlebar {
+  padding-left: 78px;
+}
+[data-platform="darwin"] .np-back {
+  left: 96px;
+}
+
 /* ============================ Top navigation ============================ */
 .topnav {
   flex: none;
@@ -1322,6 +1339,14 @@ input {
   object-fit: cover;
   display: block;
 }
+.np-cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 24px;
+}
+
 .np-cover-ph {
   width: 100%;
   height: 100%;
@@ -1684,7 +1709,9 @@ input {
 
 /* ============================ 3D Particle Album Cover ============================ */
 .now-playing-3d {
-  background: #000000;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(50, 54, 65, 0.72), transparent 54%),
+    #08090c;
   flex: 1;
   position: relative;
   min-height: 0;
@@ -1692,12 +1719,12 @@ input {
   align-items: center;
   justify-content: center;
   padding: 56px 40px 130px;
+  overflow: hidden;
 }
 
 .np-stage-3d {
-  position: relative;
-  width: min(700px, 90vw);
-  height: min(700px, 90vh);
+  position: absolute;
+  inset: 0;
 }
 
 .np-cover-3d {
@@ -1705,12 +1732,37 @@ input {
   inset: 0;
   z-index: 1;
   will-change: transform;
+  overflow: hidden;
+  background: #090a0d;
+}
+
+.np-cover-3d::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse at center,
+      rgba(5, 6, 9, 0.44) 0%,
+      rgba(5, 6, 9, 0.12) 42%,
+      transparent 72%
+    ),
+    linear-gradient(to bottom, transparent 55%, rgba(0, 0, 0, 0.22));
 }
 
 .particle-album-cover {
   width: 100%;
   height: 100%;
   cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.particle-album-cover canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .particle-album-cover:active {
@@ -1729,20 +1781,21 @@ input {
 }
 
 .lyrics-3d {
-  width: 100%;
+  width: min(88%, 520px);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 20px;
   text-align: center;
-  padding: 40px;
+  padding: 28px 34px;
+  border-radius: 24px;
 }
 
 .lyrics-3d-current {
-  font-size: 28px;
-  font-weight: 600;
+  font-size: clamp(22px, 2.3vw, 30px);
+  font-weight: 650;
   color: #ffffff;
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.95);
   transition: transform 0.3s ease;
   transform-style: preserve-3d;
   line-height: 1.5;
@@ -1750,12 +1803,60 @@ input {
 }
 
 .lyrics-3d-next {
-  font-size: 18px;
-  color: rgba(255, 255, 255, 0.5);
+  font-size: clamp(14px, 1.5vw, 18px);
+  color: rgba(255, 255, 255, 0.66);
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8);
   transition: transform 0.3s ease;
   transform-style: preserve-3d;
   line-height: 1.5;
   max-width: 90%;
 }
+
+/* Lyric swap: the incoming and outgoing lines share one grid cell so they
+   cross-fade in place instead of the text changing in a single frame. */
+.lyrics-3d-current,
+.lyrics-3d-next {
+  display: grid;
+  justify-items: center;
+}
+.lyric-3d-text {
+  grid-area: 1 / 1;
+  will-change: opacity, transform, filter;
+}
+.lyric-3d-text.is-entering {
+  animation: lyric-3d-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.lyric-3d-text.is-leaving {
+  animation: lyric-3d-out 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  pointer-events: none;
+}
+@keyframes lyric-3d-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+    filter: blur(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+@keyframes lyric-3d-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-16px);
+    filter: blur(5px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lyric-3d-text.is-entering,
+  .lyric-3d-text.is-leaving {
+    animation-duration: 0.01ms;
+  }
 }

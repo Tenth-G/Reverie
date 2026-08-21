@@ -8,6 +8,10 @@ import {
   IconSettings,
 } from "./icons";
 
+/** macOS draws its own close/minimize/zoom buttons; only Windows needs ours. */
+const isMac =
+  typeof window !== "undefined" && window.ncm?.platform === "darwin";
+
 export default function TitleBar() {
   const [maximized, setMaximized] = useState(false);
   const setShowSettings = usePlayerStore((s) => s.setShowSettings);
@@ -33,31 +37,35 @@ export default function TitleBar() {
         >
           <IconSettings width={15} height={15} />
         </button>
-        <button
-          className="tb-btn"
-          onClick={() => window.ncm?.minimize()}
-          title="最小化"
-        >
-          <IconMinimize width={15} height={15} />
-        </button>
-        <button
-          className="tb-btn"
-          onClick={() => window.ncm?.maximize()}
-          title={maximized ? "还原" : "最大化"}
-        >
-          {maximized ? (
-            <IconRestore width={13} height={13} />
-          ) : (
-            <IconMaximize width={13} height={13} />
-          )}
-        </button>
-        <button
-          className="tb-btn tb-close"
-          onClick={() => window.ncm?.close()}
-          title="关闭"
-        >
-          <IconClose width={15} height={15} />
-        </button>
+        {!isMac && (
+          <>
+            <button
+              className="tb-btn"
+              onClick={() => window.ncm?.minimize()}
+              title="最小化"
+            >
+              <IconMinimize width={15} height={15} />
+            </button>
+            <button
+              className="tb-btn"
+              onClick={() => window.ncm?.maximize()}
+              title={maximized ? "还原" : "最大化"}
+            >
+              {maximized ? (
+                <IconRestore width={13} height={13} />
+              ) : (
+                <IconMaximize width={13} height={13} />
+              )}
+            </button>
+            <button
+              className="tb-btn tb-close"
+              onClick={() => window.ncm?.close()}
+              title="关闭"
+            >
+              <IconClose width={15} height={15} />
+            </button>
+          </>
+        )}
       </div>
     </header>
   );
