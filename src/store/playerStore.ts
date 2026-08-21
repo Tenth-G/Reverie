@@ -596,7 +596,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       if (!manual) return;
       if (r.reason === "busy") get().toast("正在检查更新，请稍候", "info");
       else get().toast("当前环境不支持自动更新", "error");
-    });
+    }).catch(() => set({ updatePhase: "idle" }));
   },
   startUpdate: () => {
     if (!window.ncm?.downloadUpdate) return;
@@ -606,6 +606,9 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
         set({ updatePhase: "error" });
         get().toast("下载更新失败，请稍后重试", "error");
       }
+    }).catch(() => {
+      set({ updatePhase: "error" });
+      get().toast("下载更新失败，请稍后重试", "error");
     });
   },
   installUpdate: () => window.ncm?.installUpdate(),
@@ -1115,7 +1118,8 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
         // loadLikedSongs reads likedIds, so it has to wait for loadLiked.
         get()
           .loadLiked()
-          .then(() => get().loadLikedSongs());
+          .then(() => get().loadLikedSongs())
+          .catch(() => {});
         get().loadVipInfo();
         getRecommendSongs()
           .then((songs) => set({ recommendSongs: songs }))
@@ -1182,7 +1186,8 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
         // loadLikedSongs reads likedIds, so it has to wait for loadLiked.
         get()
           .loadLiked()
-          .then(() => get().loadLikedSongs());
+          .then(() => get().loadLikedSongs())
+          .catch(() => {});
         get().loadVipInfo();
         if (!get().recommendSongs.length) {
           getRecommendSongs()
