@@ -67,12 +67,13 @@ export default function App() {
     }
   }, [particleEffect]);
 
-  // subscribe to updater events pushed from the main process (electron-updater).
-  // the main process performs the startup check itself in packaged builds.
+  // Subscribe before starting the packaged-build update check so no event is lost.
   useEffect(() => {
-    const off = window.ncm?.onUpdateEvent?.((event) => {
+    const bridge = window.ncm;
+    const off = bridge?.onUpdateEvent?.((event) => {
       usePlayerStore.getState().applyUpdateEvent(event.type, event.data);
     });
+    if (bridge && !bridge.skipUpdate) void bridge.checkUpdate();
     return () => off?.();
   }, []);
 

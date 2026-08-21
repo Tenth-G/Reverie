@@ -21,5 +21,9 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 5173,
     strictPort: true,
+    watch: {
+      // 排除 Tauri 构建目录，避免文件锁定
+      ignored: ["**/src-tauri/**"],
+    },
   },
 });

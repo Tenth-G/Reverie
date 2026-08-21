@@ -1,27 +1,26 @@
 /// <reference types="vite/client" />
 
-/** Bridge exposed by electron/preload.cjs */
+/** Native bridge implemented by the Tauri adapter. */
 interface NcmBridge {
   apiBase: string;
   platform: string;
-  /** True when launched with REVERIE_SKIP_UPDATE=1 (used by e2e tests). */
+  /** True in development builds, where signed updater artifacts do not exist. */
   skipUpdate: boolean;
   versions: {
-    electron: string;
-    chrome: string;
-    node: string;
+    runtime: string;
+    webview: string;
   };
   minimize: () => void;
   maximize: () => void;
   close: () => void;
   isMaximized: () => Promise<boolean>;
   onMaximized: (callback: (maximized: boolean) => void) => () => void;
-  /** Trigger a manual update check (electron-updater). */
-  checkUpdate: () => Promise<{ ok: boolean; reason?: string }>;
+  /** Trigger an update check through the Tauri updater plugin. */
+  checkUpdate: (manual?: boolean) => Promise<{ ok: boolean; reason?: string }>;
   /** Start downloading the available update (after user confirms). */
   downloadUpdate: () => Promise<{ ok: boolean; reason?: string }>;
   /** Quit the app and install the downloaded update. */
-  installUpdate: () => void;
+  installUpdate: () => Promise<void>;
   /** Subscribe to updater events pushed from the main process. */
   onUpdateEvent: (
     callback: (event: {
