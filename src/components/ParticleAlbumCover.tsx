@@ -27,7 +27,7 @@ const EFFECT_TARGETS: Record<
 > = {
   none: { amp: 0, freq: 0.9, speed: 0.2 },
   spin: { amp: 0.05, freq: 0.9, speed: 0.12 },
-  wave: { amp: 0.2, freq: 0.5, speed: 0.1 },
+  wave: { amp: 0.2, freq: 0.8, speed: 0.3 },
   audio: { amp: 0.3, freq: 1.0, speed: 0.3 },
 };
 
@@ -217,8 +217,8 @@ export default function ParticleAlbumCover({
         const bands = readBands();
         if (bands) {
           pulse += (bands.total - pulse) * 0.18;
-          shimmer += (bands.high - shimmer) * 0.25;
-          ampTarget = 0.12 + bands.low * 1.25;
+          shimmer += (bands.high - shimmer) * 0.15;
+          ampTarget = 0.12 + bands.low * 1;
           speedTarget = 0.25 + bands.high * 0.7;
         } else {
           // no spectrum available: behave like the plain wave
