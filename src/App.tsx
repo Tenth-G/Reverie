@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { usePlayerStore } from "./store/playerStore";
+import { ensureAnalyser, resumeAnalyser } from "./utils/audioAnalyser";
 import TitleBar from "./components/TitleBar";
 import TopNav from "./components/TopNav";
 import PlayerBar from "./components/PlayerBar";
@@ -28,6 +29,7 @@ export default function App() {
   const activeView = usePlayerStore((s) => s.activeView);
   const currentPage = usePlayerStore((s) => s.currentPage);
 
+  const particleEffect = usePlayerStore((s) => s.particleEffect);
   const refreshLogin = usePlayerStore((s) => s.refreshLogin);
   const loadHome = usePlayerStore((s) => s.loadHome);
   const loadHomeQuote = usePlayerStore((s) => s.loadHomeQuote);
@@ -44,6 +46,21 @@ export default function App() {
     loadHome();
     loadHomeQuote();
   }, [refreshLogin, loadHome, loadHomeQuote]);
+
+  // "音乐律动" needs the player routed through an AnalyserNode. Wire it only
+  // when that effect is picked, and fall back if Web Audio is unavailable.
+  useEffect(() => {
+    if (particleEffect !== "audio") return;
+    const el = audioRef.current;
+    if (!el) return;
+    const st = usePlayerStore.getState();
+    if (ensureAnalyser(el)) {
+      resumeAnalyser();
+    } else {
+      st.toast("当前环境不支持音频分析，已切换为波动效果", "error");
+      st.setParticleEffect("wave");
+    }
+  }, [particleEffect]);
 
   // subscribe to updater events pushed from the main process (electron-updater).
   // the main process performs the startup check itself in packaged builds.
@@ -183,6 +200,9 @@ export default function App() {
 
       <audio
         ref={audioRef}
+        // Required for the spectrum analyser: without it the Web Audio graph
+        // is fed a CORS-tainted source and is specified to emit silence.
+        crossOrigin="anonymous"
         onTimeUpdate={(e) => {
           const el = e.currentTarget;
           usePlayerStore.setState({
@@ -201,7 +221,10 @@ export default function App() {
           }
         }}
         onEnded={handleEnded}
-        onPlaying={() => usePlayerStore.getState().notePlaybackOk()}
+        onPlaying={() => {
+          usePlayerStore.getState().notePlaybackOk();
+          resumeAnalyser();
+        }}
         onError={() => {
           usePlayerStore.setState({ playing: false });
           usePlayerStore.getState().failCurrent("音频加载失败");

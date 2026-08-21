@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../store/playerStore";
 import ParticleAlbumCover from "./ParticleAlbumCover";
 import Lyrics3D from "./Lyrics3D";
@@ -12,12 +12,20 @@ export default function NowPlayingView() {
   const lyricLines = usePlayerStore((s) => s.lyricLines);
   const progress = usePlayerStore((s) => s.progress);
   const setPage = usePlayerStore((s) => s.setPage);
+  const ensureLyrics = usePlayerStore((s) => s.ensureLyrics);
+  const particleEffect = usePlayerStore((s) => s.particleEffect);
   const coverRef = useRef<HTMLDivElement>(null);
   const [fadedIn, setFadedIn] = useState(false);
   const closingRef = useRef(false);
   const [currentLyricLine, setCurrentLyricLine] = useState("");
   const [nextLyricLine, setNextLyricLine] = useState("");
   const [rotation, setRotation] = useState({ x: 0, y: 0 });
+
+  // A session restored on startup never went through playSong, so its lyrics
+  // were never fetched. This view is the only lyric surface, so it has to ask.
+  useEffect(() => {
+    ensureLyrics();
+  }, [ensureLyrics, currentSong?.id]);
 
   // Parse and update lyrics based on progress
   useEffect(() => {
@@ -99,9 +107,11 @@ export default function NowPlayingView() {
     }
   };
 
-  const handleDoubleClick = () => {
+  // Must keep a stable identity: this view re-renders on every playback tick,
+  // and ParticleAlbumCover rebuilds its scene whenever this callback changes.
+  const handleDoubleClick = useCallback(() => {
     setRotation({ x: 0, y: 0 });
-  };
+  }, []);
 
   return (
     <div className="now-playing now-playing-3d">
@@ -118,6 +128,7 @@ export default function NowPlayingView() {
           {currentSong?.picUrl ? (
             <ParticleAlbumCover
               imageUrl={sizedImage(currentSong.picUrl, 1120)}
+              effect={particleEffect}
               onDoubleClick={handleDoubleClick}
             />
           ) : (

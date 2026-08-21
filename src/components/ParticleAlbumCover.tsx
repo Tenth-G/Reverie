@@ -1,210 +1,285 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/examples/jsm/postprocessing/OutputPass.js";
+import type { ParticleEffect } from "../store/playerStore";
+import { readBands } from "../utils/audioAnalyser";
+import { PARTICLE_FRAGMENT, PARTICLE_VERTEX } from "./particleShaders";
 
 interface ParticleAlbumCoverProps {
   imageUrl: string;
+  effect: ParticleEffect;
   onDoubleClick?: () => void;
+}
+
+/** 240x240 sampling grid: dense enough that the cover reads as an image. */
+const GRID = 240;
+const PARTICLE_COUNT = GRID * GRID;
+/** World size of the particle plane. */
+const PLANE = 4;
+
+/** Per-effect targets, lerped towards so switching never snaps. */
+const EFFECT_TARGETS: Record<
+  ParticleEffect,
+  { amp: number; freq: number; speed: number }
+> = {
+  none: { amp: 0, freq: 0.9, speed: 0.2 },
+  spin: { amp: 0.05, freq: 0.9, speed: 0.12 },
+  wave: { amp: 0.2, freq: 0.5, speed: 0.1 },
+  audio: { amp: 0.3, freq: 1.0, speed: 0.3 },
+};
+
+/** sRGB -> linear, so OutputPass converts back to the album's true colours. */
+function srgbToLinear(c: number): number {
+  return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
 }
 
 export default function ParticleAlbumCover({
   imageUrl,
+  effect,
   onDoubleClick,
 }: ParticleAlbumCoverProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<{
-    scene: THREE.Scene;
-    camera: THREE.PerspectiveCamera;
-    renderer: THREE.WebGLRenderer;
-    particles: THREE.Points;
-    isDragging: boolean;
-    previousMousePosition: { x: number; y: number };
-    rotation: { x: number; y: number };
-    targetRotation: { x: number; y: number };
-    animationId: number | null;
-  } | null>(null);
+  // Both callbacks/props are read through refs so neither can re-trigger the
+  // effect below: rebuilding the scene costs a renderer, a composer and a
+  // texture decode, and the parent re-renders on every playback tick.
+  const onDoubleClickRef = useRef(onDoubleClick);
+  const effectRef = useRef(effect);
+  useEffect(() => {
+    onDoubleClickRef.current = onDoubleClick;
+  }, [onDoubleClick]);
+  useEffect(() => {
+    effectRef.current = effect;
+  }, [effect]);
 
   useEffect(() => {
     if (!containerRef.current) return;
-
     const container = containerRef.current;
-    const width = container.clientWidth;
-    const height = container.clientHeight;
+    let width = container.clientWidth;
+    let height = container.clientHeight;
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
 
-    // Scene setup
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-    camera.position.z = 5;
+    const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000);
+    camera.position.z = 4.2;
 
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    /** CSS px per world unit at unit distance, for gl_PointSize. */
+    const projScale = () =>
+      height / (2 * Math.tan(((camera.fov / 2) * Math.PI) / 180));
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(pixelRatio);
     renderer.setSize(width, height);
-    renderer.setClearColor(0x000000, 0);
+    renderer.setClearColor(0x000000, 1);
     container.appendChild(renderer.domElement);
 
-    // Load texture and create particles
-    const textureLoader = new THREE.TextureLoader();
-    textureLoader.setCrossOrigin("anonymous");
-
-    let particles: THREE.Points;
-    const particleCount = 10000;
-    const positions = new Float32Array(particleCount * 3);
-    const colors = new Float32Array(particleCount * 3);
+    // --- geometry: a flat grid, coloured from the cover, displaced in the shader
+    const positions = new Float32Array(PARTICLE_COUNT * 3);
+    const colors = new Float32Array(PARTICLE_COUNT * 3);
+    const seeds = new Float32Array(PARTICLE_COUNT);
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      const row = Math.floor(i / GRID);
+      const col = i % GRID;
+      positions[i * 3] = (col / (GRID - 1) - 0.5) * PLANE;
+      positions[i * 3 + 1] = -(row / (GRID - 1) - 0.5) * PLANE;
+      positions[i * 3 + 2] = 0;
+      seeds[i] = Math.random();
+    }
 
     const geometry = new THREE.BufferGeometry();
     geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    geometry.setAttribute("aColor", new THREE.BufferAttribute(colors, 3));
+    geometry.setAttribute("aSeed", new THREE.BufferAttribute(seeds, 1));
+    geometry.boundingSphere = new THREE.Sphere(
+      new THREE.Vector3(),
+      PLANE, // fixed: displacement happens on the GPU, so auto-bounds would clip
+    );
 
-    const material = new THREE.PointsMaterial({
-      size: 0.05,
-      vertexColors: true,
+    const uniforms = {
+      uTime: { value: 0 },
+      uAmp: { value: 0 },
+      uFreq: { value: 0.9 },
+      uSpeed: { value: 0.2 },
+      uPulse: { value: 0 },
+      uShimmer: { value: 0 },
+      // Keep a little breathing room between points. Oversized sprites make
+      // bright areas merge into a solid white mass once bloom is applied.
+      uSize: { value: (PLANE / GRID) * 1.08 },
+      uProjScale: { value: 1 },
+      uPixelRatio: { value: pixelRatio },
+    };
+
+    const material = new THREE.ShaderMaterial({
+      uniforms,
+      vertexShader: PARTICLE_VERTEX,
+      fragmentShader: PARTICLE_FRAGMENT,
       transparent: true,
-      opacity: 0.8,
-      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      blending: THREE.NormalBlending,
     });
 
-    particles = new THREE.Points(geometry, material);
+    uniforms.uProjScale.value = projScale();
+
+    const particles = new THREE.Points(geometry, material);
     scene.add(particles);
 
-    // Load image and extract colors
+    // --- restrained bloom: a highlight, not a second exposure of the cover
+    const composer = new EffectComposer(renderer);
+    composer.setPixelRatio(pixelRatio);
+    composer.setSize(width, height);
+    composer.addPass(new RenderPass(scene, camera));
+    const bloom = new UnrealBloomPass(
+      new THREE.Vector2(width, height),
+      0.16, // strength
+      0.28, // radius
+      0.82, // threshold: preserve detail in bright parts of the artwork
+    );
+    composer.addPass(bloom);
+    composer.addPass(new OutputPass());
+
+    // --- colours from the cover
     const img = new Image();
     img.crossOrigin = "anonymous";
     img.onload = () => {
       const canvas = document.createElement("canvas");
-      const ctx = canvas.getContext("2d");
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
       if (!ctx) return;
-
-      const size = 200;
-      canvas.width = size;
-      canvas.height = size;
-      ctx.drawImage(img, 0, 0, size, size);
-
-      const imageData = ctx.getImageData(0, 0, size, size);
-      const data = imageData.data;
-
-      const aspect = 1;
-      const particlesPerRow = Math.sqrt(particleCount);
-
-      for (let i = 0; i < particleCount; i++) {
-        const row = Math.floor(i / particlesPerRow);
-        const col = i % particlesPerRow;
-
-        const x = (col / particlesPerRow - 0.5) * 4 * aspect;
-        const y = -(row / particlesPerRow - 0.5) * 4;
-        const z = (Math.random() - 0.5) * 0.5;
-
-        positions[i * 3] = x;
-        positions[i * 3 + 1] = y;
-        positions[i * 3 + 2] = z;
-
-        const imgX = Math.floor((col / particlesPerRow) * size);
-        const imgY = Math.floor((row / particlesPerRow) * size);
-        const pixelIndex = (imgY * size + imgX) * 4;
-
-        colors[i * 3] = data[pixelIndex] / 255;
-        colors[i * 3 + 1] = data[pixelIndex + 1] / 255;
-        colors[i * 3 + 2] = data[pixelIndex + 2] / 255;
+      canvas.width = GRID;
+      canvas.height = GRID;
+      ctx.drawImage(img, 0, 0, GRID, GRID);
+      const { data } = ctx.getImageData(0, 0, GRID, GRID);
+      for (let i = 0; i < PARTICLE_COUNT; i++) {
+        const px = i * 4;
+        colors[i * 3] = srgbToLinear(data[px] / 255);
+        colors[i * 3 + 1] = srgbToLinear(data[px + 1] / 255);
+        colors[i * 3 + 2] = srgbToLinear(data[px + 2] / 255);
       }
-
-      geometry.attributes.position.needsUpdate = true;
-      geometry.attributes.color.needsUpdate = true;
+      geometry.attributes.aColor.needsUpdate = true;
     };
-
     img.src = imageUrl;
 
-    // Mouse interaction
+    // --- drag to rotate, double click to reset
     let isDragging = false;
-    let previousMousePosition = { x: 0, y: 0 };
+    let previous = { x: 0, y: 0 };
     const rotation = { x: 0, y: 0 };
-    const targetRotation = { x: 0, y: 0 };
+    const target = { x: 0, y: 0 };
 
-    const onMouseDown = (e: MouseEvent) => {
+    const onPointerDown = (e: PointerEvent) => {
       isDragging = true;
-      previousMousePosition = { x: e.clientX, y: e.clientY };
+      previous = { x: e.clientX, y: e.clientY };
+      // Keep receiving move/up events after the pointer leaves the canvas.
+      // Without capture, releasing outside leaves the cover stuck in drag mode.
+      el.setPointerCapture(e.pointerId);
     };
-
-    const onMouseMove = (e: MouseEvent) => {
+    const onPointerMove = (e: PointerEvent) => {
       if (!isDragging) return;
-
-      const deltaX = e.clientX - previousMousePosition.x;
-      const deltaY = e.clientY - previousMousePosition.y;
-
-      targetRotation.y += deltaX * 0.01;
-      targetRotation.x += deltaY * 0.01;
-
-      previousMousePosition = { x: e.clientX, y: e.clientY };
+      target.y += (e.clientX - previous.x) * 0.01;
+      target.x += (e.clientY - previous.y) * 0.01;
+      previous = { x: e.clientX, y: e.clientY };
     };
-
-    const onMouseUp = () => {
+    const finishDrag = (e: PointerEvent) => {
       isDragging = false;
+      if (el.hasPointerCapture(e.pointerId)) {
+        el.releasePointerCapture(e.pointerId);
+      }
     };
-
-    const onDoubleClickHandler = () => {
-      targetRotation.x = 0;
-      targetRotation.y = 0;
-      if (onDoubleClick) onDoubleClick();
+    const onDblClick = () => {
+      target.x = 0;
+      target.y = 0;
+      onDoubleClickRef.current?.();
     };
+    const el = renderer.domElement;
+    el.addEventListener("pointerdown", onPointerDown);
+    el.addEventListener("pointermove", onPointerMove);
+    el.addEventListener("pointerup", finishDrag);
+    el.addEventListener("pointercancel", finishDrag);
+    el.addEventListener("dblclick", onDblClick);
 
-    renderer.domElement.addEventListener("mousedown", onMouseDown);
-    renderer.domElement.addEventListener("mousemove", onMouseMove);
-    renderer.domElement.addEventListener("mouseup", onMouseUp);
-    renderer.domElement.addEventListener("dblclick", onDoubleClickHandler);
+    // --- animation
+    let frameId = 0;
+    let spin = 0;
+    let pulse = 0;
+    let shimmer = 0;
+    const clock = new THREE.Clock();
 
-    // Animation loop
     const animate = () => {
-      const animationId = requestAnimationFrame(animate);
+      frameId = requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.1);
+      const eff = effectRef.current;
+      const preset = EFFECT_TARGETS[eff];
 
-      // Smooth rotation
-      rotation.x += (targetRotation.x - rotation.x) * 0.1;
-      rotation.y += (targetRotation.y - rotation.y) * 0.1;
+      let ampTarget = preset.amp;
+      let speedTarget = preset.speed;
 
-      particles.rotation.x = rotation.x;
-      particles.rotation.y = rotation.y;
-
-      renderer.render(scene, camera);
-
-      sceneRef.current = {
-        scene,
-        camera,
-        renderer,
-        particles,
-        isDragging,
-        previousMousePosition,
-        rotation,
-        targetRotation,
-        animationId,
-      };
-    };
-
-    animate();
-
-    // Handle resize
-    const handleResize = () => {
-      const w = container.clientWidth;
-      const h = container.clientHeight;
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
-    };
-
-    window.addEventListener("resize", handleResize);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener("resize", handleResize);
-      renderer.domElement.removeEventListener("mousedown", onMouseDown);
-      renderer.domElement.removeEventListener("mousemove", onMouseMove);
-      renderer.domElement.removeEventListener("mouseup", onMouseUp);
-      renderer.domElement.removeEventListener("dblclick", onDoubleClickHandler);
-
-      if (sceneRef.current?.animationId) {
-        cancelAnimationFrame(sceneRef.current.animationId);
+      if (eff === "audio") {
+        const bands = readBands();
+        if (bands) {
+          pulse += (bands.total - pulse) * 0.18;
+          shimmer += (bands.high - shimmer) * 0.25;
+          ampTarget = 0.12 + bands.low * 1.25;
+          speedTarget = 0.25 + bands.high * 0.7;
+        } else {
+          // no spectrum available: behave like the plain wave
+          pulse += (0 - pulse) * 0.1;
+          shimmer += (0 - shimmer) * 0.1;
+          ampTarget = EFFECT_TARGETS.wave.amp;
+          speedTarget = EFFECT_TARGETS.wave.speed;
+        }
+      } else {
+        pulse += (0 - pulse) * 0.1;
+        shimmer += (0 - shimmer) * 0.1;
       }
 
-      container.removeChild(renderer.domElement);
+      uniforms.uTime.value += dt;
+      uniforms.uAmp.value += (ampTarget - uniforms.uAmp.value) * 0.06;
+      uniforms.uSpeed.value += (speedTarget - uniforms.uSpeed.value) * 0.06;
+      uniforms.uFreq.value += (preset.freq - uniforms.uFreq.value) * 0.06;
+      uniforms.uPulse.value = pulse;
+      uniforms.uShimmer.value = shimmer;
+      bloom.strength = 0.14 + pulse * 0.16;
+
+      if (eff === "spin") spin += 0.0022;
+      rotation.x += (target.x - rotation.x) * 0.1;
+      rotation.y += (target.y - rotation.y) * 0.1;
+      particles.rotation.x = rotation.x;
+      particles.rotation.y = rotation.y + spin;
+
+      composer.render();
+    };
+    animate();
+
+    const handleResize = () => {
+      width = container.clientWidth;
+      height = container.clientHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+      composer.setSize(width, height);
+      bloom.setSize(width, height);
+      uniforms.uProjScale.value = projScale();
+    };
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", handleResize);
+      el.removeEventListener("pointerdown", onPointerDown);
+      el.removeEventListener("pointermove", onPointerMove);
+      el.removeEventListener("pointerup", finishDrag);
+      el.removeEventListener("pointercancel", finishDrag);
+      el.removeEventListener("dblclick", onDblClick);
+      container.removeChild(el);
       geometry.dispose();
       material.dispose();
+      composer.dispose();
+      // dispose() alone leaves the GL context alive; browsers cap how many a
+      // page may hold, so release it explicitly.
+      renderer.forceContextLoss();
       renderer.dispose();
     };
-  }, [imageUrl, onDoubleClick]);
+  }, [imageUrl]);
 
   return <div ref={containerRef} className="particle-album-cover" />;
 }

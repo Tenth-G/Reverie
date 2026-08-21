@@ -49,6 +49,9 @@ export type ThemePreference = "system" | "light" | "dark";
 /** Where the current queue came from; "fm" keeps roaming auto-advancing. */
 export type QueueSource = "list" | "fm";
 
+/** Motion applied to the 3D particle album cover on the now-playing page. */
+export type ParticleEffect = "none" | "spin" | "wave" | "audio";
+
 /* ------------------------- persistence helpers ------------------------- */
 function readNum(key: string, def: number): number {
   try {
@@ -99,6 +102,11 @@ function shuffle<T>(items: T[]): T[] {
 function roamingPool(songs: Song[]): Song[] {
   const free = songs.filter((s) => s.fee === 0);
   return shuffle(free.length >= 5 ? free : songs);
+}
+
+function readParticleEffect(): ParticleEffect {
+  const v = readStr("reverie_particle", "spin");
+  return v === "none" || v === "wave" || v === "audio" ? v : "spin";
 }
 
 function readPlayMode(): PlayMode {
@@ -262,6 +270,7 @@ interface PlayerState {
   theme: ThemePreference;
   lyricTheme: string;
   lyricFontSize: number;
+  particleEffect: ParticleEffect;
 
   // --- ui / data ---
   activeView: View;
@@ -307,6 +316,7 @@ interface PlayerState {
   setTheme: (t: ThemePreference) => void;
   setLyricTheme: (t: string) => void;
   setLyricFontSize: (s: number) => void;
+  setParticleEffect: (e: ParticleEffect) => void;
   setShowLogin: (v: boolean) => void;
   setShowSettings: (v: boolean) => void;
   setActiveView: (v: View) => void;
@@ -402,6 +412,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   theme: readThemePref(),
   lyricTheme: readStr("reverie_lyrictheme", "neon"),
   lyricFontSize: readNum("reverie_lyricfont", 22),
+  particleEffect: readParticleEffect(),
 
   // --- ui / data ---
   activeView: "home",
@@ -667,6 +678,10 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   setLyricFontSize: (s) => {
     set({ lyricFontSize: s });
     write("reverie_lyricfont", String(s));
+  },
+  setParticleEffect: (e) => {
+    set({ particleEffect: e });
+    write("reverie_particle", e);
   },
   setShowLogin: (v) => set({ showLogin: v }),
   setShowSettings: (v) => set({ showSettings: v }),

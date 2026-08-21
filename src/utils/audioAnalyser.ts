@@ -1,0 +1,80 @@
+/**
+ * Spectrum analysis for the particle cover's "音乐律动" effect.
+ *
+ * The player's <audio> element is routed through an AnalyserNode. That routing
+ * is one-shot per element (createMediaElementSource throws on a second call),
+ * so the graph is built lazily and kept for the lifetime of the page. The
+ * element's own `volume` is applied before this graph, so the volume slider
+ * keeps working unchanged.
+ *
+ * The media must be CORS-readable (the element carries crossOrigin="anonymous")
+ * or the spec requires the source node to output silence; readBands() then
+ * reports zero energy and callers fall back to a non-audio effect.
+ */
+
+let ctx: AudioContext | null = null;
+let analyser: AnalyserNode | null = null;
+let connectedEl: HTMLAudioElement | null = null;
+// Explicit ArrayBuffer generic: getByteFrequencyData rejects ArrayBufferLike.
+let data: Uint8Array<ArrayBuffer> | null = null;
+
+export interface Bands {
+  /** 0..1 average energy of the low / mid / high thirds of the spectrum. */
+  low: number;
+  mid: number;
+  high: number;
+  /** 0..1 overall energy. */
+  total: number;
+}
+
+/**
+ * Route `el` through an analyser, reusing the existing graph.
+ * Returns false when Web Audio is unavailable in this environment.
+ */
+export function ensureAnalyser(el: HTMLAudioElement): boolean {
+  if (connectedEl === el) return analyser !== null;
+  // A different element can never be re-sourced; keep whatever we already have.
+  if (connectedEl) return analyser !== null;
+  try {
+    ctx = new AudioContext();
+    const source = ctx.createMediaElementSource(el);
+    analyser = ctx.createAnalyser();
+    analyser.fftSize = 128;
+    analyser.smoothingTimeConstant = 0.75;
+    source.connect(analyser);
+    analyser.connect(ctx.destination);
+    connectedEl = el;
+    data = new Uint8Array(analyser.frequencyBinCount);
+    return true;
+  } catch {
+    analyser = null;
+    return false;
+  }
+}
+
+/** Browsers may start the context suspended; call this when playback starts. */
+export function resumeAnalyser(): void {
+  if (ctx && ctx.state === "suspended") ctx.resume().catch(() => {});
+}
+
+/** Current spectrum energy, or null when no analyser is wired up. */
+export function readBands(): Bands | null {
+  if (!analyser || !data) return null;
+  analyser.getByteFrequencyData(data);
+  const n = data.length;
+  const lowEnd = Math.max(1, Math.floor(n * 0.18));
+  const midEnd = Math.max(lowEnd + 1, Math.floor(n * 0.55));
+  let low = 0;
+  let mid = 0;
+  let high = 0;
+  for (let i = 0; i < n; i++) {
+    const v = data[i] / 255;
+    if (i < lowEnd) low += v;
+    else if (i < midEnd) mid += v;
+    else high += v;
+  }
+  low /= lowEnd;
+  mid /= midEnd - lowEnd;
+  high /= Math.max(1, n - midEnd);
+  return { low, mid, high, total: (low + mid + high) / 3 };
+}
