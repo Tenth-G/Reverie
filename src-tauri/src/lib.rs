@@ -1,5 +1,7 @@
+#[cfg(debug_assertions)]
+use std::path::PathBuf;
 use std::sync::Mutex;
-use tauri::{AppHandle, Manager, Window};
+use tauri::{webview::PageLoadEvent, AppHandle, Manager, Window};
 use tauri_plugin_shell::{
     process::{CommandChild, CommandEvent},
     ShellExt,
@@ -10,6 +12,19 @@ struct ApiServer(Mutex<Option<CommandChild>>);
 
 const API_PORT: u16 = 3939;
 const API_HOST: &str = "127.0.0.1";
+
+fn sanitize_api_log(line: &[u8]) -> String {
+    let text = String::from_utf8_lossy(line);
+    let Some(start) = text.find("cookie=") else {
+        return text.into_owned();
+    };
+    let value_start = start + "cookie=".len();
+    let value_end = text[value_start..]
+        .find('&')
+        .map(|offset| value_start + offset)
+        .unwrap_or(text.len());
+    format!("{}[redacted]{}", &text[..value_start], &text[value_end..])
+}
 
 // 窗口控制命令
 #[tauri::command]
@@ -52,12 +67,26 @@ fn start_ncm_api_server(app: &AppHandle) -> Result<Option<CommandChild>, String>
         return Ok(None);
     }
 
-    let (mut events, child) = app
+    #[cfg(debug_assertions)]
+    let command = {
+        let script = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .ok_or_else(|| "Cannot resolve project root".to_string())?
+            .join("sidecar")
+            .join("api-server.cjs");
+        app.shell().command("node").arg(script)
+    };
+
+    #[cfg(not(debug_assertions))]
+    let command = app
         .shell()
         .sidecar("reverie-api")
-        .map_err(|e| format!("Cannot resolve API sidecar: {e}"))?
+        .map_err(|e| format!("Cannot resolve API sidecar: {e}"))?;
+
+    let (mut events, child) = command
         .env("PORT", API_PORT.to_string())
         .env("HOST", API_HOST)
+        .env("PARENT_PID", std::process::id().to_string())
         .spawn()
         .map_err(|e| format!("Failed to start API sidecar: {e}"))?;
 
@@ -65,10 +94,10 @@ fn start_ncm_api_server(app: &AppHandle) -> Result<Option<CommandChild>, String>
         while let Some(event) = events.recv().await {
             match event {
                 CommandEvent::Stdout(line) => {
-                    log::info!("API: {}", String::from_utf8_lossy(&line));
+                    log::info!("API: {}", sanitize_api_log(&line));
                 }
                 CommandEvent::Stderr(line) => {
-                    log::warn!("API: {}", String::from_utf8_lossy(&line));
+                    log::warn!("API: {}", sanitize_api_log(&line));
                 }
                 CommandEvent::Error(error) => log::error!("API sidecar error: {error}"),
                 CommandEvent::Terminated(payload) => {
@@ -89,6 +118,13 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .on_page_load(|webview, payload| {
+            if payload.event() == PageLoadEvent::Finished {
+                if let Err(error) = webview.window().show() {
+                    log::error!("Failed to show the main window: {error}");
+                }
+            }
+        })
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(

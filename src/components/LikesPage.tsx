@@ -6,6 +6,7 @@ import SongList from "./SongList";
 export default function LikesPage() {
   const likedSongs = usePlayerStore((s) => s.likedSongs);
   const loadLikedSongs = usePlayerStore((s) => s.loadLikedSongs);
+  const likedSongsLoading = usePlayerStore((s) => s.likedSongsLoading);
 
   // auto refresh the full liked list when the page opens
   useEffect(() => {
@@ -20,6 +21,7 @@ export default function LikesPage() {
       />
       <SongList
         songs={likedSongs}
+        loading={likedSongsLoading}
         emptyText="还没有喜欢的歌曲，点播放栏的红心收藏吧"
       />
     </Page>

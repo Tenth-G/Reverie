@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { qrCheck, qrCreate, qrKey } from "../api/client";
 import { usePlayerStore } from "../store/playerStore";
-import { IconRefresh } from "./icons";
+import { RefreshCw } from "lucide-react";
 
 type QrState =
   "loading" | "waiting" | "scanned" | "expired" | "success" | "error";
@@ -154,7 +154,7 @@ export default function LoginModal() {
           </div>
           {(status === "error" || status === "expired") && (
             <button className="btn" onClick={startQr}>
-              <IconRefresh width={15} height={15} /> 刷新二维码
+              <RefreshCw size={15} /> 刷新二维码
             </button>
           )}
           {qrurl && (

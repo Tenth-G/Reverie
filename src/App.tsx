@@ -1,22 +1,30 @@
-import { useEffect, useRef } from "react";
+import { lazy, Suspense, useEffect, useRef } from "react";
 import { usePlayerStore } from "./store/playerStore";
 import { ensureAnalyser, resumeAnalyser } from "./utils/audioAnalyser";
 import TitleBar from "./components/TitleBar";
 import TopNav from "./components/TopNav";
 import PlayerBar from "./components/PlayerBar";
-import NowPlayingView from "./components/NowPlayingView";
 import LoginGate from "./components/LoginGate";
 import HomePage from "./components/HomePage";
-import ChartPage from "./components/ChartPage";
-import PlaylistPage from "./components/PlaylistPage";
-import FmPage from "./components/FmPage";
-import UserListPage from "./components/UserListPage";
-import LikesPage from "./components/LikesPage";
-import RecentPage from "./components/RecentPage";
-import LoginModal from "./components/LoginModal";
-import SettingsModal from "./components/SettingsModal";
-import UpdateModal from "./components/UpdateModal";
 import Toasts from "./components/Toasts";
+import SettingsModal from "./components/SettingsModal";
+
+const ChartPage = lazy(() => import("./components/ChartPage"));
+const PlaylistPage = lazy(() => import("./components/PlaylistPage"));
+const UserListPage = lazy(() => import("./components/UserListPage"));
+const LikesPage = lazy(() => import("./components/LikesPage"));
+const RecentPage = lazy(() => import("./components/RecentPage"));
+const AlbumPage = lazy(() => import("./components/AlbumPage"));
+const ArtistPage = lazy(() => import("./components/ArtistPage"));
+const RadioPage = lazy(() => import("./components/RadioPage"));
+const RadioDetailPage = lazy(() => import("./components/RadioDetailPage"));
+const SocialPage = lazy(() => import("./components/SocialPage"));
+const NowPlayingView = lazy(() => import("./components/NowPlayingView"));
+const PlayerCommentsDrawer = lazy(
+  () => import("./components/PlayerCommentsDrawer"),
+);
+const LoginModal = lazy(() => import("./components/LoginModal"));
+const UpdateModal = lazy(() => import("./components/UpdateModal"));
 
 export default function App() {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -28,6 +36,10 @@ export default function App() {
 
   const activeView = usePlayerStore((s) => s.activeView);
   const currentPage = usePlayerStore((s) => s.currentPage);
+  const showPlayerComments = usePlayerStore((s) => s.showPlayerComments);
+  const showLogin = usePlayerStore((s) => s.showLogin);
+  const showSettings = usePlayerStore((s) => s.showSettings);
+  const showUpdate = usePlayerStore((s) => s.showUpdate);
 
   const particleEffect = usePlayerStore((s) => s.particleEffect);
   const refreshLogin = usePlayerStore((s) => s.refreshLogin);
@@ -42,14 +54,41 @@ export default function App() {
 
   // First launch only: size the particle cover to this machine's GPU.
   useEffect(() => {
-    usePlayerStore.getState().detectCoverQuality();
+    let idle: number | undefined;
+    let fallback = 0;
+    const timer = window.setTimeout(() => {
+      const run = () => void usePlayerStore.getState().detectCoverQuality();
+      idle = window.requestIdleCallback?.(run, { timeout: 8000 });
+      if (idle === undefined) fallback = window.setTimeout(run, 1000);
+    }, 4000);
+    return () => {
+      window.clearTimeout(timer);
+      if (fallback) window.clearTimeout(fallback);
+      if (idle !== undefined) window.cancelIdleCallback?.(idle);
+    };
   }, []);
 
-  // restore login session + load home + random lyric quote on startup
+  // Restore auth before authenticated home data is refreshed. Cached content
+  // remains visible while the local API sidecar finishes starting.
   useEffect(() => {
-    refreshLogin();
-    loadHome();
-    loadHomeQuote();
+    let cancelled = false;
+    let idle: number | undefined;
+    let timer = 0;
+    void (async () => {
+      await refreshLogin();
+      if (cancelled) return;
+      const refreshHome = () => {
+        if (!cancelled)
+          void Promise.allSettled([loadHome(true), loadHomeQuote()]);
+      };
+      idle = window.requestIdleCallback?.(refreshHome, { timeout: 1800 });
+      if (idle === undefined) timer = window.setTimeout(refreshHome, 250);
+    })();
+    return () => {
+      cancelled = true;
+      if (idle !== undefined) window.cancelIdleCallback?.(idle);
+      if (timer) window.clearTimeout(timer);
+    };
   }, [refreshLogin, loadHome, loadHomeQuote]);
 
   // "音乐律动" needs the player routed through an AnalyserNode. Wire it only
@@ -73,8 +112,20 @@ export default function App() {
     const off = bridge?.onUpdateEvent?.((event) => {
       usePlayerStore.getState().applyUpdateEvent(event.type, event.data);
     });
-    if (bridge && !bridge.skipUpdate) void bridge.checkUpdate();
-    return () => off?.();
+    let idle: number | undefined;
+    let fallback = 0;
+    const timer = window.setTimeout(() => {
+      if (!bridge || bridge.skipUpdate) return;
+      const run = () => void bridge.checkUpdate();
+      idle = window.requestIdleCallback?.(run, { timeout: 12000 });
+      if (idle === undefined) fallback = window.setTimeout(run, 1000);
+    }, 8000);
+    return () => {
+      window.clearTimeout(timer);
+      if (fallback) window.clearTimeout(fallback);
+      if (idle !== undefined) window.cancelIdleCallback?.(idle);
+      off?.();
+    };
   }, []);
 
   // theme: follow system / light / dark
@@ -144,16 +195,45 @@ export default function App() {
     else a.pause();
   }, [playing, currentUrl]);
 
+  // `timeupdate` only fires a few times per second in WebView. Sample the
+  // actual audio clock at 30 fps while playing so the progress bar and lyrics
+  // move continuously without forcing the whole app to render at 60 fps.
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !playing || !currentUrl) return;
+    let frame = 0;
+    let lastPaint = 0;
+    const tick = (now: number) => {
+      if (now - lastPaint >= 32 && !document.hidden) {
+        lastPaint = now;
+        const progress = Math.floor(audio.currentTime * 1000);
+        const duration = Number.isFinite(audio.duration)
+          ? Math.floor(audio.duration * 1000)
+          : 0;
+        const state = usePlayerStore.getState();
+        if (
+          Math.abs(state.progress - progress) >= 16 ||
+          state.duration !== duration
+        ) {
+          usePlayerStore.setState({ progress, duration });
+        }
+      }
+      frame = window.requestAnimationFrame(tick);
+    };
+    frame = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frame);
+  }, [playing, currentUrl]);
+
   const handleEnded = () => {
     const st = usePlayerStore.getState();
     const { queue, index, playMode: mode, queueSource } = st;
+    if (queueSource === "fm" && queue.length > 0) {
+      void st.fmNext();
+      return;
+    }
     if (mode === "one") {
       st.seek(0);
       audioRef.current?.play().catch(() => {});
-      return;
-    }
-    if (queueSource === "fm" && queue.length > 0) {
-      st.fmNext();
       return;
     }
     if (mode === "sequence" && index >= queue.length - 1) {
@@ -171,14 +251,22 @@ export default function App() {
         return <ChartPage />;
       case "playlist":
         return <PlaylistPage />;
-      case "fm":
-        return <FmPage />;
       case "userlist":
         return <UserListPage />;
       case "likes":
         return <LikesPage />;
       case "recent":
         return <RecentPage />;
+      case "album":
+        return <AlbumPage />;
+      case "artist":
+        return <ArtistPage />;
+      case "radio":
+        return <RadioPage />;
+      case "radioDetail":
+        return <RadioDetailPage />;
+      case "social":
+        return <SocialPage />;
       default:
         return <HomePage />;
     }
@@ -194,14 +282,35 @@ export default function App() {
         <TitleBar />
         <TopNav />
         <main className="page-content">
-          <LoginGate>{renderPage()}</LoginGate>
+          <LoginGate>
+            <Suspense fallback={<div className="page-loading" />}>
+              {renderPage()}
+            </Suspense>
+          </LoginGate>
         </main>
       </div>
-      {currentPage === "nowplaying" && <NowPlayingView />}
+      {currentPage === "nowplaying" && (
+        <Suspense fallback={<div className="now-playing-loading" />}>
+          <NowPlayingView />
+        </Suspense>
+      )}
+      {showPlayerComments && (
+        <Suspense fallback={null}>
+          <PlayerCommentsDrawer />
+        </Suspense>
+      )}
       <PlayerBar />
-      <LoginModal />
-      <SettingsModal />
-      <UpdateModal />
+      {showLogin && (
+        <Suspense fallback={null}>
+          <LoginModal />
+        </Suspense>
+      )}
+      {showSettings && <SettingsModal />}
+      {showUpdate && (
+        <Suspense fallback={null}>
+          <UpdateModal />
+        </Suspense>
+      )}
       <Toasts />
 
       <audio

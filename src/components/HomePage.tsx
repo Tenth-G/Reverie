@@ -8,12 +8,42 @@ import SongCards from "./SongCards";
 const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
 
 const MUNICIPALITIES = ["北京", "上海", "天津", "重庆"];
+const LOCATION_CACHE_KEY = "reverie_home_location";
+const LOCATION_CACHE_AT_KEY = "reverie_home_location_at";
+const LOCATION_CACHE_TTL = 24 * 60 * 60 * 1000;
+
+function readCachedLocation(): string {
+  try {
+    return localStorage.getItem(LOCATION_CACHE_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+function isLocationFresh(): boolean {
+  try {
+    const cachedAt = Number(localStorage.getItem(LOCATION_CACHE_AT_KEY) ?? 0);
+    return cachedAt > 0 && Date.now() - cachedAt < LOCATION_CACHE_TTL;
+  } catch {
+    return false;
+  }
+}
+
+function cacheLocation(value: string) {
+  if (!value) return;
+  try {
+    localStorage.setItem(LOCATION_CACHE_KEY, value);
+    localStorage.setItem(LOCATION_CACHE_AT_KEY, String(Date.now()));
+  } catch {
+    /* ignore */
+  }
+}
 
 async function fetchLocation(): Promise<string> {
   // ipip.net returns Chinese location text: "来自于：中国 江苏 连云港  移动"
   try {
     const res = await fetch("https://myip.ipip.net", {
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(3500),
     });
     const text = await res.text();
     const m = text.match(/来自于：(\S+)\s+(\S+)\s+(\S+)/);
@@ -35,7 +65,7 @@ async function fetchLocation(): Promise<string> {
   // fallback
   try {
     const res = await fetch("https://ipinfo.io/json", {
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(3500),
     });
     const j = await res.json();
     const city = String(j.city ?? "");
@@ -50,12 +80,15 @@ export default function HomePage() {
   const hotPlaylists = usePlayerStore((s) => s.hotPlaylists);
   const topSongs = usePlayerStore((s) => s.topSongs);
   const recommendSongs = usePlayerStore((s) => s.recommendSongs);
+  const recommendSongsLoading = usePlayerStore((s) => s.recommendSongsLoading);
+  const hotPlaylistsLoading = usePlayerStore((s) => s.hotPlaylistsLoading);
+  const topSongsLoading = usePlayerStore((s) => s.topSongsLoading);
   const homeQuote = usePlayerStore((s) => s.homeQuote);
   const openPlaylist = usePlayerStore((s) => s.openPlaylist);
   const loadTopSongs = usePlayerStore((s) => s.loadTopSongs);
 
   const [now, setNow] = useState(() => new Date());
-  const [location, setLocation] = useState("");
+  const [location, setLocation] = useState(readCachedLocation);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 30000);
@@ -63,7 +96,22 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    fetchLocation().then(setLocation).catch(() => {});
+    if (location && isLocationFresh()) return;
+    let cancelled = false;
+    const refresh = () => {
+      void fetchLocation().then((value) => {
+        if (cancelled || !value) return;
+        setLocation(value);
+        cacheLocation(value);
+      });
+    };
+    const idle = window.requestIdleCallback?.(refresh, { timeout: 4000 });
+    const timer = idle === undefined ? window.setTimeout(refresh, 1000) : 0;
+    return () => {
+      cancelled = true;
+      if (idle !== undefined) window.cancelIdleCallback?.(idle);
+      if (timer) window.clearTimeout(timer);
+    };
   }, []);
 
   const hh = String(now.getHours()).padStart(2, "0");
@@ -109,7 +157,10 @@ export default function HomePage() {
         <div className="section-title">
           <h2>每日推荐</h2>
         </div>
-        <SongCards songs={recommendSongs.slice(0, 12)} />
+        <SongCards
+          songs={recommendSongs.slice(0, 12)}
+          loading={recommendSongsLoading}
+        />
       </section>
 
       <section className="home-section">
@@ -117,9 +168,9 @@ export default function HomePage() {
           <h2>推荐歌单</h2>
         </div>
         <PlaylistGrid
-          playlists={hotPlaylists.slice(0, 10)}
+          playlists={hotPlaylists.slice(0, 12)}
           onOpen={openPlaylist}
-          emptyText={hotPlaylists.length ? "暂无歌单" : "加载中…"}
+          loading={hotPlaylistsLoading}
         />
       </section>
 
@@ -130,7 +181,11 @@ export default function HomePage() {
             更多 →
           </button>
         </div>
-        <SongList songs={topSongs.slice(0, 10)} emptyText="加载中…" />
+        <SongList
+          songs={topSongs.slice(0, 10)}
+          loading={topSongsLoading}
+          emptyText="暂无排行数据"
+        />
       </section>
     </Page>
   );

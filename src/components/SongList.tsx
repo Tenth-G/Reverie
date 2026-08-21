@@ -1,8 +1,10 @@
+import { Disc3, Play, UserRound } from "lucide-react";
 import type { Song } from "../api/types";
+import { useExploreStore } from "../store/exploreStore";
 import { usePlayerStore } from "../store/playerStore";
 import { formatTime } from "../utils/lyrics";
 import { sizedImage } from "../utils/image";
-import { IconPlay } from "./icons";
+import { LoadingState } from "./Page";
 
 interface Props {
   songs: Song[];
@@ -10,6 +12,7 @@ interface Props {
   countLabel?: string;
   emptyText?: string;
   showCover?: boolean;
+  loading?: boolean;
 }
 
 export default function SongList({
@@ -18,10 +21,12 @@ export default function SongList({
   countLabel,
   emptyText = "暂无歌曲",
   showCover = true,
+  loading = false,
 }: Props) {
   const currentSong = usePlayerStore((s) => s.currentSong);
-  const playing = usePlayerStore((s) => s.playing);
   const playSong = usePlayerStore((s) => s.playSong);
+  const openAlbum = useExploreStore((s) => s.openAlbum);
+  const openArtist = useExploreStore((s) => s.openArtist);
 
   return (
     <>
@@ -32,7 +37,9 @@ export default function SongList({
         </div>
       )}
       <div className="song-list">
-        {songs.length === 0 ? (
+        {songs.length === 0 && loading ? (
+          <LoadingState />
+        ) : songs.length === 0 ? (
           <div className="empty">{emptyText}</div>
         ) : (
           songs.map((song, i) => {
@@ -44,7 +51,7 @@ export default function SongList({
                 onClick={() => playSong(song, songs)}
               >
                 <span className="idx">
-                  {isCur ? <IconPlay width={13} height={13} /> : i + 1}
+                  {isCur ? <Play size={13} fill="currentColor" /> : i + 1}
                 </span>
                 {showCover &&
                   (song.picUrl ? (
@@ -67,13 +74,11 @@ export default function SongList({
                         color: "var(--text-faint)",
                       }}
                     >
-                      ♪
+                      <Disc3 size={17} />
                     </span>
                   ))}
                 <div className="meta">
-                  <div
-                    className={`t ${isCur && playing ? "playing-text" : ""}`}
-                  >
+                  <div className={`t ${isCur ? "playing-text" : ""}`}>
                     {song.name}
                     {song.fee === 1 && <span className="vip-badge">VIP</span>}
                   </div>
@@ -81,6 +86,29 @@ export default function SongList({
                     {song.artists}
                     {song.album ? ` · ${song.album}` : ""}
                   </div>
+                </div>
+                <div
+                  className="song-row-actions"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {song.artistIds?.[0] ? (
+                    <button
+                      className="icon-action"
+                      title="歌手详情"
+                      onClick={() => void openArtist(song.artistIds![0])}
+                    >
+                      <UserRound size={15} />
+                    </button>
+                  ) : null}
+                  {song.albumId > 0 ? (
+                    <button
+                      className="icon-action"
+                      title="专辑详情"
+                      onClick={() => void openAlbum(song.albumId)}
+                    >
+                      <Disc3 size={15} />
+                    </button>
+                  ) : null}
                 </div>
                 <span className="dur">{formatTime(song.duration)}</span>
               </div>

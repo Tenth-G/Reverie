@@ -11,7 +11,8 @@ export default function ChartPage() {
       <PageHeader title="排行榜" subtitle="飙升榜 · 热门歌曲" />
       <SongList
         songs={topSongs}
-        emptyText={topSongsLoading ? "加载中…" : "暂无排行数据"}
+        loading={topSongsLoading}
+        emptyText="暂无排行数据"
       />
     </Page>
   );

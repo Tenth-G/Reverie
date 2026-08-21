@@ -1,5 +1,11 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, statSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  renameSync,
+  rmSync,
+  statSync,
+} from "node:fs";
 import { join, resolve } from "node:path";
 
 const targets = {
@@ -46,6 +52,10 @@ const output = join(
   `reverie-api-${target.triple}${target.extension}`,
 );
 const input = join(root, "sidecar", "api-server.cjs");
+const temporaryOutput = join(
+  outputDir,
+  `reverie-api-${target.triple}.tmp${target.extension}`,
+);
 const config = join(root, "package.json");
 const apiPackage = join(
   root,
@@ -67,6 +77,7 @@ if (!existsSync(apiPackage)) {
 }
 
 const newestInput = Math.max(
+  statSync(import.meta.filename).mtimeMs,
   statSync(input).mtimeMs,
   statSync(config).mtimeMs,
   statSync(apiPackage).mtimeMs,
@@ -77,20 +88,29 @@ if (existsSync(output) && statSync(output).mtimeMs >= newestInput) {
 }
 
 mkdirSync(outputDir, { recursive: true });
-execFileSync(
-  process.execPath,
-  [
-    pkgCli,
-    input,
-    "--config",
-    config,
-    "--target",
-    target.pkg,
-    "--output",
-    output,
-    "--compress",
-    "GZip",
-  ],
-  { cwd: root, stdio: "inherit" },
-);
+rmSync(temporaryOutput, { force: true });
+try {
+  execFileSync(
+    process.execPath,
+    [
+      pkgCli,
+      input,
+      "--config",
+      config,
+      "--target",
+      target.pkg,
+      "--public",
+      "--public-packages",
+      "*",
+      "--no-bytecode",
+      "--output",
+      temporaryOutput,
+    ],
+    { cwd: root, stdio: "inherit" },
+  );
+  rmSync(output, { force: true });
+  renameSync(temporaryOutput, output);
+} finally {
+  rmSync(temporaryOutput, { force: true });
+}
 console.log(`Built API sidecar: ${output}`);

@@ -1,7 +1,7 @@
 import { usePlayerStore } from "../store/playerStore";
 import { Page, PageHeader } from "./Page";
 import SongList from "./SongList";
-import { IconRefresh } from "./icons";
+import { RefreshCw } from "lucide-react";
 
 export default function FmPage() {
   const fmSongs = usePlayerStore((s) => s.fmSongs);
@@ -11,14 +11,14 @@ export default function FmPage() {
     <Page>
       <PageHeader
         title="漫游"
-        subtitle="随机播放歌曲，换一批听听"
+        subtitle="网易云私人 FM，根据你的听歌偏好持续推荐"
         actions={
           <button className="btn" onClick={loadPersonalFm}>
-            <IconRefresh width={14} height={14} /> 换一批
+            <RefreshCw size={14} /> 换一批
           </button>
         }
       />
-      <SongList songs={fmSongs} emptyText="登录后开启漫游随机播放" />
+      <SongList songs={fmSongs} emptyText="登录后开启私人漫游" />
     </Page>
   );
 }

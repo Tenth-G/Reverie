@@ -1,5 +1,5 @@
-import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { flushSync } from "react-dom";
 import App from "./App";
 import "./index.css";
 import "./tauri-api"; // 初始化 Tauri API
@@ -10,8 +10,5 @@ document.documentElement.setAttribute(
   window.ncm?.platform ?? "",
 );
 
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+const root = createRoot(document.getElementById("root")!);
+flushSync(() => root.render(<App />));

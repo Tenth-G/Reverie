@@ -1,10 +1,19 @@
 import type { Song } from "../api/types";
 import { usePlayerStore } from "../store/playerStore";
 import { sizedImage } from "../utils/image";
+import { Disc3 } from "lucide-react";
+import { LoadingState } from "./Page";
 
-export default function SongCards({ songs }: { songs: Song[] }) {
+export default function SongCards({
+  songs,
+  loading = false,
+}: {
+  songs: Song[];
+  loading?: boolean;
+}) {
   const playSong = usePlayerStore((s) => s.playSong);
-  if (!songs.length) return <div className="empty">加载中…</div>;
+  if (!songs.length && loading) return <LoadingState label="正在加载推荐…" />;
+  if (!songs.length) return <div className="empty">暂无推荐</div>;
   return (
     <div className="song-cards">
       {songs.map((song) => (
@@ -13,11 +22,20 @@ export default function SongCards({ songs }: { songs: Song[] }) {
           className="song-card"
           onClick={() => playSong(song, songs)}
         >
-          {song.picUrl ? (
-            <img src={sizedImage(song.picUrl, 320)} alt="" loading="lazy" />
-          ) : (
-            <span className="song-card-ph">♪</span>
-          )}
+          <div className="card-cover">
+            {song.picUrl ? (
+              <img
+                src={sizedImage(song.picUrl, 320)}
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
+            ) : (
+              <span className="song-card-ph">
+                <Disc3 size={24} />
+              </span>
+            )}
+          </div>
           <div className="n">{song.name}</div>
           <div className="a">{song.artists}</div>
         </div>

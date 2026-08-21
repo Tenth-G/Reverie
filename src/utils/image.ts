@@ -6,6 +6,10 @@
  */
 export function sizedImage(url: string, size: number): string {
   if (!url || url.startsWith("data:") || url.includes("param=")) return url;
-  const sep = url.includes("?") ? "&" : "?";
-  return `${url}${sep}param=${size}y${size}`;
+  const safeUrl = url.replace(
+    /^http:\/\/(p\d+\.music\.126\.net)/i,
+    "https://$1",
+  );
+  const sep = safeUrl.includes("?") ? "&" : "?";
+  return `${safeUrl}${sep}param=${size}y${size}`;
 }
