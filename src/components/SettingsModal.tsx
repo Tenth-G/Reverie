@@ -273,8 +273,8 @@ export default function SettingsModal() {
               Reverie <span>v{__APP_VERSION__}</span>
             </div>
             <div className="about-meta">
-              Electron {window.ncm?.versions.electron ?? "—"} · Chrome{" "}
-              {window.ncm?.versions.chrome ?? "—"}
+              {window.ncm?.versions.runtime ?? "Tauri"} · WebView{" "}
+              {window.ncm?.versions.webview ?? "—"}
             </div>
           </div>
         </div>

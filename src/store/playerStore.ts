@@ -590,26 +590,32 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     }
     if (get().updatePhase === "checking") return;
     set({ updatePhase: "checking" });
-    window.ncm.checkUpdate().then((r) => {
-      if (r.ok) return;
-      set({ updatePhase: "idle" });
-      if (!manual) return;
-      if (r.reason === "busy") get().toast("正在检查更新，请稍候", "info");
-      else get().toast("当前环境不支持自动更新", "error");
-    }).catch(() => set({ updatePhase: "idle" }));
+    window.ncm
+      .checkUpdate(manual)
+      .then((r) => {
+        if (r.ok) return;
+        set({ updatePhase: "idle" });
+        if (!manual) return;
+        if (r.reason === "busy") get().toast("正在检查更新，请稍候", "info");
+        else get().toast("当前环境不支持自动更新", "error");
+      })
+      .catch(() => set({ updatePhase: "idle" }));
   },
   startUpdate: () => {
     if (!window.ncm?.downloadUpdate) return;
     set({ updatePhase: "downloading", updateProgress: 0 });
-    window.ncm.downloadUpdate().then((r) => {
-      if (!r.ok) {
+    window.ncm
+      .downloadUpdate()
+      .then((r) => {
+        if (!r.ok) {
+          set({ updatePhase: "error" });
+          get().toast("下载更新失败，请稍后重试", "error");
+        }
+      })
+      .catch(() => {
         set({ updatePhase: "error" });
         get().toast("下载更新失败，请稍后重试", "error");
-      }
-    }).catch(() => {
-      set({ updatePhase: "error" });
-      get().toast("下载更新失败，请稍后重试", "error");
-    });
+      });
   },
   installUpdate: () => window.ncm?.installUpdate(),
   dismissUpdate: () => {

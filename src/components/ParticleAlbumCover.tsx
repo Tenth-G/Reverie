@@ -84,14 +84,14 @@ export default function ParticleAlbumCover({
   useEffect(() => {
     if (!containerRef.current) return;
     const container = containerRef.current;
-    const GRID = Math.max(16, Math.floor(grid));
+    const GRID = Math.max(16, Math.min(grid, 160)); // 限制最大网格防止内存爆炸
     const PARTICLE_COUNT = GRID * GRID;
     const useBloom = GRID >= BLOOM_MIN_GRID;
     let width = container.clientWidth;
     let height = container.clientHeight;
     // Fill rate, not particle count, is what sinks a weak GPU: the render
     // area scales with the square of the pixel ratio. Cap it by tier.
-    const maxRatio = GRID >= 190 ? 2 : GRID >= 130 ? 1.5 : 1;
+    const maxRatio = GRID >= 160 ? 1.5 : GRID >= 130 ? 1.2 : 1;
     const pixelRatio = Math.min(window.devicePixelRatio || 1, maxRatio);
 
     const scene = new THREE.Scene();
@@ -254,6 +254,12 @@ export default function ParticleAlbumCover({
     let watchdogSkipGap = true;
     const onVisibilityChange = () => {
       watchdogSkipGap = true;
+      // 后台时暂停渲染，节省内存和 CPU
+      if (document.hidden) {
+        cancelAnimationFrame(frameId);
+      } else {
+        animate();
+      }
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
 
@@ -358,13 +364,20 @@ export default function ParticleAlbumCover({
       el.removeEventListener("pointercancel", finishDrag);
       el.removeEventListener("dblclick", onDblClick);
       container.removeChild(el);
+
+      // 彻底清理 Three.js 资源
       geometry.dispose();
       material.dispose();
       composer?.dispose();
-      // dispose() alone leaves the GL context alive; browsers cap how many a
-      // page may hold, so release it explicitly.
+
+      // 强制释放 WebGL 上下文和 TypedArray 内存
       renderer.forceContextLoss();
       renderer.dispose();
+
+      // 手动清空 TypedArray 引用，帮助 GC 回收
+      (geometry.attributes.position.array as any) = null;
+      (geometry.attributes.aColor.array as any) = null;
+      (geometry.attributes.aSeed.array as any) = null;
     };
     // grid changes the buffer layout, so rebuilding on it is correct.
   }, [imageUrl, grid]);

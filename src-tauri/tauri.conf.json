@@ -1,0 +1,60 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Reverie",
+  "version": "1.0.2",
+  "identifier": "com.reverie.player",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://127.0.0.1:5173",
+    "beforeDevCommand": "npm run prepare:sidecar && npm run dev:web",
+    "beforeBuildCommand": "npm run prepare:sidecar && npm run build:web"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Reverie",
+        "width": 1380,
+        "height": 860,
+        "minWidth": 1080,
+        "minHeight": 680,
+        "resizable": true,
+        "fullscreen": false,
+        "decorations": false,
+        "transparent": false,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": null
+    },
+    "withGlobalTauri": true
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "createUpdaterArtifacts": true,
+    "externalBin": ["binaries/reverie-api"],
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "publisher": "Tenth-G",
+    "windows": {
+      "nsis": null
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/Tenth-G/Reverie/releases/latest/download/latest.json"
+      ],
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDYxODMwN0MzOTEyQ0VFNkQKUldSdDdpeVJ3d2VEWVFwWkZ6cXMyRzNuRVc1dDFTNkNhMnNEM2orSDNkQlRQOW8zNFR0S1Zzc2gK",
+      "windows": {
+        "installMode": "passive"
+      }
+    }
+  }
+}

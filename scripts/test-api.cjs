@@ -1,6 +1,7 @@
 "use strict";
 
 const { serveNcmApi } = require("NeteaseCloudMusicApi");
+const { mkdirSync } = require("fs");
 
 const PORT = 3949;
 const BASE = `http://127.0.0.1:${PORT}`;
@@ -26,6 +27,7 @@ async function req(path) {
 }
 
 async function main() {
+  mkdirSync("test-results", { recursive: true });
   await serveNcmApi({ port: PORT, host: "127.0.0.1", checkVersion: false });
   console.log(`API 服务已启动 @ ${BASE}\n`);
 

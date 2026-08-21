@@ -1,8 +1,7 @@
 /**
  * Release notes rendering.
  *
- * electron-updater's GitHub provider delivers release notes as HTML (from the
- * GitHub Atom feed) or as a plain/markdown string (from latest.yml). This
+ * GitHub release notes can arrive as HTML or as a plain/markdown string. This
  * module turns either form into safe, readable HTML so raw source never leaks
  * into the UI: HTML input is sanitized through a strict allow-list, and plain
  * text/markdown is escaped and formatted with a small safe subset.

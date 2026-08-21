@@ -1,6 +1,6 @@
 # Reverie
 
-一款基于 Electron + React 的桌面音乐播放器。
+一款基于 Tauri 2、React 和 Rust 的桌面音乐播放器。
 
 ## 功能
 
@@ -24,13 +24,19 @@
 
 ### 从源码运行
 
-需要 Node.js 22.12 及以上。
+需要 Node.js 22.12 及以上、Rust stable 和 Windows WebView2。首次构建会下载
+一次用于本地音乐 API sidecar 的 Node.js 运行时，生成产物会缓存在本机。
 
 ```bash
-npm install      # 安装依赖
-npm run dev      # 开发模式（热更新）
-npm start        # 构建并运行
+npm install      # 安装前端和 Tauri 依赖
+npm run dev      # Tauri 开发模式（热更新）
+npm run check    # TypeScript、前端和 Rust 检查
+npm test         # 单元测试与 API sidecar 烟雾测试
+npm run build    # 构建安装包与签名更新产物
 ```
+
+本地音乐 API 会作为 sidecar 随应用分发，最终用户不需要安装 Node.js。发布和
+自动更新签名流程见 [RELEASING.md](./RELEASING.md)。
 
 ## 免责声明
 

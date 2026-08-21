@@ -7,3 +7,6 @@ test-results/
 .npm-cache/
 .electron-cache/
 .electron-builder-cache/
+src-tauri/binaries/*
+!src-tauri/binaries/.gitkeep
+src-tauri/target/

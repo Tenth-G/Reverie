@@ -4,48 +4,56 @@
   "version": "1.0.2",
   "description": "Reverie — 一款音乐播放器",
   "type": "module",
-  "main": "electron/main.cjs",
   "author": {
     "name": ""
   },
   "license": "GPL-3.0",
   "private": true,
+  "pkg": {
+    "scripts": [
+      "node_modules/NeteaseCloudMusicApi/module/*.js"
+    ],
+    "assets": [
+      "node_modules/NeteaseCloudMusicApi/data/**/*",
+      "node_modules/NeteaseCloudMusicApi/public/**/*"
+    ]
+  },
   "scripts": {
-    "postinstall": "node node_modules/electron/install.js",
-    "dev": "concurrently -k -s first \"npm:dev:vite\" \"npm:dev:electron\"",
-    "dev:vite": "vite",
-    "dev:electron": "wait-on tcp:127.0.0.1:5173 && cross-env VITE_DEV_SERVER_URL=http://127.0.0.1:5173 electron .",
-    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && vite build",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"electron/**/*.cjs\" \"scripts/*.cjs\" \"scripts/*.mjs\" \"vite.config.ts\" \"electron-builder.config.cjs\" \"*.{json,html,md}\"",
+    "dev": "tauri dev",
+    "dev:web": "vite",
+    "build": "tauri build",
+    "build:web": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && vite build",
+    "prepare:sidecar": "node scripts/build-api-sidecar.mjs",
+    "tauri": "tauri",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"scripts/*.{cjs,mjs}\" \"vite.config.ts\" \"*.{json,html,md}\"",
+    "check": "npm run prepare:sidecar && npm run typecheck && npm run build:web && cargo check --manifest-path src-tauri/Cargo.toml",
     "typecheck": "tsc --noEmit",
-    "start": "npm run build && electron .",
-    "dist": "npm run build && electron-builder --config electron-builder.config.cjs",
-    "dist:win": "npm run build && electron-builder --win --config electron-builder.config.cjs",
+    "test": "npm run test:unit && npm run test:sidecar",
+    "test:unit": "node --experimental-strip-types --test tests/*.test.ts",
     "test:api": "node scripts/test-api.cjs",
-    "test:e2e": "node scripts/e2e-test.mjs"
+    "test:sidecar": "node scripts/test-sidecar.mjs"
   },
   "dependencies": {
-    "electron-updater": "^6.8.9",
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-process": "^2.3.1",
+    "@tauri-apps/plugin-shell": "^2.3.5",
+    "@tauri-apps/plugin-updater": "^2.10.1",
     "NeteaseCloudMusicApi": "^4.32.0"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@types/three": "^0.185.4",
     "@vitejs/plugin-react": "^6.0.0",
-    "concurrently": "^10.0.0",
-    "cross-env": "^10.0.0",
-    "electron": "^43.0.0",
-    "electron-builder": "^26.0.0",
-    "playwright-core": "^1.62.1",
+    "@yao-pkg/pkg": "^6.22.0",
     "prettier": "^3.9.6",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "three": "^0.185.1",
     "typescript": "^5.6.0",
     "vite": "^8.0.0",
-    "wait-on": "^9.0.0",
     "zustand": "^5.0.0"
   }
 }
