@@ -63,7 +63,7 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    fetchLocation().then(setLocation);
+    fetchLocation().then(setLocation).catch(() => {});
   }, []);
 
   const hh = String(now.getHours()).padStart(2, "0");

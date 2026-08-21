@@ -260,9 +260,6 @@ export async function benchmarkCoverQuality(): Promise<BenchmarkResult> {
     // ns per particle; constant per-draw terms cancel.
     const slope = (nsLarge - nsSmall) / (LARGE - SMALL);
     const usableNs = (FRAME_BUDGET_MS - RESERVED_FIXED_MS) * 1e6;
-    console.log(
-      `[bench] small=${(nsSmall / 1e6).toFixed(3)}ms large=${(nsLarge / 1e6).toFixed(3)}ms slope=${slope.toFixed(2)}ns/粒子`,
-    );
 
     const ceiling = Math.floor(usableNs / slope);
     const budgeted = Math.floor(ceiling * HEADROOM);
