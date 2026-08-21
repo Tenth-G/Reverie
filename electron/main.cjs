@@ -300,7 +300,7 @@ function createWindow() {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: false,
-      backgroundThrottling: false,
+      backgroundThrottling: true,
     },
   });
 
