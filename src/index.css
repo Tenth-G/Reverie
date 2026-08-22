@@ -5195,6 +5195,16 @@ input {
   .yunbei-task { align-items: flex-start; }
   .yunbei-task-action { flex-direction: column; align-items: flex-end; }
 }
+.recent-card-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.recent-card { display: grid; gap: 5px; min-width: 0; padding: 0; border: 0; background: transparent; color: var(--text); text-align: left; }
+.recent-card-cover { position: relative; display: grid; place-items: center; aspect-ratio: 1; overflow: hidden; border-radius: 8px; background: var(--bg-3); color: var(--text-faint); }
+.recent-card-cover img { width: 100%; height: 100%; object-fit: cover; }
+.recent-card-cover > svg:last-child { position: absolute; right: 7px; bottom: 7px; color: #fff; filter: drop-shadow(0 1px 4px rgba(0,0,0,.5)); }
+.recent-card strong, .recent-card span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recent-card strong { font-size: 12px; }
+.recent-card span { color: var(--text-faint); font-size: 11px; }
+.recent-card button { cursor: pointer; }
+@media (max-width: 700px) { .recent-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 700px) {
   .comment-page-heading {
     align-items: flex-start;
