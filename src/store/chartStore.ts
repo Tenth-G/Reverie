@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { getChartSongs, getChartSummaries } from "../api/charts.ts";
+import { getChartSongs, getChartSummaries, getChartSummariesV2 } from "../api/charts.ts";
 import type { ChartSummary, Song } from "../api/types.ts";
 import { usePlayerStore } from "./playerStore.ts";
 
@@ -26,7 +26,21 @@ export const useChartStore = create<ChartState>()((set, get) => ({
     const token = ++requestToken;
     set({ loading: true });
     try {
-      const charts = await getChartSummaries();
+      const [v2, legacy] = await Promise.allSettled([
+        getChartSummariesV2(),
+        getChartSummaries(),
+      ]);
+      const rows = [
+        ...(v2.status === "fulfilled" ? v2.value : []),
+        ...(legacy.status === "fulfilled" ? legacy.value : []),
+      ];
+      const seen = new Set<number>();
+      const charts = rows.filter((chart) => {
+        if (seen.has(chart.id)) return false;
+        seen.add(chart.id);
+        return true;
+      });
+      if (!charts.length) throw new Error("榜单目录为空");
       if (token !== requestToken) return;
       const selectedId = get().selectedId || charts[0]?.id || 0;
       set({ charts, selectedId, loading: false });
