@@ -9,6 +9,7 @@ import { usePlayerStore } from "./playerStore";
 interface PlaylistDiscoveryState {
   categories: PlaylistCategory[];
   hotTags: PlaylistCategory[];
+  highQualityTags: PlaylistCategory[];
   playlists: PlaylistInfo[];
   selectedTag: string;
   loading: boolean;
@@ -28,6 +29,7 @@ export const usePlaylistDiscoveryStore = create<PlaylistDiscoveryState>()(
   (set, get) => ({
     categories: [],
     hotTags: [],
+    highQualityTags: [],
     playlists: [],
     selectedTag: "全部",
     loading: false,
@@ -42,13 +44,14 @@ export const usePlaylistDiscoveryStore = create<PlaylistDiscoveryState>()(
       try {
         const [categories, page] = await Promise.all([
           get().loaded
-            ? Promise.resolve({ categories: get().categories, hotTags: get().hotTags })
+            ? Promise.resolve({ categories: get().categories, hotTags: get().hotTags, highQualityTags: get().highQualityTags })
             : getPlaylistDiscoveryCategories(),
           getHighQualityPlaylists(selectedTag),
         ]);
         set({
           categories: categories.categories,
           hotTags: categories.hotTags,
+          highQualityTags: categories.highQualityTags,
           playlists: page.playlists,
           more: page.more,
           before: page.before,
