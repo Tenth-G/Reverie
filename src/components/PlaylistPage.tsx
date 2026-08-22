@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Heart, ListPlus, MessageCircle, Pencil, Trash2 } from "lucide-react";
+import { Heart, ListPlus, MessageCircle, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import type { PlaylistInfo } from "../api/types";
 import type { Song } from "../api/types";
 import { getPlaylistDetail } from "../api/client";
@@ -7,6 +7,7 @@ import { getRelatedPlaylists } from "../api/related";
 import {
   getPlaylistDynamicStats,
   getPlaylistSubscribers,
+  getPlaylistAllTracks,
   manipulatePlaylistTracks,
   updatePlaylistOrder,
 } from "../api/playlist";
@@ -42,6 +43,7 @@ export default function PlaylistPage() {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [mutating, setMutating] = useState(false);
+  const [fullLoading, setFullLoading] = useState(false);
   const [dynamicStats, setDynamicStats] = useState<PlaylistDynamicStats | null>(null);
   const [relatedPlaylists, setRelatedPlaylists] = useState<PlaylistInfo[]>([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
@@ -113,6 +115,24 @@ export default function PlaylistPage() {
       playlistCreatorId: detail.creatorId,
       playlistSubscribed: detail.subscribed,
     });
+  };
+
+  const loadFullSongs = async () => {
+    if (!playlistId || fullLoading) return;
+    setFullLoading(true);
+    try {
+      const songs = await getPlaylistAllTracks(playlistId);
+      if (!songs.length) {
+        usePlayerStore.getState().toast("歌单暂无可用歌曲", "error");
+        return;
+      }
+      usePlayerStore.setState({ playlistSongs: songs });
+      usePlayerStore.getState().toast(`已加载完整歌曲列表（${songs.length} 首）`, "success");
+    } catch {
+      usePlayerStore.getState().toast("加载完整歌曲列表失败", "error");
+    } finally {
+      setFullLoading(false);
+    }
   };
 
   const addSongs = async (songs: Song[]) => {
@@ -192,6 +212,9 @@ export default function PlaylistPage() {
         subtitle={playlistDescription || `${playlistSongs.length} 首`}
         actions={
           <div className="page-action-row">
+            <button className="btn" onClick={() => void loadFullSongs()} disabled={fullLoading} title="从网易云加载歌单全部歌曲">
+              <RefreshCw size={14} className={fullLoading ? "spin" : ""} /> 完整列表
+            </button>
             <button
               className="btn"
               onClick={() =>

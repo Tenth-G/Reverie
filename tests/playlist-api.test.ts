@@ -4,6 +4,7 @@ import {
   addPlaylistTracks,
   deletePlaylistTracks,
   getPlaylistDynamicStats,
+  getPlaylistAllTracks,
   getPlaylistSubscribers,
   manipulatePlaylistTracks,
   updatePlaylistOrder,
@@ -37,6 +38,27 @@ test("playlist track mutations forward ids and operation parameters", async () =
     const fourth = new URL(calls[3]!.url);
     assert.equal(fourth.pathname, "/playlist/order/update");
     assert.equal(fourth.searchParams.get("ids"), "5,4,3");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("playlist full-track loader normalizes song records and paging", async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (input) => {
+      const url = new URL(String(input));
+      assert.equal(url.pathname, "/playlist/track/all");
+      assert.equal(url.searchParams.get("id"), "10");
+      assert.equal(url.searchParams.get("limit"), "2");
+      assert.equal(url.searchParams.get("offset"), "4");
+      return Response.json({ songs: [
+        { id: 1, name: "歌曲一", ar: [{ name: "歌手" }], al: { name: "专辑" } },
+        { song: { id: 2, name: "歌曲二", ar: [{ name: "歌手" }], al: { name: "专辑" } } },
+      ] });
+    };
+    const songs = await getPlaylistAllTracks(10, 2, 4);
+    assert.deepEqual(songs.map((song) => song.id), [1, 2]);
   } finally {
     globalThis.fetch = originalFetch;
   }
