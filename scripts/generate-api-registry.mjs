@@ -38,7 +38,12 @@ const names = (await readdir(moduleDir))
   .sort((a, b) => a.localeCompare(b));
 const included = names.filter((name) => !excluded.has(name));
 
-const routeFor = (name) => `/${name.replaceAll("_", "/")}`;
+const specialRoutes = {
+  daily_signin: "/daily_signin",
+  fm_trash: "/fm_trash",
+  personal_fm: "/personal_fm",
+};
+const routeFor = (name) => specialRoutes[name] ?? `/${name.replaceAll("_", "/")}`;
 const quote = (value) => JSON.stringify(value);
 const lines = [
   "/* eslint-disable @typescript-eslint/consistent-type-imports */",
