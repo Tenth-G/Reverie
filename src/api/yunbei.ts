@@ -1,5 +1,6 @@
 import { request } from "./client.ts";
 import type {
+  HappySignInfo,
   SigninProgress,
   YunbeiLedgerEntry,
   YunbeiOverview,
@@ -10,6 +11,17 @@ type Obj = Record<string, unknown>;
 const obj = (value: unknown): Obj =>
   value && typeof value === "object" ? (value as Obj) : {};
 const arr = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
+
+export async function getHappySignInfo(): Promise<HappySignInfo> {
+  const response = await request<Obj>("/sign/happy/info", {}, false);
+  const value = obj(response.data ?? response.result ?? response);
+  return {
+    content: String(value.content ?? value.text ?? value.title ?? ""),
+    author: String(value.author ?? value.source ?? value.from ?? ""),
+    imageUrl: String(value.imageUrl ?? value.picUrl ?? value.cover ?? ""),
+    date: String(value.date ?? value.time ?? value.createTime ?? ""),
+  };
+}
 
 export async function getYunbeiOverview(): Promise<YunbeiOverview> {
   const [balance, info, today] = await Promise.all([
