@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import type { PlaylistInfo } from "../api/types";
 import { useExploreStore } from "../store/exploreStore";
+import {
+  updatePlaylistCover,
+  updatePlaylistTags,
+} from "../api/playlistMetadata.ts";
+import { usePlayerStore } from "../store/playerStore";
 
 export default function PlaylistEditorModal({
   playlist,
@@ -16,6 +21,8 @@ export default function PlaylistEditorModal({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [privateList, setPrivateList] = useState(false);
+  const [tags, setTags] = useState("");
+  const [cover, setCover] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -23,6 +30,8 @@ export default function PlaylistEditorModal({
     setName(playlist?.name ?? "");
     setDescription(playlist?.description ?? "");
     setPrivateList(playlist?.privacy === 10);
+    setTags(playlist?.tags?.join(", ") ?? "");
+    setCover(null);
   }, [open, playlist]);
 
   if (!open) return null;
@@ -33,6 +42,16 @@ export default function PlaylistEditorModal({
     const ok = playlist
       ? await updatePlaylist(playlist, name, description)
       : await createPlaylist(name, privateList ? 10 : 0);
+    if (ok && playlist) {
+      try {
+        await updatePlaylistTags(playlist.id, tags.trim());
+        if (cover) await updatePlaylistCover(playlist.id, cover);
+      } catch {
+        usePlayerStore
+          .getState()
+          .toast("歌单名称已保存，但标签或封面更新失败", "error");
+      }
+    }
     setSaving(false);
     if (ok) onClose();
   };
@@ -49,6 +68,27 @@ export default function PlaylistEditorModal({
             onChange={(e) => setName(e.target.value)}
           />
         </label>
+        {playlist && (
+          <label className="field-label">
+            标签
+            <input
+              value={tags}
+              maxLength={100}
+              placeholder="多个标签用逗号分隔"
+              onChange={(e) => setTags(e.target.value)}
+            />
+          </label>
+        )}
+        {playlist && (
+          <label className="field-label">
+            封面
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setCover(e.target.files?.[0] ?? null)}
+            />
+          </label>
+        )}
         <label className="field-label">
           描述
           <textarea
