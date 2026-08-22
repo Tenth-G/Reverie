@@ -13,6 +13,7 @@ import {
 import { useExploreStore } from "../store/exploreStore";
 import { usePlayerStore } from "../store/playerStore";
 import { useProfileStore } from "../store/profileStore";
+import { useCollectionStore } from "../store/collectionStore";
 import { sizedImage } from "../utils/image";
 import BackButton from "./BackButton";
 import { LoadingState, Page } from "./Page";
@@ -36,6 +37,7 @@ export default function ProfilePage() {
   const loading = useProfileStore((state) => state.loading);
   const recordsLoading = useProfileStore((state) => state.recordsLoading);
   const setPeriod = useProfileStore((state) => state.setPeriod);
+  const openCollections = useCollectionStore((state) => state.openCollections);
   const playSong = usePlayerStore((state) => state.playSong);
   const setSocialTab = useExploreStore((state) => state.setSocialTab);
   const loadSocial = useExploreStore((state) => state.loadSocial);
@@ -152,26 +154,26 @@ export default function ProfilePage() {
       </section>
 
       <section className="profile-library-summary">
-        <div>
+        <button onClick={() => void openCollections("albums")}>
           <Album size={17} />
           <strong>{subcount?.albumCount ?? 0}</strong>
           <span>收藏专辑</span>
-        </div>
-        <div>
+        </button>
+        <button onClick={() => void openCollections("artists")}>
           <Music2 size={17} />
           <strong>{subcount?.artistCount ?? 0}</strong>
           <span>收藏歌手</span>
-        </div>
-        <div>
+        </button>
+        <button onClick={() => void openCollections("mvs")}>
           <Radio size={17} />
           <strong>{subcount?.mvCount ?? 0}</strong>
           <span>收藏 MV</span>
-        </div>
-        <div>
+        </button>
+        <button onClick={() => void openCollections("radios")}>
           <Podcast size={17} />
           <strong>{subcount?.djRadioCount ?? 0}</strong>
           <span>订阅播客</span>
-        </div>
+        </button>
       </section>
 
       <section className="content-section">

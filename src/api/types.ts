@@ -123,6 +123,7 @@ export type View =
   | "home"
   | "search"
   | "profile"
+  | "collection"
   | "chart"
   | "fm"
   | "userlist"
@@ -147,6 +148,8 @@ export type SearchCategory =
   | "mvs"
   | "videos";
 
+export type CollectionCategory = "albums" | "artists" | "mvs" | "radios";
+
 export interface SearchMediaInfo {
   id: string;
   name: string;
@@ -165,6 +168,15 @@ export interface SearchResultPage {
   radios: RadioInfo[];
   users: SocialUser[];
   media: SearchMediaInfo[];
+  total: number;
+  hasMore: boolean;
+}
+
+export interface CollectionResultPage {
+  albums: AlbumInfo[];
+  artists: ArtistInfo[];
+  media: SearchMediaInfo[];
+  radios: RadioInfo[];
   total: number;
   hasMore: boolean;
 }
