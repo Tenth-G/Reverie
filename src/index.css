@@ -5880,7 +5880,7 @@ input {
 .digital-album-search { display: flex; gap: 8px; max-width: 760px; margin: 10px auto 16px; }
 .digital-album-input { display: flex; align-items: center; gap: 7px; min-width: 0; flex: 1; padding: 0 10px; border: 1px solid var(--border); border-radius: 6px; color: var(--text-faint); }
 .digital-album-input input { width: 100%; min-height: 36px; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 12px; }
-.digital-album-detail, .digital-album-purchased { max-width: 960px; margin: 0 auto 18px; padding: 18px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); }
+.digital-album-detail, .digital-album-purchased, .digital-album-style-library { max-width: 960px; margin: 0 auto 18px; padding: 18px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); }
 .digital-album-hero { display: flex; align-items: center; gap: 15px; }
 .digital-album-hero img, .digital-album-hero > span { width: 116px; height: 116px; flex: 0 0 116px; border-radius: 7px; object-fit: cover; }
 .digital-album-hero > span { display: grid; place-items: center; background: var(--bg-3); color: var(--text-faint); }
@@ -5904,6 +5904,7 @@ input {
 .digital-album-card small { color: var(--text-dim); font-size: 10px; }
 .digital-album-empty, .digital-album-error { color: var(--text-faint); font-size: 12px; }
 .digital-album-error { max-width: 960px; margin: 0 auto 18px; color: #ff8585; }
+.digital-album-more { display: flex; justify-content: center; margin-top: 14px; }
 
 /* Musician center */
 .musician-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 9px; max-width: 1100px; margin: 10px auto 16px; }

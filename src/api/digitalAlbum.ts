@@ -38,6 +38,20 @@ export async function getDigitalAlbumDetail(
 
 export type DigitalAlbumSalesPeriod = "daily" | "week" | "year" | "total";
 
+export type DigitalAlbumStyleArea = "Z_H" | "E_A" | "KR" | "JP";
+
+export async function getDigitalAlbumStyleLibrary(
+  area: DigitalAlbumStyleArea = "Z_H",
+  limit = 30,
+  offset = 0,
+): Promise<DigitalAlbum[]> {
+  const response = await request<Obj>("/album/list/style", { area, limit, offset }, false);
+  const value = obj(response.data ?? response.result ?? response);
+  return arr(value.albums ?? value.list ?? value.records ?? response.data ?? response)
+    .map(normalizeDigitalAlbum)
+    .filter((item): item is DigitalAlbum => item !== null);
+}
+
 export async function getDigitalAlbumSalesBoard(
   period: DigitalAlbumSalesPeriod = "daily",
   year?: number,
