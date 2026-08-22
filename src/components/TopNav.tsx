@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../store/playerStore";
+import { useSearchStore } from "../store/searchStore";
 import type { ThemePreference } from "../store/playerStore";
 import type { View } from "../api/types";
 import type { ReactElement } from "react";
@@ -52,6 +53,8 @@ const preloadView = (view: View) => {
   switch (view) {
     case "chart":
       return import("./ChartPage");
+    case "search":
+      return import("./SearchPage");
     case "userlist":
       return import("./UserListPage");
     case "radio":
@@ -86,6 +89,7 @@ export default function TopNav() {
   const loadUserPlaylists = usePlayerStore((s) => s.loadUserPlaylists);
   const loadHome = usePlayerStore((s) => s.loadHome);
   const playSong = usePlayerStore((s) => s.playSong);
+  const openSearch = useSearchStore((s) => s.openSearch);
 
   const searchRef = useRef<HTMLInputElement>(null);
   const navRef = useRef<HTMLElement>(null);
@@ -197,7 +201,7 @@ export default function TopNav() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     window.clearTimeout(searchTimerRef.current);
-                    void doSearch(e.currentTarget.value);
+                    void openSearch(e.currentTarget.value, "songs");
                   }
                   if (e.key === "Escape") {
                     setSearchOpen(false);
@@ -220,28 +224,36 @@ export default function TopNav() {
                     <span>登录后即可搜索音乐，请点击右上角「登录」</span>
                   </div>
                 ) : (
-                  searchResults.slice(0, 20).map((song) => (
-                    <div
-                      key={song.id}
-                      className="search-dropdown-item"
-                      onClick={() => {
-                        playSong(song, searchResults);
-                        setSearchOpen(false);
-                      }}
-                    >
-                      {song.picUrl ? (
-                        <img src={sizedImage(song.picUrl, 80)} alt="" />
-                      ) : (
-                        <span className="song-ph">
-                          <Disc3 size={16} />
-                        </span>
-                      )}
-                      <div className="meta">
-                        <div className="t">{song.name}</div>
-                        <div className="a">{song.artists}</div>
+                  <>
+                    {searchResults.slice(0, 12).map((song) => (
+                      <div
+                        key={song.id}
+                        className="search-dropdown-item"
+                        onClick={() => {
+                          playSong(song, searchResults);
+                          setSearchOpen(false);
+                        }}
+                      >
+                        {song.picUrl ? (
+                          <img src={sizedImage(song.picUrl, 80)} alt="" />
+                        ) : (
+                          <span className="song-ph">
+                            <Disc3 size={16} />
+                          </span>
+                        )}
+                        <div className="meta">
+                          <div className="t">{song.name}</div>
+                          <div className="a">{song.artists}</div>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    ))}
+                    <button
+                      className="search-view-all"
+                      onClick={() => void openSearch(searchKeyword, "songs")}
+                    >
+                      查看全部搜索结果
+                    </button>
+                  </>
                 )}
               </div>
             ) : null}

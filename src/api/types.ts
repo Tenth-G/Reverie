@@ -121,6 +121,7 @@ export type PlayMode = "sequence" | "one" | "shuffle";
 
 export type View =
   | "home"
+  | "search"
   | "chart"
   | "fm"
   | "userlist"
@@ -133,6 +134,39 @@ export type View =
   | "radio"
   | "radioDetail"
   | "social";
+
+export type SearchCategory =
+  | "songs"
+  | "lyrics"
+  | "albums"
+  | "artists"
+  | "playlists"
+  | "radios"
+  | "users"
+  | "mvs"
+  | "videos";
+
+export interface SearchMediaInfo {
+  id: string;
+  name: string;
+  coverUrl: string;
+  creatorName: string;
+  duration: number;
+  playCount: number;
+  kind: "mv" | "video";
+}
+
+export interface SearchResultPage {
+  songs: Song[];
+  albums: AlbumInfo[];
+  artists: ArtistInfo[];
+  playlists: PlaylistInfo[];
+  radios: RadioInfo[];
+  users: SocialUser[];
+  media: SearchMediaInfo[];
+  total: number;
+  hasMore: boolean;
+}
 
 export interface SearchResponse {
   result?: { songs?: unknown[]; songCount?: number };
