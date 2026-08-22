@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   addPlaylistTracks,
   deletePlaylistTracks,
+  getPlaylistDynamicStats,
   manipulatePlaylistTracks,
   updatePlaylistOrder,
 } from "../src/api/playlist.ts";
@@ -35,6 +36,34 @@ test("playlist track mutations forward ids and operation parameters", async () =
     const fourth = new URL(calls[3]!.url);
     assert.equal(fourth.pathname, "/playlist/order/update");
     assert.equal(fourth.searchParams.get("ids"), "5,4,3");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("playlist dynamic stats normalize count fields", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    assert.equal(url.pathname, "/playlist/detail/dynamic");
+    assert.equal(url.searchParams.get("id"), "10");
+    return Response.json({
+      playCount: 120,
+      subscribedCount: 30,
+      commentCount: 4,
+      shareCount: 2,
+      followed: true,
+    });
+  };
+  try {
+    const stats = await getPlaylistDynamicStats(10);
+    assert.deepEqual(stats, {
+      playCount: 120,
+      subscribedCount: 30,
+      commentCount: 4,
+      shareCount: 2,
+      followed: true,
+    });
   } finally {
     globalThis.fetch = originalFetch;
   }

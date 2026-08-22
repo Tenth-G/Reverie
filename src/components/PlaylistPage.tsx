@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Heart, ListPlus, MessageCircle, Pencil, Trash2 } from "lucide-react";
 import type { PlaylistInfo } from "../api/types";
 import type { Song } from "../api/types";
 import { getPlaylistDetail } from "../api/client";
 import {
+  getPlaylistDynamicStats,
   manipulatePlaylistTracks,
   updatePlaylistOrder,
 } from "../api/playlist";
 import { useExploreStore } from "../store/exploreStore";
 import { usePlayerStore } from "../store/playerStore";
 import { useCommentStore } from "../store/commentStore";
+import type { PlaylistDynamicStats } from "../api/types";
 import { Page, PageHeader } from "./Page";
 import SongList from "./SongList";
 import PlaylistEditorModal from "./PlaylistEditorModal";
@@ -36,6 +38,23 @@ export default function PlaylistPage() {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [mutating, setMutating] = useState(false);
+  const [dynamicStats, setDynamicStats] = useState<PlaylistDynamicStats | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    setDynamicStats(null);
+    if (!playlistId) return;
+    void getPlaylistDynamicStats(playlistId)
+      .then((stats) => {
+        if (alive) setDynamicStats(stats);
+      })
+      .catch(() => {
+        if (alive) setDynamicStats(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [playlistId]);
 
   const refreshSongs = async () => {
     const detail = await getPlaylistDetail(playlistId);
@@ -175,6 +194,14 @@ export default function PlaylistPage() {
           </div>
         }
       />
+      {dynamicStats && (
+        <div className="playlist-dynamic-stats" aria-label="歌单动态统计">
+          <span>播放 {dynamicStats.playCount.toLocaleString("zh-CN")}</span>
+          <span>收藏 {dynamicStats.subscribedCount.toLocaleString("zh-CN")}</span>
+          <span>评论 {dynamicStats.commentCount.toLocaleString("zh-CN")}</span>
+          <span>分享 {dynamicStats.shareCount.toLocaleString("zh-CN")}</span>
+        </div>
+      )}
       <SongList
         songs={playlistSongs}
         loading={playlistLoading}
