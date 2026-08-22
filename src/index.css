@@ -6122,3 +6122,17 @@ input {
 .yunbei-progress-copy small { color: var(--accent-2); }
 .yunbei-progress-track { height: 8px; overflow: hidden; border-radius: 999px; background: var(--bg-3); }
 .yunbei-progress-track i { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width .25s ease; }
+
+/* DIFM radio */
+.difm-section { margin: 16px 0; padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); }
+.difm-layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(280px, .85fr); gap: 14px; }
+.difm-channel-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 8px; }
+.difm-channel { position: relative; display: grid; gap: 6px; min-width: 0; padding: 7px; border: 1px solid transparent; border-radius: 6px; background: var(--bg-3); color: var(--text); text-align: left; }
+.difm-channel:hover, .difm-channel.active { border-color: var(--accent); }
+.difm-channel > img, .difm-channel-placeholder { width: 100%; aspect-ratio: 1; display: grid; place-items: center; border-radius: 5px; object-fit: cover; background: var(--bg-4); color: var(--text-faint); font-size: 11px; }
+.difm-channel > span { overflow: hidden; padding-right: 20px; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+.difm-channel > i { position: absolute; right: 10px; bottom: 10px; display: grid; place-items: center; color: var(--accent); font-style: normal; }
+.difm-tracks { min-width: 0; padding: 10px; border-radius: 6px; background: var(--bg-3); }
+.difm-tracks .song-list { max-height: 360px; overflow: auto; }
+.difm-tracks > .btn { margin-top: 10px; }
+@media (max-width: 760px) { .difm-layout { grid-template-columns: 1fr; } }
