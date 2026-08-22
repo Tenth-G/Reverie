@@ -40,7 +40,7 @@ export default function PlaylistEditorModal({
     if (!name.trim() || saving) return;
     setSaving(true);
     const ok = playlist
-      ? await updatePlaylist(playlist, name, description)
+      ? await updatePlaylist(playlist, name, description, playlist.privacy === 10 && !privateList)
       : await createPlaylist(name, privateList ? 10 : 0);
     if (ok && playlist) {
       try {
@@ -98,14 +98,14 @@ export default function PlaylistEditorModal({
             onChange={(e) => setDescription(e.target.value)}
           />
         </label>
-        {!playlist && (
+        {(!playlist || playlist.privacy === 10) && (
           <label className="check-row">
             <input
               type="checkbox"
               checked={privateList}
               onChange={(e) => setPrivateList(e.target.checked)}
             />
-            设为隐私歌单
+            {playlist ? "保持为隐私歌单（取消勾选后公开）" : "设为隐私歌单"}
           </label>
         )}
         <div className="modal-actions">
