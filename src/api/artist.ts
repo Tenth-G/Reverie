@@ -125,3 +125,21 @@ export async function getArtistNewSongs(
     .map((raw) => normalizeSong(obj(raw).song ?? raw))
     .filter((song): song is Song => song !== null);
 }
+
+export async function getArtistSongs(
+  id: number,
+  order: "hot" | "time" = "hot",
+  limit = 100,
+  offset = 0,
+): Promise<Song[]> {
+  if (!id) return [];
+  const response = await request<Obj>(
+    "/artist/songs",
+    { id, order, limit, offset },
+    false,
+  );
+  const value = obj(response.data ?? response.result ?? response);
+  return arr(value.songs ?? value.list ?? response.songs ?? response.data ?? response)
+    .map((raw) => normalizeSong(obj(raw).song ?? raw))
+    .filter((song): song is Song => song !== null);
+}
