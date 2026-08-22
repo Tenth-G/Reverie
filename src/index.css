@@ -5351,6 +5351,19 @@ input {
 .voice-empty-panel { display: grid; place-items: center; gap: 8px; min-height: 260px; color: var(--text-faint); font-size: 12px; }
 .voice-empty-panel strong { color: var(--text-dim); }
 .voice-error { margin-top: 12px; padding: 9px 11px; border: 1px solid color-mix(in srgb, #ff6b6b 35%, transparent); border-radius: 6px; color: #ff8585; font-size: 11px; }
+.voice-detail-backdrop { z-index: 35; }
+.voice-detail-dialog { width: min(620px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-1); box-shadow: 0 24px 70px rgba(0, 0, 0, .38); }
+.voice-detail-head { display: flex; align-items: center; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--border-light); }
+.voice-detail-head > img, .voice-detail-head > span { width: 58px; height: 58px; flex: none; border-radius: 7px; object-fit: cover; }
+.voice-detail-head > span { display: grid; place-items: center; background: var(--bg-3); color: var(--text-faint); }
+.voice-detail-head > div { min-width: 0; flex: 1; }
+.voice-detail-head h2 { margin: 0 0 4px; overflow: hidden; color: var(--text); font-size: 17px; text-overflow: ellipsis; white-space: nowrap; }
+.voice-detail-head small { color: var(--text-faint); font-size: 11px; }
+.voice-detail-content { display: grid; gap: 18px; padding: 18px 20px 22px; }
+.voice-detail-content section { display: grid; gap: 7px; }
+.voice-detail-content h3 { display: flex; align-items: center; gap: 5px; margin: 0; color: var(--text-2); font-size: 12px; }
+.voice-detail-content p { margin: 0; color: var(--text-dim); font-size: 12px; line-height: 1.7; white-space: pre-wrap; }
+.voice-detail-content pre { max-height: 280px; margin: 0; overflow: auto; color: var(--text-dim); font: inherit; font-size: 12px; line-height: 1.7; white-space: pre-wrap; }
 @media (max-width: 760px) { .voice-workbench-layout { grid-template-columns: 1fr; } .voice-list-sidebar { max-height: 250px; overflow: auto; } .voice-toolbar { flex-wrap: wrap; } .voice-search { flex-basis: 100%; } .voice-name-input { flex: 1; width: auto; } }
 
 /* Playlist import */

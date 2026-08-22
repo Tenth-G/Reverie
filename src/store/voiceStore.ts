@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import {
   deleteVoices,
+  getVoiceDetail,
   getVoiceListDetail,
   getVoicesByList,
   getVoiceLyric,
@@ -20,6 +21,9 @@ interface VoiceState {
   loading: boolean;
   uploading: boolean;
   busyId: number;
+  activeVoice: VoiceItem | null;
+  activeLyric: string;
+  detailLoading: boolean;
   error: string;
   loadLists: (query?: string) => Promise<void>;
   selectList: (list: VoiceListInfo) => Promise<void>;
@@ -28,6 +32,8 @@ interface VoiceState {
   remove: (id: number) => Promise<void>;
   transcribe: (voice: VoiceItem) => Promise<void>;
   loadLyric: (voice: VoiceItem) => Promise<string>;
+  openDetail: (voice: VoiceItem) => Promise<void>;
+  closeDetail: () => void;
   setSearch: (value: string) => void;
   clearError: () => void;
 }
@@ -42,6 +48,9 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
   loading: false,
   uploading: false,
   busyId: 0,
+  activeVoice: null,
+  activeLyric: "",
+  detailLoading: false,
   error: "",
 
   setSearch: (value) => set({ search: value }),
@@ -177,4 +186,23 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
       return "";
     }
   },
+
+  openDetail: async (voice) => {
+    const token = ++loadToken;
+    set({ activeVoice: voice, activeLyric: "", detailLoading: true });
+    const [detail, lyric] = await Promise.allSettled([
+      getVoiceDetail(voice.id),
+      getVoiceLyric(voice.id),
+    ]);
+    if (token !== loadToken) return;
+    set({
+      activeVoice:
+        detail.status === "fulfilled" && detail.value ? detail.value : voice,
+      activeLyric: lyric.status === "fulfilled" ? lyric.value : "",
+      detailLoading: false,
+    });
+  },
+
+  closeDetail: () =>
+    set({ activeVoice: null, activeLyric: "", detailLoading: false }),
 }));
