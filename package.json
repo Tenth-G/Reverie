@@ -56,6 +56,7 @@
     "test:vip-yunbei-actions": "node scripts/test-vip-yunbei-actions.cjs",
     "test:fans-api": "node scripts/test-fans-api.cjs",
     "test:artist-videos-api": "node scripts/test-artist-videos-api.cjs",
+    "test:media-api": "node scripts/test-media-api.cjs",
     "test:sidecar": "node scripts/test-sidecar.mjs"
   },
   "dependencies": {

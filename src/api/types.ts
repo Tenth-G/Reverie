@@ -211,6 +211,12 @@ export interface MediaDetail extends SearchMediaInfo {
   commentCount: number;
   subCount: number;
 }
+export interface MediaStats {
+  likedCount: number;
+  shareCount: number;
+  commentCount: number;
+  subCount: number;
+}
 
 export interface YunbeiTask {
   id: number;

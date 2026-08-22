@@ -22,6 +22,7 @@ export default function MediaDetailDialog() {
   const detail = useMediaStore((state) => state.detail);
   const url = useMediaStore((state) => state.url);
   const related = useMediaStore((state) => state.related);
+  const stats = useMediaStore((state) => state.stats);
   const loading = useMediaStore((state) => state.loading);
   const urlLoading = useMediaStore((state) => state.urlLoading);
   const resolution = useMediaStore((state) => state.resolution);
@@ -108,6 +109,14 @@ export default function MediaDetailDialog() {
           ) : detail?.description ? (
             <p className="media-detail-description">{detail.description}</p>
           ) : null}
+          {stats && (
+            <div className="media-detail-stats">
+              <span>点赞 {stats.likedCount.toLocaleString("zh-CN")}</span>
+              <span>分享 {stats.shareCount.toLocaleString("zh-CN")}</span>
+              <span>评论 {stats.commentCount.toLocaleString("zh-CN")}</span>
+              <span>收藏 {stats.subCount.toLocaleString("zh-CN")}</span>
+            </div>
+          )}
           {!!detail?.tags.length && (
             <div className="media-detail-tags">
               {detail.tags.map((tag) => (

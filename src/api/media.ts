@@ -1,5 +1,5 @@
 import { request } from "./client.ts";
-import type { MediaDetail, SearchMediaInfo } from "./types.ts";
+import type { MediaDetail, MediaStats, SearchMediaInfo } from "./types.ts";
 
 type Obj = Record<string, unknown>;
 const obj = (value: unknown): Obj =>
@@ -101,4 +101,20 @@ export async function getRelatedMedia(
       } satisfies SearchMediaInfo;
     })
     .filter((media) => media.id && media.id !== item.id);
+}
+
+export async function getMediaStats(
+  item: SearchMediaInfo,
+): Promise<MediaStats> {
+  const response =
+    item.kind === "mv"
+      ? await request<Obj>("/mv/detail/info", { mvid: item.id }, false)
+      : await request<Obj>("/video/detail/info", { vid: item.id }, false);
+  const value = obj(response.data ?? response.result ?? response);
+  return {
+    likedCount: Number(value.likedCount ?? value.liked ?? 0),
+    shareCount: Number(value.shareCount ?? value.share ?? 0),
+    commentCount: Number(value.commentCount ?? value.comment ?? 0),
+    subCount: Number(value.subCount ?? value.subscribeCount ?? 0),
+  };
 }

@@ -4,6 +4,7 @@ import {
   getMediaDetail,
   getMediaUrl,
   getRelatedMedia,
+  getMediaStats,
   normalizeMediaDetail,
 } from "../src/api/media.ts";
 import type { SearchMediaInfo } from "../src/api/types.ts";
@@ -64,6 +65,35 @@ test("media detail, url and related routes use media kind-specific parameters", 
     assert.match(urls[0]!, /mvid=mv-1/);
     assert.match(urls[1]!, /r=720/);
     assert.match(urls[2]!, /mvid=mv-1/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("media advanced stats normalizes like, share, comment and subscription counts", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    assert.match(String(input), /mv\/detail\/info/);
+    return Response.json({
+      data: { likedCount: 3, shareCount: 4, commentCount: 5, subCount: 6 },
+    });
+  };
+  try {
+    const stats = await getMediaStats({
+      id: "mv-1",
+      name: "MV",
+      coverUrl: "",
+      creatorName: "",
+      duration: 0,
+      playCount: 0,
+      kind: "mv",
+    });
+    assert.deepEqual(stats, {
+      likedCount: 3,
+      shareCount: 4,
+      commentCount: 5,
+      subCount: 6,
+    });
   } finally {
     globalThis.fetch = originalFetch;
   }
