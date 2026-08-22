@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Headphones, Mic2, RefreshCw } from "lucide-react";
-import { getPrivateDjContent } from "../api/privateDj.ts";
+import { getPersonalFmByMode, getPrivateDjContent, type PersonalFmMode } from "../api/privateDj.ts";
 import type { PrivateDjItem } from "../api/types.ts";
+import { usePlayerStore } from "../store/playerStore";
 import { sizedImage } from "../utils/image";
 import { LoadingState, Page, PageHeader } from "./Page";
 import SongList from "./SongList";
@@ -10,6 +11,9 @@ export default function PrivateDjPage() {
   const [items, setItems] = useState<PrivateDjItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fmMode, setFmMode] = useState<PersonalFmMode>("DEFAULT");
+  const [fmSongs, setFmSongs] = useState<NonNullable<PrivateDjItem["song"]>[]>([]);
+  const [fmLoading, setFmLoading] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -27,6 +31,19 @@ export default function PrivateDjPage() {
   useEffect(() => {
     void load();
   }, []);
+
+  const loadFmMode = async (mode: PersonalFmMode) => {
+    setFmMode(mode);
+    setFmLoading(true);
+    try {
+      setFmSongs(await getPersonalFmByMode(mode));
+    } catch {
+      setFmSongs([]);
+      usePlayerStore.getState().toast("私人 FM 模式加载失败", "error");
+    } finally {
+      setFmLoading(false);
+    }
+  };
 
   const songs = useMemo(
     () => items.map((item) => item.song).filter((song): song is NonNullable<typeof song> => song !== null),
@@ -49,6 +66,23 @@ export default function PrivateDjPage() {
         <LoadingState label="正在加载私人 DJ…" />
       ) : items.length ? (
         <>
+          <section className="private-dj-mode-panel">
+            <div className="list-header">
+              <h3>私人 FM 模式</h3>
+              <select
+                value={fmMode}
+                onChange={(event) => void loadFmMode(event.target.value as PersonalFmMode)}
+                disabled={fmLoading}
+              >
+                <option value="DEFAULT">默认</option>
+                <option value="FAMILIAR">熟悉</option>
+                <option value="EXPLORE">探索</option>
+                <option value="SCENE_RCMD">场景推荐</option>
+                <option value="aidj">AI DJ</option>
+              </select>
+            </div>
+            {fmLoading ? <LoadingState label="正在切换 FM 模式…" /> : <SongList songs={fmSongs} emptyText="选择模式加载歌曲" />}
+          </section>
           {songs.length > 0 && <SongList songs={songs} title="推荐歌曲" emptyText="暂无推荐歌曲" />}
           {programs.length > 0 && (
             <section className="private-dj-section">
