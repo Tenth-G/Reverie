@@ -175,7 +175,8 @@ export type View =
   | "digitalAlbum"
   | "musician"
   | "sati"
-  | "broadcast";
+  | "broadcast"
+  | "ugc";
 
 export type SearchCategory =
   | "songs"
@@ -419,6 +420,10 @@ export interface SatiResource { id: number; name: string; description: string; c
 
 export interface BroadcastCategory { id: number; name: string; }
 export interface BroadcastChannel { id: number; name: string; description: string; coverUrl: string; subscribed: boolean; categoryName: string; regionName: string; currentSong?: Song; }
+
+export interface UgcResource { kind: "song" | "album" | "artist" | "mv"; id: number; name: string; description: string; coverUrl: string; extra: string; }
+export interface UgcContribution { id: string; type: number; title: string; status: string; createTime: number; description: string; }
+export interface UgcDevote { count: number; points: number; yunbei: number; }
 
 export interface SearchResultPage {
   songs: Song[];
