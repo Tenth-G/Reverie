@@ -53,6 +53,7 @@ const ListenReportsPage = lazy(() => import("./components/ListenReportsPage"));
 const FansPage = lazy(() => import("./components/FansPage"));
 const StylePage = lazy(() => import("./components/StylePage"));
 const TopicPage = lazy(() => import("./components/TopicPage"));
+const LibraryPage = lazy(() => import("./components/LibraryPage"));
 const VideoPage = lazy(() => import("./components/VideoPage"));
 const NowPlayingView = lazy(() => import("./components/NowPlayingView"));
 const PlayerCommentsDrawer = lazy(
@@ -352,6 +353,8 @@ export default function App() {
         return <StylePage />;
       case "topics":
         return <TopicPage />;
+      case "library":
+        return <LibraryPage />;
       case "videos":
         return <VideoPage />;
       default:
