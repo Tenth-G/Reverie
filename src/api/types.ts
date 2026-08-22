@@ -161,7 +161,8 @@ export type View =
   | "radio"
   | "radioDetail"
   | "social"
-  | "cloud";
+  | "cloud"
+  | "yunbei";
 
 export type SearchCategory =
   | "songs"
@@ -193,6 +194,31 @@ export interface MediaDetail extends SearchMediaInfo {
   artistIds: number[];
   commentCount: number;
   subCount: number;
+}
+
+export interface YunbeiTask {
+  id: number;
+  name: string;
+  description: string;
+  point: number;
+  status: "todo" | "done" | "claimed";
+  userTaskId?: number;
+  depositCode?: string;
+}
+
+export interface YunbeiLedgerEntry {
+  id: string;
+  title: string;
+  amount: number;
+  time: number;
+  type: "income" | "expense";
+}
+
+export interface YunbeiOverview {
+  balance: number;
+  todayEarned: number;
+  signed: boolean;
+  signDays: number;
 }
 
 export interface SearchResultPage {

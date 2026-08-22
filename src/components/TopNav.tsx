@@ -10,6 +10,7 @@ import {
   Bell,
   Cloud,
   Disc3,
+  Gift,
   Heart,
   History,
   House,
@@ -43,6 +44,7 @@ const NAV: NavItem[] = [
   { view: "radio", label: "播客", icon: <Podcast size={16} />, auth: true },
   { view: "social", label: "动态", icon: <Users size={16} />, auth: true },
   { view: "cloud", label: "云盘", icon: <Cloud size={16} />, auth: true },
+  { view: "yunbei", label: "云贝", icon: <Gift size={16} />, auth: true },
 ];
 
 const THEME_ORDER: ThemePreference[] = ["system", "light", "dark"];
@@ -67,6 +69,8 @@ const preloadView = (view: View) => {
       return import("./SocialPage");
     case "cloud":
       return import("./CloudPage");
+    case "yunbei":
+      return import("./YunbeiPage");
     case "likes":
       return import("./LikesPage");
     case "recent":
@@ -168,6 +172,7 @@ export default function TopNav() {
       case "radio":
       case "social":
       case "cloud":
+      case "yunbei":
         setActiveView(view);
         break;
       default:

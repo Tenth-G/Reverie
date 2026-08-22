@@ -26,6 +26,7 @@ const RadioPage = lazy(() => import("./components/RadioPage"));
 const RadioDetailPage = lazy(() => import("./components/RadioDetailPage"));
 const SocialPage = lazy(() => import("./components/SocialPage"));
 const CloudPage = lazy(() => import("./components/CloudPage"));
+const YunbeiPage = lazy(() => import("./components/YunbeiPage"));
 const NowPlayingView = lazy(() => import("./components/NowPlayingView"));
 const PlayerCommentsDrawer = lazy(
   () => import("./components/PlayerCommentsDrawer"),
@@ -290,6 +291,8 @@ export default function App() {
         return <SocialPage />;
       case "cloud":
         return <CloudPage />;
+      case "yunbei":
+        return <YunbeiPage />;
       default:
         return <HomePage />;
     }
