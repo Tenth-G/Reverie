@@ -18,6 +18,7 @@ import {
   getMutualFollow,
   type FollowScene,
   getUserEvents,
+  deleteEvent as apiDeleteEvent,
   likeSongComment,
   sendSongComment,
   subscribeAlbum,
@@ -89,6 +90,7 @@ interface ExploreState {
   toggleFollow: (user: SocialUser) => Promise<void>;
   toggleEventLike: (event: SocialEvent) => Promise<void>;
   forwardEvent: (event: SocialEvent, forwards: string) => Promise<boolean>;
+  deleteEvent: (event: SocialEvent) => Promise<boolean>;
   createPlaylist: (name: string, privacy: number) => Promise<boolean>;
   updatePlaylist: (
     playlist: PlaylistInfo,
@@ -489,6 +491,21 @@ export const useExploreStore = create<ExploreState>()((set, get) => ({
       return true;
     } catch {
       toastError("动态转发失败");
+      return false;
+    }
+  },
+  deleteEvent: async (event) => {
+    if (!event.id) return false;
+    try {
+      await apiDeleteEvent(event.id);
+      set((state) => ({
+        events: state.events.filter((item) => item.id !== event.id),
+        myEvents: state.myEvents.filter((item) => item.id !== event.id),
+      }));
+      usePlayerStore.getState().toast("动态已删除", "success");
+      return true;
+    } catch {
+      toastError("删除动态失败");
       return false;
     }
   },

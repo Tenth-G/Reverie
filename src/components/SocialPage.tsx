@@ -6,10 +6,12 @@ import {
   Repeat2,
   UserMinus,
   UserPlus,
+  Trash2,
 } from "lucide-react";
 import type { SocialUser } from "../api/types";
 import { useCommentStore } from "../store/commentStore";
 import { useExploreStore } from "../store/exploreStore";
+import { usePlayerStore } from "../store/playerStore";
 import { sizedImage } from "../utils/image";
 import { LoadingState, Page, PageHeader } from "./Page";
 
@@ -63,6 +65,8 @@ export default function SocialPage() {
   const openComments = useCommentStore((s) => s.openResourceComments);
   const toggleEventLike = useExploreStore((s) => s.toggleEventLike);
   const forwardEvent = useExploreStore((s) => s.forwardEvent);
+  const deleteEvent = useExploreStore((s) => s.deleteEvent);
+  const uid = usePlayerStore((s) => s.profile?.userId ?? 0);
   const displayEvents = tab === "myEvents" ? myEvents : events;
 
   useEffect(() => {
@@ -179,6 +183,17 @@ export default function SocialPage() {
                   >
                     <Repeat2 size={13} /> 转发 {event.forwardCount}
                   </button>
+                  {uid > 0 && event.user.userId === uid && (
+                    <button
+                      className="event-delete-button"
+                      title="删除动态"
+                      onClick={() => {
+                        if (window.confirm("确定删除这条动态吗？")) void deleteEvent(event);
+                      }}
+                    >
+                      <Trash2 size={13} /> 删除
+                    </button>
+                  )}
                 </div>
               </div>
             </article>

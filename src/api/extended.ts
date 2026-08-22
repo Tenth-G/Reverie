@@ -499,6 +499,11 @@ export async function forwardEvent(
   );
 }
 
+export async function deleteEvent(eventId: number): Promise<void> {
+  if (!eventId) return;
+  await request("/event/del", { evId: eventId }, false, { method: "POST" });
+}
+
 export async function getEvents(): Promise<SocialEvent[]> {
   const res = await request<Obj>(
     "/event",
@@ -540,4 +545,59 @@ export async function getUserEvents(
     true,
   );
   return arr(res.events ?? res.event ?? res.data).map(normalizeSocialEvent);
+}
+
+export async function getUserCreatedPlaylists(
+  uid: number,
+  limit = 100,
+  offset = 0,
+): Promise<PlaylistInfo[]> {
+  if (!uid) return [];
+  const response = await request<Obj>(
+    "/user/playlist/create",
+    { uid, limit, offset },
+    false,
+  );
+  return arr(response.playlist ?? response.playlists ?? response.data)
+    .map(normalizePlaylist)
+    .filter((playlist) => playlist.id > 0);
+}
+
+export async function getUserCollectedPlaylists(
+  uid: number,
+  limit = 100,
+  offset = 0,
+): Promise<PlaylistInfo[]> {
+  if (!uid) return [];
+  const response = await request<Obj>(
+    "/user/playlist/collect",
+    { uid, limit, offset },
+    false,
+  );
+  return arr(response.playlist ?? response.playlists ?? response.data)
+    .map(normalizePlaylist)
+    .filter((playlist) => playlist.id > 0);
+}
+
+export async function getUserSocialStatus(uid: number): Promise<string> {
+  if (!uid) return "";
+  const response = await request<Obj>("/user/social/status", { uid }, false);
+  const value = obj(response.data ?? response.result ?? response);
+  return String(value.statusName ?? value.name ?? value.status ?? value.content ?? "");
+}
+
+export async function getSocialStatusRecommendations(): Promise<string[]> {
+  const response = await request<Obj>("/user/social/status/rcmd", {}, false);
+  const value = obj(response.data ?? response.result ?? response);
+  return arr(value.list ?? value.statuses ?? response.data ?? response)
+    .map((raw) => String(obj(raw).name ?? obj(raw).content ?? raw))
+    .filter(Boolean);
+}
+
+export async function getSupportedSocialStatuses(): Promise<string[]> {
+  const response = await request<Obj>("/user/social/status/support", {}, false);
+  const value = obj(response.data ?? response.result ?? response);
+  return arr(value.list ?? value.statuses ?? response.data ?? response)
+    .map((raw) => String(obj(raw).name ?? obj(raw).content ?? raw))
+    .filter(Boolean);
 }

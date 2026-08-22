@@ -9,6 +9,7 @@ import PlaylistGrid from "./PlaylistGrid";
 import PlaylistEditorModal from "./PlaylistEditorModal";
 import ConfirmModal from "./ConfirmModal";
 import PlaylistImportModal from "./PlaylistImportModal";
+import { getUserCollectedPlaylists, getUserCreatedPlaylists } from "../api/extended";
 
 export default function UserListPage() {
   const userPlaylists = usePlayerStore((s) => s.userPlaylists);
@@ -24,6 +25,9 @@ export default function UserListPage() {
   const [pendingDelete, setPendingDelete] = useState<PlaylistInfo | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [mode, setMode] = useState<"mine" | "discover">("mine");
+  const [accountListMode, setAccountListMode] = useState<"all" | "created" | "collected">("all");
+  const [accountPlaylists, setAccountPlaylists] = useState<PlaylistInfo[]>([]);
+  const [accountLoading, setAccountLoading] = useState(false);
   const discovery = usePlaylistDiscoveryStore();
 
   useEffect(() => {
@@ -31,6 +35,25 @@ export default function UserListPage() {
       void discovery.load();
     }
   }, [discovery, mode]);
+
+  useEffect(() => {
+    if (mode !== "mine" || accountListMode === "all" || !uid) return;
+    let alive = true;
+    setAccountLoading(true);
+    const task = accountListMode === "created"
+      ? getUserCreatedPlaylists(uid)
+      : getUserCollectedPlaylists(uid);
+    void task.then((items) => {
+      if (alive) setAccountPlaylists(items);
+    }).catch(() => {
+      if (alive) setAccountPlaylists([]);
+    }).finally(() => {
+      if (alive) setAccountLoading(false);
+    });
+    return () => { alive = false; };
+  }, [accountListMode, mode, uid]);
+
+  const minePlaylists = accountListMode === "all" ? userPlaylists : accountPlaylists;
 
   return (
     <Page>
@@ -85,10 +108,16 @@ export default function UserListPage() {
         </button>
       </div>
       {mode === "mine" ? (
-        <PlaylistGrid
-          playlists={userPlaylists}
+        <>
+          <div className="playlist-view-tabs" role="tablist" aria-label="账户歌单范围">
+            <button className={accountListMode === "all" ? "active" : ""} onClick={() => setAccountListMode("all")}>全部</button>
+            <button className={accountListMode === "created" ? "active" : ""} onClick={() => setAccountListMode("created")}>我创建</button>
+            <button className={accountListMode === "collected" ? "active" : ""} onClick={() => setAccountListMode("collected")}>我收藏</button>
+          </div>
+          <PlaylistGrid
+          playlists={minePlaylists}
           onOpen={openPlaylist}
-          loading={userPlaylistsLoading}
+          loading={accountLoading || userPlaylistsLoading}
           emptyText="登录后查看「我创建 / 收藏的歌单」"
           renderActions={(playlist) =>
             playlist.creatorId === uid ? (
@@ -124,7 +153,8 @@ export default function UserListPage() {
               </button>
             )
           }
-        />
+          />
+        </>
       ) : (
         <>
           <div className="playlist-discovery-toolbar">
