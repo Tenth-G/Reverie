@@ -5158,6 +5158,7 @@ input {
 .media-detail-description { margin: 0; color: var(--text-2); font-size: 12px; line-height: 1.7; white-space: pre-wrap; }
 .media-detail-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
 .media-detail-tags span { padding: 3px 7px; border-radius: 4px; background: var(--bg-3); color: var(--text-faint); font-size: 10px; }
+.media-detail-stats { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; color: var(--text-dim); font-size: 11px; }
 .media-related { margin-top: 18px; }
 .media-related h3 { margin: 0 0 9px; color: var(--text-2); font-size: 13px; }
 .media-related-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }

@@ -1,6 +1,11 @@
 import { create } from "zustand";
-import { getMediaDetail, getMediaUrl, getRelatedMedia } from "../api/media.ts";
-import type { MediaDetail, SearchMediaInfo } from "../api/types.ts";
+import {
+  getMediaDetail,
+  getMediaStats,
+  getMediaUrl,
+  getRelatedMedia,
+} from "../api/media.ts";
+import type { MediaDetail, MediaStats, SearchMediaInfo } from "../api/types.ts";
 import { usePlayerStore } from "./playerStore.ts";
 
 interface MediaState {
@@ -8,6 +13,7 @@ interface MediaState {
   detail: MediaDetail | null;
   url: string;
   related: SearchMediaInfo[];
+  stats: MediaStats | null;
   loading: boolean;
   urlLoading: boolean;
   error: string;
@@ -24,6 +30,7 @@ export const useMediaStore = create<MediaState>()((set, get) => ({
   detail: null,
   url: "",
   related: [],
+  stats: null,
   loading: false,
   urlLoading: false,
   error: "",
@@ -36,25 +43,30 @@ export const useMediaStore = create<MediaState>()((set, get) => ({
       detail: null,
       url: "",
       related: [],
+      stats: null,
       loading: true,
       urlLoading: true,
       error: "",
     });
-    const [detailResult, urlResult, relatedResult] = await Promise.allSettled([
-      getMediaDetail(item),
-      getMediaUrl(item, get().resolution),
-      getRelatedMedia(item),
-    ]);
+    const [detailResult, urlResult, relatedResult, statsResult] =
+      await Promise.allSettled([
+        getMediaDetail(item),
+        getMediaUrl(item, get().resolution),
+        getRelatedMedia(item),
+        getMediaStats(item),
+      ]);
     if (current !== token) return;
     const detail =
       detailResult.status === "fulfilled" ? detailResult.value : null;
     const url = urlResult.status === "fulfilled" ? urlResult.value : "";
     const related =
       relatedResult.status === "fulfilled" ? relatedResult.value : [];
+    const stats = statsResult.status === "fulfilled" ? statsResult.value : null;
     set({
       detail,
       url,
       related,
+      stats,
       loading: false,
       urlLoading: false,
       error: detail || url ? "" : "视频详情暂时不可用",
@@ -87,6 +99,7 @@ export const useMediaStore = create<MediaState>()((set, get) => ({
       detail: null,
       url: "",
       related: [],
+      stats: null,
       loading: false,
       urlLoading: false,
       error: "",
