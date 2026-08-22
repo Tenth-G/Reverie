@@ -5,6 +5,7 @@ import { formatTime } from "../utils/lyrics";
 import { sizedImage } from "../utils/image";
 import { captureCoverOrigin } from "../utils/sharedCoverTransition";
 import type { PlayMode } from "../api/types";
+import SongSheetDialog from "./SongSheetDialog";
 import {
   Disc3,
   Heart,
@@ -16,6 +17,7 @@ import {
   Repeat1,
   Shuffle,
   Sparkles,
+  Music2,
   SkipBack,
   SkipForward,
   Volume2,
@@ -37,6 +39,7 @@ function ModeIcon({ mode }: { mode: PlayMode }) {
 export default function PlayerBar() {
   const [failedCover, setFailedCover] = useState("");
   const [smartLoading, setSmartLoading] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const currentSong = usePlayerStore((s) => s.currentSong);
   const playing = usePlayerStore((s) => s.playing);
   const loadingUrl = usePlayerStore((s) => s.loadingUrl);
@@ -209,6 +212,19 @@ export default function PlayerBar() {
             <MessageCircle size={17} />
           </button>
           <button
+            className={`icon-btn ${sheetOpen ? "active" : ""}`}
+            onClick={() => {
+              if (!currentSong) {
+                toast("请先播放一首歌曲", "info");
+                return;
+              }
+              setSheetOpen(true);
+            }}
+            title="查看乐谱"
+          >
+            <Music2 size={17} />
+          </button>
+          <button
             className={`icon-btn ${liked ? "active" : ""}`}
             onClick={toggleLike}
             title={liked ? "取消喜欢" : "喜欢"}
@@ -259,6 +275,11 @@ export default function PlayerBar() {
           animation: spin 0.8s linear infinite;
         }
       `}</style>
+      <SongSheetDialog
+        song={currentSong}
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+      />
     </footer>
   );
 }

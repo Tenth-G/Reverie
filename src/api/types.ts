@@ -83,6 +83,15 @@ export interface FirstListenInfo {
   description: string;
 }
 
+export interface SongSheet {
+  id: string;
+  name: string;
+  type: string;
+  coverUrl: string;
+  previewUrl: string;
+  description: string;
+}
+
 export interface PlaylistDynamicStats {
   playCount: number;
   subscribedCount: number;
