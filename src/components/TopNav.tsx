@@ -97,6 +97,8 @@ const preloadView = (view: View) => {
       return import("./UgcPage");
     case "listenReports":
       return import("./ListenReportsPage");
+    case "fans":
+      return import("./FansPage");
     case "likes":
       return import("./LikesPage");
     case "recent":
