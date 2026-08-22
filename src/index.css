@@ -5168,6 +5168,33 @@ input {
   .media-related-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .media-detail-dialog { width: calc(100vw - 16px); max-height: calc(100vh - 16px); }
 }
+
+.yunbei-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) auto; align-items: center; gap: 10px; margin-bottom: 18px; }
+.yunbei-summary > div { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 8px; row-gap: 2px; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-1); color: var(--text-faint); }
+.yunbei-summary > div svg { grid-row: span 2; color: var(--accent); }
+.yunbei-summary > div span { font-size: 11px; }
+.yunbei-summary > div strong { color: var(--text); font-size: 18px; }
+.yunbei-section { margin-top: 20px; }
+.yunbei-task-list, .yunbei-ledger { display: grid; gap: 6px; }
+.yunbei-task { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 12px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-1); }
+.yunbei-task > div:first-child { display: grid; min-width: 0; gap: 3px; }
+.yunbei-task strong, .yunbei-task span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.yunbei-task strong { color: var(--text); font-size: 12px; }
+.yunbei-task span { color: var(--text-faint); font-size: 11px; }
+.yunbei-task-action { display: flex; align-items: center; gap: 8px; flex: none; }
+.yunbei-task-action b { color: var(--accent); font-size: 12px; }
+.yunbei-ledger > div { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 12px; padding: 9px 11px; border-bottom: 1px solid var(--border-light); }
+.yunbei-ledger span { overflow: hidden; color: var(--text-2); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.yunbei-ledger time { color: var(--text-faint); font-size: 10px; }
+.yunbei-ledger strong { min-width: 58px; text-align: right; font-size: 12px; }
+.yunbei-ledger strong.income { color: var(--success, #36b37e); }
+.yunbei-ledger strong.expense { color: var(--danger, #e45858); }
+@media (max-width: 700px) {
+  .yunbei-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .yunbei-summary > .btn { grid-column: 1 / -1; justify-self: start; }
+  .yunbei-task { align-items: flex-start; }
+  .yunbei-task-action { flex-direction: column; align-items: flex-end; }
+}
 @media (max-width: 700px) {
   .comment-page-heading {
     align-items: flex-start;

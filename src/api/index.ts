@@ -16,3 +16,4 @@ export * from "./comment";
 export * from "./cloud";
 export * from "./playlist";
 export * from "./media";
+export * from "./yunbei";
