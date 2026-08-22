@@ -2,6 +2,11 @@ name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release tag to build, for example v1.1.0"
+        required: true
+        type: string
   push:
     tags:
       - "v*"
@@ -9,31 +14,59 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ inputs.tag_name || github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
   windows:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout release source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag_name || github.ref }}
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+
       - uses: dtolnay/rust-toolchain@stable
+
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
 
-      - run: npm ci
-      - run: npm run typecheck
-      - uses: tauri-apps/tauri-action@v0
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Verify updater signing key
+        shell: pwsh
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY)) {
+            throw "Missing TAURI_SIGNING_PRIVATE_KEY repository secret."
+          }
+
+      - name: Build and publish GitHub Release
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${{ github.ref_name }}
+          tagName: ${{ inputs.tag_name || github.ref_name }}
           releaseName: "Reverie __VERSION__"
-          releaseBody: "See the assets below to download and install this version."
+          releaseBody: |
+            ## Reverie __VERSION__
+
+            Windows installer and signed in-app updater artifacts are attached below.
           releaseDraft: true
           prerelease: false
+          uploadUpdaterJson: true
           updaterJsonPreferNsis: true
