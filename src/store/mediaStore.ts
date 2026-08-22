@@ -4,6 +4,8 @@ import {
   getMediaStats,
   getMediaUrl,
   getRelatedMedia,
+  setMediaLiked,
+  setMediaSubscribed,
 } from "../api/media.ts";
 import type { MediaDetail, MediaStats, SearchMediaInfo } from "../api/types.ts";
 import { usePlayerStore } from "./playerStore.ts";
@@ -17,9 +19,12 @@ interface MediaState {
   loading: boolean;
   urlLoading: boolean;
   error: string;
+  actionLoading: "like" | "subscribe" | "";
   resolution: 720 | 1080;
   open: (item: SearchMediaInfo) => Promise<void>;
   setResolution: (resolution: 720 | 1080) => Promise<void>;
+  toggleLike: () => Promise<void>;
+  toggleSubscription: () => Promise<void>;
   close: () => void;
 }
 
@@ -34,6 +39,7 @@ export const useMediaStore = create<MediaState>()((set, get) => ({
   loading: false,
   urlLoading: false,
   error: "",
+  actionLoading: "",
   resolution: 1080,
 
   open: async (item) => {
@@ -44,6 +50,7 @@ export const useMediaStore = create<MediaState>()((set, get) => ({
       url: "",
       related: [],
       stats: null,
+      actionLoading: "",
       loading: true,
       urlLoading: true,
       error: "",
@@ -92,6 +99,60 @@ export const useMediaStore = create<MediaState>()((set, get) => ({
     }
   },
 
+  toggleLike: async () => {
+    const item = get().item;
+    const stats = get().stats;
+    if (!item || !stats || get().actionLoading) return;
+    const liked = !stats.liked;
+    set({ actionLoading: "like" });
+    try {
+      await setMediaLiked(item, liked);
+      set({
+        actionLoading: "",
+        stats: {
+          ...stats,
+          liked,
+          likedCount: Math.max(0, stats.likedCount + (liked ? 1 : -1)),
+        },
+      });
+    } catch (error) {
+      set({ actionLoading: "" });
+      usePlayerStore
+        .getState()
+        .toast(
+          error instanceof Error ? error.message : "点赞操作失败",
+          "error",
+        );
+    }
+  },
+
+  toggleSubscription: async () => {
+    const item = get().item;
+    const stats = get().stats;
+    if (!item || !stats || get().actionLoading) return;
+    const subscribed = !stats.subscribed;
+    set({ actionLoading: "subscribe" });
+    try {
+      await setMediaSubscribed(item, subscribed);
+      set({
+        actionLoading: "",
+        stats: {
+          ...stats,
+          subscribed,
+          subCount: Math.max(0, stats.subCount + (subscribed ? 1 : -1)),
+        },
+      });
+    } catch (error) {
+      set({ actionLoading: "" });
+      usePlayerStore
+        .getState()
+        .toast(
+          error instanceof Error ? error.message : "收藏操作失败",
+          "error",
+        );
+    }
+  },
+
   close: () => {
     token++;
     set({
@@ -103,6 +164,7 @@ export const useMediaStore = create<MediaState>()((set, get) => ({
       loading: false,
       urlLoading: false,
       error: "",
+      actionLoading: "",
     });
   },
 }));

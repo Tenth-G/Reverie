@@ -6,6 +6,8 @@ import {
   getRelatedMedia,
   getMediaStats,
   normalizeMediaDetail,
+  setMediaLiked,
+  setMediaSubscribed,
 } from "../src/api/media.ts";
 import type { SearchMediaInfo } from "../src/api/types.ts";
 
@@ -75,7 +77,14 @@ test("media advanced stats normalizes like, share, comment and subscription coun
   globalThis.fetch = async (input) => {
     assert.match(String(input), /mv\/detail\/info/);
     return Response.json({
-      data: { likedCount: 3, shareCount: 4, commentCount: 5, subCount: 6 },
+      data: {
+        likedCount: 3,
+        shareCount: 4,
+        commentCount: 5,
+        subCount: 6,
+        liked: true,
+        subed: true,
+      },
     });
   };
   try {
@@ -93,7 +102,78 @@ test("media advanced stats normalizes like, share, comment and subscription coun
       shareCount: 4,
       commentCount: 5,
       subCount: 6,
+      liked: true,
+      subscribed: true,
     });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("media like and subscription mutations use kind-specific routes", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: Array<{ path: string; url: URL; method?: string }> = [];
+  globalThis.fetch = async (input, init) => {
+    const url = new URL(String(input));
+    calls.push({ path: url.pathname, url, method: init?.method });
+    return Response.json({ code: 200 });
+  };
+  try {
+    await setMediaLiked(
+      {
+        id: "mv-1",
+        name: "",
+        coverUrl: "",
+        creatorName: "",
+        duration: 0,
+        playCount: 0,
+        kind: "mv",
+      },
+      true,
+    );
+    await setMediaSubscribed(
+      {
+        id: "mv-1",
+        name: "",
+        coverUrl: "",
+        creatorName: "",
+        duration: 0,
+        playCount: 0,
+        kind: "mv",
+      },
+      false,
+    );
+    await setMediaLiked(
+      {
+        id: "video-1",
+        name: "",
+        coverUrl: "",
+        creatorName: "",
+        duration: 0,
+        playCount: 0,
+        kind: "video",
+      },
+      false,
+    );
+    await setMediaSubscribed(
+      {
+        id: "video-1",
+        name: "",
+        coverUrl: "",
+        creatorName: "",
+        duration: 0,
+        playCount: 0,
+        kind: "video",
+      },
+      true,
+    );
+    assert.deepEqual(
+      calls.map((call) => call.path),
+      ["/resource/like", "/mv/sub", "/resource/like", "/video/sub"],
+    );
+    assert.equal(calls[0]!.url.searchParams.get("type"), "1");
+    assert.equal(calls[2]!.url.searchParams.get("type"), "5");
+    assert.equal(calls[3]!.url.searchParams.get("id"), "video-1");
   } finally {
     globalThis.fetch = originalFetch;
   }
