@@ -45,6 +45,28 @@ test("playlist track mutations forward ids and operation parameters", async () =
   }
 });
 
+test("playlist order falls back to the legacy song order endpoint", async () => {
+  const originalFetch = globalThis.fetch;
+  const paths: string[] = [];
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    paths.push(url.pathname);
+    if (url.pathname === "/playlist/order/update") {
+      return new Response("upstream failure", { status: 502 });
+    }
+    assert.equal(url.pathname, "/song/order/update");
+    assert.equal(url.searchParams.get("pid"), "10");
+    assert.equal(url.searchParams.get("ids"), "3,2,1");
+    return Response.json({ code: 200 });
+  };
+  try {
+    await updatePlaylistOrder(10, [3, 2, 1]);
+    assert.deepEqual(paths, ["/playlist/order/update", "/song/order/update"]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test("playlist full-track loader normalizes song records and paging", async () => {
   const originalFetch = globalThis.fetch;
   try {

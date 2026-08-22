@@ -74,12 +74,23 @@ export async function updatePlaylistOrder(
   songIds: number[],
 ): Promise<void> {
   if (!playlistId || !songIds.length) return;
-  await request(
-    "/playlist/order/update",
-    { id: playlistId, ids: songIds.join(",") },
-    false,
-    { method: "POST" },
-  );
+  try {
+    await request(
+      "/playlist/order/update",
+      { id: playlistId, ids: songIds.join(",") },
+      false,
+      { method: "POST" },
+    );
+  } catch {
+    // Older NeteaseCloudMusicApi releases expose the same operation under
+    // /song/order/update and expect pid instead of id.
+    await request(
+      "/song/order/update",
+      { pid: playlistId, ids: songIds.join(",") },
+      false,
+      { method: "POST" },
+    );
+  }
 }
 
 export async function getPlaylistDynamicStats(
