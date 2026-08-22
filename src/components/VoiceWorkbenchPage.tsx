@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   FileAudio,
+  FileText,
   LoaderCircle,
   Mic2,
   RefreshCw,
@@ -12,6 +13,7 @@ import {
 import { useVoiceStore } from "../store/voiceStore.ts";
 import { sizedImage } from "../utils/image";
 import { LoadingState, Page, PageHeader } from "./Page";
+import VoiceDetailDialog from "./VoiceDetailDialog.tsx";
 
 export default function VoiceWorkbenchPage() {
   const lists = useVoiceStore((state) => state.lists);
@@ -22,12 +24,17 @@ export default function VoiceWorkbenchPage() {
   const uploading = useVoiceStore((state) => state.uploading);
   const busyId = useVoiceStore((state) => state.busyId);
   const error = useVoiceStore((state) => state.error);
+  const activeVoice = useVoiceStore((state) => state.activeVoice);
+  const activeLyric = useVoiceStore((state) => state.activeLyric);
+  const detailLoading = useVoiceStore((state) => state.detailLoading);
   const loadLists = useVoiceStore((state) => state.loadLists);
   const selectList = useVoiceStore((state) => state.selectList);
   const searchCurrentList = useVoiceStore((state) => state.searchCurrentList);
   const upload = useVoiceStore((state) => state.upload);
   const remove = useVoiceStore((state) => state.remove);
   const transcribe = useVoiceStore((state) => state.transcribe);
+  const openDetail = useVoiceStore((state) => state.openDetail);
+  const closeDetail = useVoiceStore((state) => state.closeDetail);
   const setSearch = useVoiceStore((state) => state.setSearch);
   const fileRef = useRef<HTMLInputElement>(null);
   const [songName, setSongName] = useState("");
@@ -157,6 +164,13 @@ export default function VoiceWorkbenchPage() {
                   <div className="voice-item-actions">
                     <button
                       className="icon-button"
+                      title="查看声音详情"
+                      onClick={() => void openDetail(voice)}
+                    >
+                      <FileText size={16} />
+                    </button>
+                    <button
+                      className="icon-button"
                       title="提交歌词转写"
                       onClick={() => void transcribe(voice)}
                       disabled={busyId === voice.id || voice.transcribed}
@@ -191,6 +205,14 @@ export default function VoiceWorkbenchPage() {
           )}
         </section>
       </div>
+      {activeVoice && (
+        <VoiceDetailDialog
+          voice={activeVoice}
+          lyric={activeLyric}
+          loading={detailLoading}
+          onClose={closeDetail}
+        />
+      )}
     </Page>
   );
 }
