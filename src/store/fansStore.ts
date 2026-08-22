@@ -4,6 +4,8 @@ import {
   getFansDemographics,
   getFansOverview,
   getFansTrend,
+  getInfluencerThreshold,
+  type InfluencerThreshold,
 } from "../api/fans.ts";
 import type {
   CreatorAuthInfo,
@@ -17,6 +19,7 @@ interface FansState {
   age: Array<{ label: string; value: number }>;
   gender: Array<{ label: string; value: number }>;
   province: Array<{ label: string; value: number }>;
+  threshold: InfluencerThreshold | null;
   loading: boolean;
   error: string;
   load: () => Promise<void>;
@@ -28,11 +31,12 @@ export const useFansStore = create<FansState>((set) => ({
   age: [],
   gender: [],
   province: [],
+  threshold: null,
   loading: false,
   error: "",
   load: async () => {
     set({ loading: true, error: "" });
-    const [auth, overview, trend, age, gender, province] =
+    const [auth, overview, trend, age, gender, province, threshold] =
       await Promise.allSettled([
         getCreatorAuthInfo(),
         getFansOverview(),
@@ -40,6 +44,7 @@ export const useFansStore = create<FansState>((set) => ({
         getFansDemographics("age"),
         getFansDemographics("gender"),
         getFansDemographics("province"),
+        getInfluencerThreshold(),
       ]);
     set({
       auth: auth.status === "fulfilled" ? auth.value : null,
@@ -48,6 +53,7 @@ export const useFansStore = create<FansState>((set) => ({
       age: age.status === "fulfilled" ? age.value : [],
       gender: gender.status === "fulfilled" ? gender.value : [],
       province: province.status === "fulfilled" ? province.value : [],
+      threshold: threshold.status === "fulfilled" ? threshold.value : null,
       loading: false,
       error: overview.status === "rejected" ? "粉丝中心暂时不可用" : "",
     });

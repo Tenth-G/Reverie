@@ -5,6 +5,7 @@ import {
   getFansDemographics,
   getFansOverview,
   getFansTrend,
+  getInfluencerThreshold,
 } from "../src/api/fans.ts";
 test("fans APIs normalize auth, overview, trend and demographics", async () => {
   const originalFetch = globalThis.fetch;
@@ -23,6 +24,23 @@ test("fans APIs normalize auth, overview, trend and demographics", async () => {
     assert.equal((await getFansOverview()).total, 8);
     assert.equal((await getFansTrend())[0]?.count, 3);
     assert.equal((await getFansDemographics("age"))[0]?.label, "18-24");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("influencer threshold API normalizes qualification requirements", async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (input) => {
+      const url = new URL(String(input));
+      assert.equal(url.pathname, "/threshold/detail/get");
+      return Response.json({ data: { qualified: true, level: 3, currentFans: 100, fansThreshold: 80, currentPlayCount: 2000, playThreshold: 1000, desc: "已满足申请条件" } });
+    };
+    const threshold = await getInfluencerThreshold();
+    assert.equal(threshold.eligible, true);
+    assert.equal(threshold.requiredFans, 80);
+    assert.equal(threshold.description, "已满足申请条件");
   } finally {
     globalThis.fetch = originalFetch;
   }

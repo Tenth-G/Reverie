@@ -9,6 +9,7 @@ export default function FansPage() {
   const age = useFansStore((s) => s.age);
   const gender = useFansStore((s) => s.gender);
   const province = useFansStore((s) => s.province);
+  const threshold = useFansStore((s) => s.threshold);
   const loading = useFansStore((s) => s.loading);
   const error = useFansStore((s) => s.error);
   const load = useFansStore((s) => s.load);
@@ -43,6 +44,22 @@ export default function FansPage() {
                   : "当前账号未认证为音乐人"}
               </span>
             </div>
+          )}
+          {threshold && (
+            <section className="fans-section fans-threshold">
+              <div className="fans-head">
+                <h2>达人达标条件</h2>
+                <span className={threshold.eligible ? "threshold-ok" : ""}>
+                  {threshold.eligible ? "已达标" : "未达标"}
+                </span>
+              </div>
+              <div className="fans-summary">
+                <div><span>粉丝</span><strong>{threshold.fanCount} / {threshold.requiredFans || "—"}</strong></div>
+                <div><span>播放</span><strong>{threshold.playCount} / {threshold.requiredPlayCount || "—"}</strong></div>
+                <div><span>等级</span><strong>Lv.{threshold.level}</strong></div>
+              </div>
+              {threshold.description && <p>{threshold.description}</p>}
+            </section>
           )}
           {overview && (
             <div className="fans-summary">
