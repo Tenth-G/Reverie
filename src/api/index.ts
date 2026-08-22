@@ -31,6 +31,7 @@ export * from "./playlistImport";
 export * from "./playlistDiscovery";
 export * from "./related";
 export * from "./style";
+export * from "./topic";
 export * from "./lyricsMark";
 export * from "./digitalAlbum";
 export * from "./musician";

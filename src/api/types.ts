@@ -57,6 +57,25 @@ export interface StyleDetail {
   coverUrl: string;
 }
 
+export interface TopicInfo {
+  id: number;
+  title: string;
+  description: string;
+  coverUrl: string;
+  participateCount: number;
+  shareCount: number;
+}
+
+export interface TopicEvent {
+  id: string;
+  text: string;
+  creatorName: string;
+  creatorAvatar: string;
+  time: number;
+  likedCount: number;
+  commentCount: number;
+}
+
 export interface PlaylistDynamicStats {
   playCount: number;
   subscribedCount: number;
@@ -209,7 +228,8 @@ export type View =
   | "listenReports"
   | "videos"
   | "fans"
-  | "style";
+  | "style"
+  | "topics";
 
 export type SearchCategory =
   | "songs"
