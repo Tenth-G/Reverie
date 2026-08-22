@@ -8,6 +8,7 @@ const TABS = [
   ["all", "全部下载"],
   ["month", "本月下载"],
   ["purchased", "已购歌曲"],
+  ["singlePurchased", "已购单曲"],
 ] as const;
 
 export default function DownloadHistoryPage() {

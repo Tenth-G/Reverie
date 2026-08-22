@@ -106,6 +106,24 @@ export default function PlaybackVisualPanel({
                   </span>
                 </div>
               )}
+              {songMetadata.musicDetail && (
+                <div>
+                  <strong>音质</strong>
+                  <span>
+                    {[songMetadata.musicDetail.level, songMetadata.musicDetail.format]
+                      .filter(Boolean)
+                      .join(" · ") || "标准音质"}
+                    {songMetadata.musicDetail.bitrate > 0 &&
+                      ` · ${Math.round(songMetadata.musicDetail.bitrate / 1000)} kbps`}
+                  </span>
+                </div>
+              )}
+              {songMetadata.redCount !== undefined && (
+                <div>
+                  <strong>红心</strong>
+                  <span>{songMetadata.redCount.toLocaleString("zh-CN")} 次</span>
+                </div>
+              )}
             </div>
           ) : (
             <div className="metadata-loading">暂无百科信息</div>

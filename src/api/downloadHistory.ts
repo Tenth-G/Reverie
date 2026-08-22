@@ -16,7 +16,9 @@ export async function getDownloadHistory(
       ? "/song/downlist"
       : category === "month"
         ? "/song/monthdownlist"
-        : "/song/purchased";
+        : category === "purchased"
+          ? "/song/purchased"
+          : "/song/singledownlist";
   const response = await request<Obj>(route, { limit, offset }, false);
   const data = obj(response.data ?? response);
   return arr(data.list ?? data.songs ?? response.songs ?? response.data)
