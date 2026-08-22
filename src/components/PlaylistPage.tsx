@@ -4,8 +4,7 @@ import type { PlaylistInfo } from "../api/types";
 import type { Song } from "../api/types";
 import { getPlaylistDetail } from "../api/client";
 import {
-  addPlaylistTracks,
-  deletePlaylistTracks,
+  manipulatePlaylistTracks,
   updatePlaylistOrder,
 } from "../api/playlist";
 import { useExploreStore } from "../store/exploreStore";
@@ -52,8 +51,9 @@ export default function PlaylistPage() {
   const addSongs = async (songs: Song[]) => {
     setMutating(true);
     try {
-      await addPlaylistTracks(
+      await manipulatePlaylistTracks(
         playlistId,
+        "add",
         songs.map((song) => song.id),
       );
       await refreshSongs();
@@ -73,7 +73,7 @@ export default function PlaylistPage() {
     if (mutating) return;
     setMutating(true);
     try {
-      await deletePlaylistTracks(playlistId, [song.id]);
+      await manipulatePlaylistTracks(playlistId, "del", [song.id]);
       usePlayerStore.setState({
         playlistSongs: playlistSongs.filter((item) => item.id !== song.id),
       });
