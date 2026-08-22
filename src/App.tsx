@@ -9,6 +9,7 @@ import HomePage from "./components/HomePage";
 import Toasts from "./components/Toasts";
 import SettingsModal from "./components/SettingsModal";
 import MediaDetailDialog from "./components/MediaDetailDialog";
+import { reportScrobble, reportWeblog } from "./api/playbackReport";
 
 const ChartPage = lazy(() => import("./components/ChartPage"));
 const SearchPage = lazy(() => import("./components/SearchPage"));
@@ -78,6 +79,20 @@ export default function App() {
   const showLogin = usePlayerStore((s) => s.showLogin);
   const showSettings = usePlayerStore((s) => s.showSettings);
   const showUpdate = usePlayerStore((s) => s.showUpdate);
+  const currentSong = usePlayerStore((s) => s.currentSong);
+  const reportedSongRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!playing || !currentSong || reportedSongRef.current === currentSong.id) {
+      return;
+    }
+    reportedSongRef.current = currentSong.id;
+    void reportScrobble({
+      id: currentSong.id,
+      sourceId: currentSong.id,
+      time: Math.floor((currentSong.duration || 0) / 1000),
+    }).catch(() => {});
+  }, [playing, currentSong]);
 
   const particleEffect = usePlayerStore((s) => s.particleEffect);
   const refreshLogin = usePlayerStore((s) => s.refreshLogin);
@@ -268,6 +283,15 @@ export default function App() {
 
   const handleEnded = () => {
     const st = usePlayerStore.getState();
+    const endedSong = st.currentSong;
+    if (endedSong) {
+      void reportWeblog({
+        id: endedSong.id,
+        sourceId: endedSong.id,
+        time: Math.floor((st.duration || endedSong.duration || 0) / 1000),
+        source: st.queueSource === "fm" ? "fm" : "list",
+      }).catch(() => {});
+    }
     const { queue, index, playMode: mode, queueSource } = st;
     if (queueSource === "fm" && queue.length > 0) {
       void st.fmNext();

@@ -53,3 +53,4 @@ export * from "./calendar";
 export * from "./artistFans";
 export * from "./artist";
 export * from "./privateDj";
+export * from "./playbackReport";
