@@ -4149,6 +4149,62 @@ input {
 .account-overview > div span { color: var(--text-faint); }
 .account-overview > div strong { color: var(--text); font-weight: 600; text-align: right; }
 .account-overview p { margin: 4px 0 0; color: var(--text-faint); font-size: 11px; line-height: 1.5; }
+.song-sheet-dialog {
+  width: min(92vw, 760px);
+  max-height: min(86vh, 820px);
+  overflow: auto;
+}
+.song-sheet-dialog .modal-head p {
+  margin-top: 4px;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+.song-sheet-list {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0 14px;
+}
+.song-sheet-list button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: none;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-dim);
+  background: var(--bg-2);
+  text-align: left;
+}
+.song-sheet-list button.active,
+.song-sheet-list button:hover {
+  color: var(--accent-2);
+  border-color: rgba(236, 65, 65, 0.45);
+  background: rgba(236, 65, 65, 0.1);
+}
+.song-sheet-list button span { display: grid; gap: 2px; }
+.song-sheet-list small { color: var(--text-faint); font-size: 10px; }
+.song-sheet-preview {
+  display: flex;
+  justify-content: center;
+  min-height: 180px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-3);
+  overflow: hidden;
+}
+.song-sheet-preview img { display: block; max-width: 100%; height: auto; object-fit: contain; }
+.song-sheet-placeholder {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  min-height: 180px;
+  padding: 20px;
+  color: var(--text-faint);
+  text-align: center;
+}
 .settings-section .about-panel {
   margin: 8px 0 4px;
   border-radius: 6px;
