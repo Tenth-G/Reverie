@@ -6,6 +6,12 @@ const obj = (value: unknown): Obj =>
   value && typeof value === "object" ? (value as Obj) : {};
 const arr = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
 
+/** Record a playlist check-in/play-count update. */
+export async function markPlaylistPlayed(playlistId: number): Promise<void> {
+  if (!playlistId) return;
+  await request("/playlist/update/playcount", { id: playlistId }, false);
+}
+
 /** Fetch the complete song records for a playlist, with optional paging. */
 export async function getPlaylistAllTracks(
   playlistId: number,

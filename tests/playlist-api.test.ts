@@ -5,6 +5,7 @@ import {
   deletePlaylistTracks,
   getPlaylistDynamicStats,
   getPlaylistAllTracks,
+  markPlaylistPlayed,
   getPlaylistSubscribers,
   manipulatePlaylistTracks,
   updatePlaylistOrder,
@@ -123,6 +124,22 @@ test("publishPlaylist opens a private playlist through the privacy endpoint", as
       return Response.json({ code: 200 });
     };
     await publishPlaylist(10);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("markPlaylistPlayed posts the playlist check-in id", async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (input, init) => {
+      const url = new URL(String(input));
+      assert.equal(url.pathname, "/playlist/update/playcount");
+      assert.equal(url.searchParams.get("id"), "10");
+      assert.equal(init?.method, "GET");
+      return Response.json({ code: 200 });
+    };
+    await markPlaylistPlayed(10);
   } finally {
     globalThis.fetch = originalFetch;
   }
