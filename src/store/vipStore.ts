@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import {
   getVipGrowth,
+  getVipGrowthpointInfo,
   getVipGrowthDetails,
   getVipTasks,
   getVipTimeMachine,
@@ -14,6 +15,7 @@ interface VipState {
   tasks: VipTask[];
   details: VipGrowthEntry[];
   timeMachine: Record<string, unknown> | null;
+  growthInfo: Record<string, unknown> | null;
   loading: boolean;
   claiming: boolean;
   load: () => Promise<void>;
@@ -25,15 +27,17 @@ export const useVipStore = create<VipState>()((set, get) => ({
   tasks: [],
   details: [],
   timeMachine: null,
+  growthInfo: null,
   loading: false,
   claiming: false,
   load: async () => {
     set({ loading: true });
-    const [growth, tasks, details, timeMachine] = await Promise.allSettled([
+    const [growth, tasks, details, timeMachine, growthInfo] = await Promise.allSettled([
       getVipGrowth(),
       getVipTasks(),
       getVipGrowthDetails(),
       getVipTimeMachine(),
+      getVipGrowthpointInfo(),
     ]);
     set({
       growth: growth.status === "fulfilled" ? growth.value : null,
@@ -41,6 +45,8 @@ export const useVipStore = create<VipState>()((set, get) => ({
       details: details.status === "fulfilled" ? details.value : [],
       timeMachine:
         timeMachine.status === "fulfilled" ? timeMachine.value : null,
+      growthInfo:
+        growthInfo.status === "fulfilled" ? growthInfo.value : null,
       loading: false,
     });
     if (growth.status === "rejected")

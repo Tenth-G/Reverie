@@ -3,6 +3,18 @@ import { Check, Crown, Gift, History, RefreshCw, Sparkles } from "lucide-react";
 import { useVipStore } from "../store/vipStore.ts";
 import { LoadingState, Page, PageHeader } from "./Page";
 
+function infoEntries(value: Record<string, unknown> | null): Array<[string, string]> {
+  if (!value) return [];
+  const source =
+    value.data && typeof value.data === "object" && !Array.isArray(value.data)
+      ? (value.data as Record<string, unknown>)
+      : value;
+  return Object.entries(source)
+    .filter(([, item]) => ["string", "number", "boolean"].includes(typeof item))
+    .slice(0, 8)
+    .map(([key, item]) => [key, String(item)]);
+}
+
 function formatTime(value: number) {
   if (!value) return "时间未知";
   return new Date(value < 1e12 ? value * 1000 : value).toLocaleString("zh-CN", {
@@ -16,6 +28,7 @@ export default function VipPage() {
   const tasks = useVipStore((state) => state.tasks);
   const details = useVipStore((state) => state.details);
   const timeMachine = useVipStore((state) => state.timeMachine);
+  const growthInfo = useVipStore((state) => state.growthInfo);
   const loading = useVipStore((state) => state.loading);
   const claiming = useVipStore((state) => state.claiming);
   const load = useVipStore((state) => state.load);
@@ -123,6 +136,23 @@ export default function VipPage() {
               <div className="empty">暂无成长记录</div>
             )}
           </section>
+          {infoEntries(growthInfo).length > 0 && (
+            <section className="vip-section">
+              <div className="list-header">
+                <h3>成长值补充信息</h3>
+                <Sparkles size={16} />
+              </div>
+              <div className="vip-detail-list">
+                {infoEntries(growthInfo).map(([key, value]) => (
+                  <div key={key}>
+                    <span>{key}</span>
+                    <time />
+                    <strong>{value}</strong>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
           {timeMachine && (
             <section className="vip-section vip-time-machine">
               <div>
