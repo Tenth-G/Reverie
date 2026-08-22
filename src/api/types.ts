@@ -338,7 +338,13 @@ export interface YunbeiOverview {
 }
 
 export type RecentCategory =
-  "songs" | "albums" | "playlists" | "radios" | "videos" | "voices";
+  | "songs"
+  | "listen"
+  | "albums"
+  | "playlists"
+  | "radios"
+  | "videos"
+  | "voices";
 
 export interface RecentAlbum {
   id: number;
