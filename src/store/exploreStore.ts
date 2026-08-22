@@ -14,6 +14,7 @@ import {
   getRadioDetail,
   getRadioHome,
   getSongComments,
+  getUserEvents,
   likeSongComment,
   sendSongComment,
   subscribeAlbum,
@@ -36,7 +37,7 @@ import type {
 import { usePlayerStore } from "./playerStore";
 
 type CommentSort = "hot" | "new";
-type SocialTab = "events" | "follows" | "followers";
+type SocialTab = "events" | "myEvents" | "follows" | "followers";
 
 interface ExploreState {
   loading: boolean;
@@ -60,6 +61,7 @@ interface ExploreState {
   follows: SocialUser[];
   followers: SocialUser[];
   events: SocialEvent[];
+  myEvents: SocialEvent[];
 
   openAlbum: (id: number) => Promise<void>;
   toggleAlbumSubscription: () => Promise<void>;
@@ -128,6 +130,7 @@ export const useExploreStore = create<ExploreState>()((set, get) => ({
   follows: [],
   followers: [],
   events: [],
+  myEvents: [],
 
   openAlbum: async (id) => {
     if (!id) return;
@@ -388,12 +391,13 @@ export const useExploreStore = create<ExploreState>()((set, get) => ({
     showView("social");
     set({ loading: true });
     try {
-      const [events, follows, followers] = await Promise.all([
+      const [events, myEvents, follows, followers] = await Promise.all([
         getEvents(),
+        getUserEvents(uid).catch(() => []),
         getFollows(uid),
         getFollowers(uid),
       ]);
-      set({ events, follows, followers });
+      set({ events, myEvents, follows, followers });
     } catch {
       toastError("加载社交动态失败");
     } finally {
