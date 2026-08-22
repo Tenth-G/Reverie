@@ -152,6 +152,23 @@ export async function getPodcastBanners(): Promise<Array<{ imageUrl: string; tit
   }).filter((item) => item.imageUrl);
 }
 
+export type PodcastAdvancedRank = "hours" | "popular" | "newcomer" | "pay";
+
+export async function getPodcastAdvancedToplist(
+  type: PodcastAdvancedRank,
+  limit = 30,
+  offset = 0,
+): Promise<RadioInfo[]> {
+  const route = {
+    hours: "/dj/toplist/hours",
+    popular: "/dj/toplist/popular",
+    newcomer: "/dj/toplist/newcomer",
+    pay: "/dj/toplist/pay",
+  }[type];
+  const response = await request<Obj>(route, { limit, offset }, false);
+  return normalizeRadioList(response);
+}
+
 export async function getPodcastProgramDetail(
   id: number,
 ): Promise<PodcastProgramDetail> {

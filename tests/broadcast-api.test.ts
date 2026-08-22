@@ -10,6 +10,7 @@ import {
   getPodcastProgramDetail,
   getPodcastProgramHoursToplist,
   getPodcastProgramToplist,
+  getPodcastAdvancedToplist,
   getPodcastTodayPreferred,
   getSportRadio,
   toggleBroadcastSubscription,
@@ -154,6 +155,29 @@ test("podcast program rankings forward routes and normalize program records", as
     assert.equal((await getPodcastProgramHoursToplist(10))[0]?.song?.id, 90);
     assert.equal((await getPodcastTodayPreferred(1))[0]?.radioName, "电台");
     assert.deepEqual(paths, ["/dj/program/toplist", "/dj/program/toplist/hours", "/dj/today/perfered"]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("advanced podcast rankings select the documented toplist routes", async () => {
+  const originalFetch = globalThis.fetch;
+  const paths: string[] = [];
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    paths.push(url.pathname);
+    return Response.json({ data: { list: [{ id: 5, name: "榜单电台" }] } });
+  };
+  try {
+    for (const type of ["hours", "popular", "newcomer", "pay"] as const) {
+      assert.equal((await getPodcastAdvancedToplist(type, 5))[0]?.name, "榜单电台");
+    }
+    assert.deepEqual(paths, [
+      "/dj/toplist/hours",
+      "/dj/toplist/popular",
+      "/dj/toplist/newcomer",
+      "/dj/toplist/pay",
+    ]);
   } finally {
     globalThis.fetch = originalFetch;
   }
