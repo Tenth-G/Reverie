@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../store/playerStore";
 import { sizedImage } from "../utils/image";
-import { CircleUserRound, Link2, Mic2 } from "lucide-react";
+import { BookOpenText, CircleUserRound, Link2, Mic2 } from "lucide-react";
 import { useProfileStore } from "../store/profileStore";
 import { useCollectionStore } from "../store/collectionStore";
 
@@ -183,6 +183,19 @@ export default function UserMenu() {
           >
             <Mic2 size={15} />
             声音工作台
+          </button>
+          <button
+            className="user-dropdown-item"
+            onClick={() => {
+              setOpen(false);
+              usePlayerStore.setState({
+                activeView: "lyricsMark",
+                prevView: "home",
+              });
+            }}
+          >
+            <BookOpenText size={15} />
+            我的歌词本
           </button>
           <button className="user-dropdown-item" onClick={switchAccount}>
             切换账号

@@ -5369,3 +5369,27 @@ input {
 .playlist-import-status.failed, .playlist-import-error { color: #ff8585; }
 .playlist-import-error { margin-bottom: 12px; font-size: 12px; }
 .playlist-import-modal footer { justify-content: flex-end; }
+
+/* Lyrics marking */
+.lyrics-mark-layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px; max-width: 1100px; margin: 10px auto 18px; }
+.lyrics-mark-panel { min-width: 0; padding: 18px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); }
+.lyrics-mark-section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 14px; color: var(--accent); }
+.lyrics-mark-section-head h2 { margin: 0; color: var(--text); font-size: 16px; }
+.lyrics-mark-section-head span { display: block; margin-top: 4px; color: var(--text-dim); font-size: 11px; }
+.lyrics-mark-song-input { display: flex; align-items: center; gap: 7px; padding: 0 9px; border: 1px solid var(--border); border-radius: 6px; color: var(--text-faint); }
+.lyrics-mark-song-input input { min-width: 0; flex: 1; min-height: 34px; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 12px; }
+.lyrics-mark-list { display: grid; gap: 6px; }
+.lyrics-mark-row { display: flex; align-items: flex-start; gap: 8px; padding: 10px; border: 1px solid transparent; border-radius: 6px; background: var(--bg-3); }
+.lyrics-mark-row:hover { border-color: var(--border); }
+.lyrics-mark-row-copy { display: grid; min-width: 0; flex: 1; gap: 4px; }
+.lyrics-mark-row-copy strong { overflow: hidden; color: var(--text-dim); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.lyrics-mark-row-copy span { color: var(--text); font-size: 13px; line-height: 1.45; }
+.lyrics-mark-row-copy small { color: var(--text-dim); font-size: 11px; }
+.lyrics-mark-row-copy time { color: var(--text-faint); font-size: 10px; }
+.lyrics-mark-add { display: grid; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+.lyrics-mark-add h3 { margin: 0; color: var(--text-dim); font-size: 12px; }
+.lyrics-mark-add input { min-height: 34px; padding: 0 9px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-3); color: var(--text); font-size: 12px; }
+.lyrics-mark-input-row { display: grid; grid-template-columns: 125px 1fr; gap: 7px; }
+.lyrics-mark-empty { display: grid; place-items: center; min-height: 130px; color: var(--text-faint); font-size: 12px; }
+.lyrics-mark-error { max-width: 1100px; margin: 0 auto 18px; color: #ff8585; font-size: 12px; }
+@media (max-width: 760px) { .lyrics-mark-layout { grid-template-columns: 1fr; } }
