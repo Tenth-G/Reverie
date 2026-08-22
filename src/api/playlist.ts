@@ -1,4 +1,9 @@
 import { request } from "./client.ts";
+import type { PlaylistDynamicStats } from "./types.ts";
+
+type Obj = Record<string, unknown>;
+const obj = (value: unknown): Obj =>
+  value && typeof value === "object" ? (value as Obj) : {};
 
 export async function addPlaylistTracks(
   playlistId: number,
@@ -51,4 +56,24 @@ export async function updatePlaylistOrder(
     false,
     { method: "POST" },
   );
+}
+
+export async function getPlaylistDynamicStats(
+  playlistId: number,
+): Promise<PlaylistDynamicStats> {
+  const response = await request<Obj>(
+    "/playlist/detail/dynamic",
+    { id: playlistId, s: 8 },
+    false,
+  );
+  const value = obj(response.data ?? response);
+  return {
+    playCount: Number(value.playCount ?? value.playcount ?? 0),
+    subscribedCount: Number(
+      value.subscribedCount ?? value.subCount ?? value.followedCount ?? 0,
+    ),
+    commentCount: Number(value.commentCount ?? value.commentCountAll ?? 0),
+    shareCount: Number(value.shareCount ?? 0),
+    followed: Boolean(value.followed ?? value.subscribed ?? value.isSub),
+  };
 }

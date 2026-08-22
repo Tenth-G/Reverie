@@ -36,6 +36,14 @@ export interface PlaylistInfo {
   tags?: string[];
 }
 
+export interface PlaylistDynamicStats {
+  playCount: number;
+  subscribedCount: number;
+  commentCount: number;
+  shareCount: number;
+  followed: boolean;
+}
+
 export interface ArtistInfo {
   id: number;
   name: string;

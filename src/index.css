@@ -5134,6 +5134,7 @@ input {
 .profile-radio-list strong, .profile-radio-list small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .profile-radio-list strong { font-size: 12px; }
 .profile-radio-list small { color: var(--text-faint); font-size: 10px; }
+.playlist-dynamic-stats { display: flex; flex-wrap: wrap; gap: 12px; margin: -2px 0 12px; color: var(--text-faint); font-size: 11px; }
 .cloud-load-more { display: block; margin: 14px auto 0; }
 .cloud-empty { display: grid; justify-items: center; gap: 8px; padding: 72px 20px; color: var(--text-faint); }
 .cloud-empty strong { color: var(--text-2); }
