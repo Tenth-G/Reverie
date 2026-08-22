@@ -7,6 +7,8 @@ import {
   getYunbeiTasks,
   getYunbeiTodo,
   yunbeiSign,
+  submitYunbeiRecommendation,
+  getYunbeiRecommendationHistory,
 } from "../api/yunbei.ts";
 import type {
   YunbeiLedgerEntry,
@@ -25,10 +27,12 @@ interface YunbeiState {
   ledgerLoading: boolean;
   signing: boolean;
   claimingId: number;
+  recommendationHistory: Record<string, unknown>[];
   load: () => Promise<void>;
   sign: () => Promise<boolean>;
   claim: (task: YunbeiTask) => Promise<boolean>;
   setLedgerType: (type: "income" | "expense") => Promise<void>;
+  recommendCurrentSong: () => Promise<boolean>;
 }
 
 function toast(message: string, type: "info" | "error" | "success" = "info") {
@@ -45,6 +49,7 @@ export const useYunbeiStore = create<YunbeiState>()((set, get) => ({
   ledgerLoading: false,
   signing: false,
   claimingId: 0,
+  recommendationHistory: [],
 
   load: async () => {
     set({ loading: true, taskLoading: true, ledgerLoading: true });
@@ -63,6 +68,9 @@ export const useYunbeiStore = create<YunbeiState>()((set, get) => ({
             ? todo.value
             : [],
       ledger: ledger.status === "fulfilled" ? ledger.value : [],
+      recommendationHistory: (await getYunbeiRecommendationHistory().catch(
+        () => [],
+      )) as Record<string, unknown>[],
       loading: false,
       taskLoading: false,
       ledgerLoading: false,
@@ -117,6 +125,21 @@ export const useYunbeiStore = create<YunbeiState>()((set, get) => ({
     } catch {
       set({ ledger: [], ledgerLoading: false });
       toast("加载云贝记录失败", "error");
+    }
+  },
+  recommendCurrentSong: async () => {
+    const song = usePlayerStore.getState().currentSong;
+    if (!song) {
+      toast("请先播放一首歌曲", "info");
+      return false;
+    }
+    try {
+      await submitYunbeiRecommendation({ songId: song.id });
+      toast("已提交云贝推歌", "success");
+      return true;
+    } catch {
+      toast("云贝推歌失败", "error");
+      return false;
     }
   },
 }));

@@ -72,3 +72,17 @@ export async function getVipTimeMachine(
     startTime && endTime ? { startTime, endTime, type: 1, limit: 60 } : {};
   return request<Obj>("/vip/timemachine", params, false);
 }
+
+export async function getVipGrowthpointInfo(): Promise<Obj> {
+  return request<Obj>("/vip/growthpoint/get", {}, false);
+}
+
+export async function claimVipTaskRewards(taskIds: string[]): Promise<void> {
+  if (!taskIds.length) return;
+  await request(
+    "/vip/growthpoint/reward/get",
+    { ids: taskIds.join(",") },
+    false,
+    { method: "POST" },
+  );
+}

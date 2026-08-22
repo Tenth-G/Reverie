@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Check, Coins, Gift, RefreshCw, ShieldCheck } from "lucide-react";
+import { Check, Coins, Gift, RefreshCw, Send, ShieldCheck } from "lucide-react";
 import { useYunbeiStore } from "../store/yunbeiStore.ts";
 import { LoadingState, Page, PageHeader } from "./Page";
 
@@ -25,6 +25,9 @@ export default function YunbeiPage() {
   const sign = useYunbeiStore((state) => state.sign);
   const claim = useYunbeiStore((state) => state.claim);
   const setLedgerType = useYunbeiStore((state) => state.setLedgerType);
+  const recommendCurrentSong = useYunbeiStore(
+    (state) => state.recommendCurrentSong,
+  );
   useEffect(() => {
     void load();
   }, [load]);
@@ -35,13 +38,18 @@ export default function YunbeiPage() {
         title="云贝中心"
         subtitle="签到、任务与云贝记录"
         actions={
-          <button
-            className="btn"
-            onClick={() => void load()}
-            disabled={loading}
-          >
-            <RefreshCw size={15} className={loading ? "spin" : ""} /> 刷新
-          </button>
+          <div className="page-action-row">
+            <button
+              className="btn"
+              onClick={() => void load()}
+              disabled={loading}
+            >
+              <RefreshCw size={15} className={loading ? "spin" : ""} /> 刷新
+            </button>
+            <button className="btn" onClick={() => void recommendCurrentSong()}>
+              <Send size={15} /> 推歌
+            </button>
+          </div>
         }
       />
       {overview ? (
