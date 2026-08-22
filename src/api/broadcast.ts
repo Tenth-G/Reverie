@@ -1,5 +1,5 @@
 import { request } from "./client.ts";
-import type { BroadcastChannel, BroadcastCategory, Song } from "./types.ts";
+import type { BroadcastChannel, BroadcastCategory, RadioInfo, Song } from "./types.ts";
 import { normalizeSong } from "./client.ts";
 
 type Obj = Record<string, unknown>;
@@ -57,6 +57,36 @@ export async function getBroadcastChannels(
   return arr(value.list ?? value.channels ?? response.data ?? response)
     .map(normalizeChannel)
     .filter((item): item is BroadcastChannel => item !== null);
+}
+
+export async function getPodcastToplist(
+  type: "new" | "hot" = "new",
+  limit = 30,
+  offset = 0,
+): Promise<RadioInfo[]> {
+  const response = await request<Obj>("/dj/toplist", {
+    type,
+    limit,
+    offset,
+  });
+  const value = obj(response.data ?? response.result ?? response);
+  return arr(value.list ?? value.djRadios ?? response.data ?? response)
+    .map((raw) => {
+      const item = obj(raw);
+      const dj = obj(item.dj);
+      return {
+        id: Number(item.id ?? item.rid ?? 0),
+        name: String(item.name ?? item.radioName ?? "播客电台"),
+        picUrl: String(item.picUrl ?? item.intervenePicUrl ?? item.coverUrl ?? ""),
+        description: String(item.desc ?? item.description ?? ""),
+        programCount: Number(item.programCount ?? 0),
+        subscriberCount: Number(item.subCount ?? item.subscriberCount ?? 0),
+        subscribed: Boolean(item.subscribed ?? false),
+        category: String(item.category ?? item.categoryName ?? ""),
+        djName: String(dj.nickname ?? item.djName ?? ""),
+      } satisfies RadioInfo;
+    })
+    .filter((item) => item.id > 0);
 }
 export async function getBroadcastCurrentInfo(
   id: number,

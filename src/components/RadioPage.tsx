@@ -1,9 +1,10 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Heart } from "lucide-react";
 import type { RadioInfo } from "../api/types";
 import { useExploreStore } from "../store/exploreStore";
 import { sizedImage } from "../utils/image";
 import { LoadingState, Page, PageHeader } from "./Page";
+import { getPodcastToplist } from "../api/broadcast.ts";
 
 function RadioGrid({ radios }: { radios: RadioInfo[] }) {
   const openRadio = useExploreStore((s) => s.openRadio);
@@ -47,10 +48,25 @@ export default function RadioPage() {
   const subscribed = useExploreStore((s) => s.subscribedRadios);
   const loading = useExploreStore((s) => s.loading);
   const loadRadios = useExploreStore((s) => s.loadRadios);
+  const [ranking, setRanking] = useState<"new" | "hot" | "">("");
+  const [ranked, setRanked] = useState<RadioInfo[]>([]);
+  const [rankingLoading, setRankingLoading] = useState(false);
 
   useEffect(() => {
     void loadRadios();
   }, [loadRadios]);
+
+  const loadRanking = async (type: "new" | "hot") => {
+    setRanking(type);
+    setRankingLoading(true);
+    try {
+      setRanked(await getPodcastToplist(type));
+    } catch {
+      setRanked([]);
+    } finally {
+      setRankingLoading(false);
+    }
+  };
 
   return (
     <Page>
@@ -58,6 +74,19 @@ export default function RadioPage() {
         title="播客与电台"
         subtitle="精选节目、声音内容和已订阅电台"
       />
+      <div className="collection-tabs" role="tablist" aria-label="播客榜单">
+        <button className={ranking === "new" ? "active" : ""} onClick={() => void loadRanking("new")}>新晋电台榜</button>
+        <button className={ranking === "hot" ? "active" : ""} onClick={() => void loadRanking("hot")}>热门电台榜</button>
+      </div>
+      {ranking && (
+        <section className="content-section">
+          <div className="list-header">
+            <h3>{ranking === "new" ? "新晋电台榜" : "热门电台榜"}</h3>
+            <span className="count">{ranked.length} 个</span>
+          </div>
+          {rankingLoading ? <LoadingState label="正在加载播客榜单…" /> : <RadioGrid radios={ranked} />}
+        </section>
+      )}
       {subscribed.length > 0 && (
         <section className="content-section">
           <div className="list-header">

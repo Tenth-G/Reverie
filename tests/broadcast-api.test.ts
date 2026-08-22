@@ -7,6 +7,7 @@ import {
   getSportRadio,
   toggleBroadcastSubscription,
 } from "../src/api/broadcast.ts";
+import { getPodcastToplist } from "../src/api/broadcast.ts";
 
 test("broadcast APIs normalize channels and sport recommendations", async () => {
   const originalFetch = globalThis.fetch;
@@ -49,6 +50,23 @@ test("broadcast subscription forwards state and POST method", async () => {
     assert.equal(new URL(call!.url).pathname, "/broadcast/sub");
     assert.equal(new URL(call!.url).searchParams.get("t"), "1");
     assert.equal(call!.init?.method, "POST");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("podcast toplist normalizes new and hot radio records", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    assert.equal(url.pathname, "/dj/toplist");
+    assert.equal(url.searchParams.get("type"), "hot");
+    return Response.json({ data: { list: [{ id: 8, name: "热门电台", dj: { nickname: "主播" } }] } });
+  };
+  try {
+    const radios = await getPodcastToplist("hot", 10, 0);
+    assert.equal(radios[0]?.name, "热门电台");
+    assert.equal(radios[0]?.djName, "主播");
   } finally {
     globalThis.fetch = originalFetch;
   }
