@@ -110,6 +110,7 @@ export default function HomePage() {
   const discoveryMvs = useDiscoveryStore((s) => s.mvs);
   const privateContent = useDiscoveryStore((s) => s.privateContent);
   const recommendResources = useDiscoveryStore((s) => s.recommendResources);
+  const starpickComments = useDiscoveryStore((s) => s.starpickComments);
   const discoveryLoading = useDiscoveryStore((s) => s.loading);
   const loadDiscovery = useDiscoveryStore((s) => s.load);
   const openMedia = useMediaStore((s) => s.open);
@@ -217,6 +218,23 @@ export default function HomePage() {
             playlists={recommendResources.slice(0, 12)}
             onOpen={openPlaylist}
           />
+        </section>
+      )}
+
+      {starpickComments.length > 0 && (
+        <section className="home-section">
+          <div className="section-title">
+            <h2>星评热评</h2>
+          </div>
+          <div className="home-comment-grid">
+            {starpickComments.slice(0, 6).map((comment) => (
+              <article className="home-comment-card" key={`${comment.id}-${comment.content}`}>
+                <strong>{comment.nickname}</strong>
+                <p>{comment.content}</p>
+                <small>赞 {comment.likedCount.toLocaleString("zh-CN")}</small>
+              </article>
+            ))}
+          </div>
         </section>
       )}
 
