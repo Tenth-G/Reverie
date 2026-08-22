@@ -3,6 +3,7 @@ import {
   getBroadcastCategories,
   getBroadcastChannels,
   getBroadcastCollected,
+  getBroadcastCurrentInfo,
   getSportRadio,
   toggleBroadcastSubscription,
 } from "../api/broadcast.ts";
@@ -16,6 +17,8 @@ interface BroadcastState {
   categories: BroadcastCategory[];
   channels: BroadcastChannel[];
   collected: BroadcastChannel[];
+  activeChannel: BroadcastChannel | null;
+  currentInfoLoading: boolean;
   sportSongs: Song[];
   loading: boolean;
   error: string;
@@ -24,11 +27,15 @@ interface BroadcastState {
   setBpm: (bpm: number) => Promise<void>;
   toggle: (channel: BroadcastChannel) => Promise<void>;
   playSport: () => Promise<void>;
+  openCurrentInfo: (channel: BroadcastChannel) => Promise<void>;
+  closeCurrentInfo: () => void;
 }
 export const useBroadcastStore = create<BroadcastState>((set, get) => ({
   categories: [],
   channels: [],
   collected: [],
+  activeChannel: null,
+  currentInfoLoading: false,
   sportSongs: [],
   loading: false,
   error: "",
@@ -80,4 +87,16 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
     if (songs.length)
       await usePlayerStore.getState().playSong(songs[0]!, songs);
   },
+  openCurrentInfo: async (channel) => {
+    set({ activeChannel: channel, currentInfoLoading: true });
+    try {
+      const detail = await getBroadcastCurrentInfo(channel.id);
+      set({ activeChannel: detail ?? channel, currentInfoLoading: false });
+    } catch {
+      set({ activeChannel: channel, currentInfoLoading: false });
+      usePlayerStore.getState().toast("广播频道详情暂时不可用", "error");
+    }
+  },
+  closeCurrentInfo: () =>
+    set({ activeChannel: null, currentInfoLoading: false }),
 }));
