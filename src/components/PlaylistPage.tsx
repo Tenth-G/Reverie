@@ -3,6 +3,7 @@ import { Heart, ListPlus, MessageCircle, Pencil, Trash2 } from "lucide-react";
 import type { PlaylistInfo } from "../api/types";
 import type { Song } from "../api/types";
 import { getPlaylistDetail } from "../api/client";
+import { getRelatedPlaylists } from "../api/related";
 import {
   getPlaylistDynamicStats,
   manipulatePlaylistTracks,
@@ -18,6 +19,7 @@ import PlaylistEditorModal from "./PlaylistEditorModal";
 import BackButton from "./BackButton";
 import ConfirmModal from "./ConfirmModal";
 import PlaylistTrackPicker from "./PlaylistTrackPicker";
+import PlaylistGrid from "./PlaylistGrid";
 
 export default function PlaylistPage() {
   const playlistSongs = usePlayerStore((s) => s.playlistSongs);
@@ -39,10 +41,14 @@ export default function PlaylistPage() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [mutating, setMutating] = useState(false);
   const [dynamicStats, setDynamicStats] = useState<PlaylistDynamicStats | null>(null);
+  const [relatedPlaylists, setRelatedPlaylists] = useState<PlaylistInfo[]>([]);
+  const [relatedLoading, setRelatedLoading] = useState(false);
+  const openPlaylist = usePlayerStore((s) => s.openPlaylist);
 
   useEffect(() => {
     let alive = true;
     setDynamicStats(null);
+    setRelatedPlaylists([]);
     if (!playlistId) return;
     void getPlaylistDynamicStats(playlistId)
       .then((stats) => {
@@ -50,6 +56,25 @@ export default function PlaylistPage() {
       })
       .catch(() => {
         if (alive) setDynamicStats(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [playlistId]);
+
+  useEffect(() => {
+    let alive = true;
+    if (!playlistId) return;
+    setRelatedLoading(true);
+    void getRelatedPlaylists(playlistId)
+      .then((items) => {
+        if (alive) setRelatedPlaylists(items.slice(0, 12));
+      })
+      .catch(() => {
+        if (alive) setRelatedPlaylists([]);
+      })
+      .finally(() => {
+        if (alive) setRelatedLoading(false);
       });
     return () => {
       alive = false;
@@ -213,6 +238,20 @@ export default function PlaylistPage() {
             : undefined
         }
       />
+      {(relatedLoading || relatedPlaylists.length > 0) && (
+        <section className="related-section">
+          <div className="list-header">
+            <h3>相似歌单</h3>
+            <span className="count">{relatedPlaylists.length} 个</span>
+          </div>
+          <PlaylistGrid
+            playlists={relatedPlaylists}
+            onOpen={openPlaylist}
+            loading={relatedLoading}
+            emptyText="暂无相似歌单"
+          />
+        </section>
+      )}
       <PlaylistTrackPicker
         open={pickerOpen}
         existingIds={new Set(playlistSongs.map((song) => song.id))}

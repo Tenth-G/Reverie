@@ -2800,6 +2800,9 @@ input {
   justify-content: center;
   padding: 28px 0 8px;
 }
+.related-section {
+  margin-top: 30px;
+}
 
 .icon-action {
   width: 30px;
