@@ -33,6 +33,7 @@ export * from "./related";
 export * from "./style";
 export * from "./topic";
 export * from "./account";
+export * from "./playback";
 export * from "./lyricsMark";
 export * from "./digitalAlbum";
 export * from "./musician";

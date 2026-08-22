@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { getIntelligentPlaylist } from "../api/playback";
 import { usePlayerStore } from "../store/playerStore";
 import { formatTime } from "../utils/lyrics";
 import { sizedImage } from "../utils/image";
@@ -14,6 +15,7 @@ import {
   Radio,
   Repeat1,
   Shuffle,
+  Sparkles,
   SkipBack,
   SkipForward,
   Volume2,
@@ -34,6 +36,7 @@ function ModeIcon({ mode }: { mode: PlayMode }) {
 
 export default function PlayerBar() {
   const [failedCover, setFailedCover] = useState("");
+  const [smartLoading, setSmartLoading] = useState(false);
   const currentSong = usePlayerStore((s) => s.currentSong);
   const playing = usePlayerStore((s) => s.playing);
   const loadingUrl = usePlayerStore((s) => s.loadingUrl);
@@ -59,6 +62,32 @@ export default function PlayerBar() {
   const loadPersonalFm = usePlayerStore((s) => s.loadPersonalFm);
   const setShowPlayerComments = usePlayerStore((s) => s.setShowPlayerComments);
   const toast = usePlayerStore((s) => s.toast);
+  const playSong = usePlayerStore((s) => s.playSong);
+  const playlistId = usePlayerStore((s) => s.playlistId);
+
+  const startIntelligentPlayback = async () => {
+    if (!currentSong || smartLoading) {
+      if (!currentSong) toast("请先播放一首歌曲", "info");
+      return;
+    }
+    setSmartLoading(true);
+    try {
+      const songs = await getIntelligentPlaylist(currentSong.id, {
+        playlistId: playlistId || undefined,
+        count: 8,
+      });
+      if (!songs.length) {
+        toast("暂无智能推荐歌曲", "info");
+        return;
+      }
+      await playSong(songs[0]!, songs, "list");
+      toast(`已载入 ${songs.length} 首智能推荐`, "success");
+    } catch {
+      toast("智能播放加载失败", "error");
+    } finally {
+      setSmartLoading(false);
+    }
+  };
 
   const pct = duration > 0 ? Math.min(100, (progress / duration) * 100) : 0;
   const liked = currentSong ? likedIds.includes(currentSong.id) : false;
@@ -156,6 +185,14 @@ export default function PlayerBar() {
             title="私人漫游"
           >
             <Radio size={17} />
+          </button>
+          <button
+            className={`icon-btn ${smartLoading ? "active" : ""}`}
+            onClick={() => void startIntelligentPlayback()}
+            title="智能播放"
+            disabled={smartLoading}
+          >
+            {smartLoading ? <span className="spin-dot" /> : <Sparkles size={17} />}
           </button>
           <button
             className={`icon-btn ${showPlayerComments ? "active" : ""}`}
