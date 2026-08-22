@@ -13,3 +13,4 @@ export * from "./profile";
 export * from "./collection";
 export * from "./notification";
 export * from "./comment";
+export * from "./cloud";

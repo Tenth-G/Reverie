@@ -41,6 +41,7 @@
     "test:collection-api": "node scripts/test-collection-api.cjs",
     "test:notification-api": "node scripts/test-notification-api.cjs",
     "test:comment-api": "node scripts/test-comment-api.cjs",
+    "test:cloud-api": "node scripts/test-cloud-api.cjs",
     "test:sidecar": "node scripts/test-sidecar.mjs"
   },
   "dependencies": {

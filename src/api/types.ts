@@ -160,7 +160,8 @@ export type View =
   | "comments"
   | "radio"
   | "radioDetail"
-  | "social";
+  | "social"
+  | "cloud";
 
 export type SearchCategory =
   | "songs"
@@ -204,6 +205,15 @@ export interface CollectionResultPage {
   radios: RadioInfo[];
   total: number;
   hasMore: boolean;
+}
+
+export interface CloudSong extends Song {
+  cloudId: number;
+  fileName: string;
+  fileSize: number;
+  bitrate: number;
+  addTime: number;
+  matchedSongId?: number;
 }
 
 export type NotificationCategory =

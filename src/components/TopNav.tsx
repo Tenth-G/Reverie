@@ -8,6 +8,7 @@ import type { ReactElement } from "react";
 import {
   BarChart3,
   Bell,
+  Cloud,
   Disc3,
   Heart,
   History,
@@ -41,6 +42,7 @@ const NAV: NavItem[] = [
   },
   { view: "radio", label: "播客", icon: <Podcast size={16} />, auth: true },
   { view: "social", label: "动态", icon: <Users size={16} />, auth: true },
+  { view: "cloud", label: "云盘", icon: <Cloud size={16} />, auth: true },
 ];
 
 const THEME_ORDER: ThemePreference[] = ["system", "light", "dark"];
@@ -63,6 +65,8 @@ const preloadView = (view: View) => {
       return import("./RadioPage");
     case "social":
       return import("./SocialPage");
+    case "cloud":
+      return import("./CloudPage");
     case "likes":
       return import("./LikesPage");
     case "recent":
@@ -163,6 +167,7 @@ export default function TopNav() {
         break;
       case "radio":
       case "social":
+      case "cloud":
         setActiveView(view);
         break;
       default:
