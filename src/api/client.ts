@@ -87,8 +87,10 @@ export async function request<T = unknown>(
 /* ------------------------------------------------------------------ */
 
 export function normalizeSong(raw: unknown): Song | null {
+  if (!raw || typeof raw !== "object") return null;
   const s = raw as Record<string, unknown>;
-  if (!s || typeof s.id !== "number") return null;
+  const id = Number(s.id);
+  if (!Number.isSafeInteger(id) || id <= 0) return null;
 
   // artist(s): prefer `ar`/`artists`, accept both shapes
   let artistNames: string[] = [];
@@ -114,7 +116,7 @@ export function normalizeSong(raw: unknown): Song | null {
   const fee = Number(s.fee ?? 0);
 
   return {
-    id: s.id,
+    id,
     name: String(s.name ?? "未知歌曲"),
     artists: artistNames.join(" / ") || "未知歌手",
     artistNames,

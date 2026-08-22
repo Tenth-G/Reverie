@@ -1,5 +1,5 @@
 import { Component } from "react";
-import type { ErrorInfo, ReactNode } from "react";
+import type { ReactNode } from "react";
 
 interface Props {
   fallback: ReactNode;
@@ -24,7 +24,7 @@ export default class CoverErrorBoundary extends Component<
     return { failed: true };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo) {
+  componentDidCatch(error: Error) {
     this.props.onError?.(error);
   }
 

@@ -10,8 +10,8 @@ type UpdateEvent = Parameters<NativeBridge["onUpdateEvent"]>[0] extends (
   : never;
 
 const hasTauriRuntime =
-  (window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__ !==
-  undefined;
+  (window as unknown as { __TAURI_INTERNALS__?: unknown })
+    .__TAURI_INTERNALS__ !== undefined;
 const appWindow = hasTauriRuntime ? getCurrentWindow() : null;
 const updateListeners = new Set<(event: UpdateEvent) => void>();
 let pendingUpdate: Update | null = null;
