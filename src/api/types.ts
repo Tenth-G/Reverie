@@ -170,7 +170,8 @@ export type View =
   | "commentHistory"
   | "downloadHistory"
   | "listenTogether"
-  | "voiceWorkbench";
+  | "voiceWorkbench"
+  | "lyricsMark";
 
 export type SearchCategory =
   | "songs"
@@ -361,6 +362,17 @@ export interface PlaylistImportTaskStatus {
   message: string;
   playlistId?: number;
   playlistName?: string;
+}
+
+export interface LyricMark {
+  id: string;
+  songId: number;
+  songName: string;
+  originalLyricsText: string;
+  translateLyricsText: string;
+  translateType: number;
+  startTimeStamp: number;
+  createdAt: number;
 }
 
 export interface SearchResultPage {

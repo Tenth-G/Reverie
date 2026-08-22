@@ -83,6 +83,8 @@ const preloadView = (view: View) => {
       return import("./ListenTogetherPage");
     case "voiceWorkbench":
       return import("./VoiceWorkbenchPage");
+    case "lyricsMark":
+      return import("./LyricsMarkPage");
     case "likes":
       return import("./LikesPage");
     case "recent":
