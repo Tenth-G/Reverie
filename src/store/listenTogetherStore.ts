@@ -8,6 +8,7 @@ import {
   getListenTogetherStatus,
   sendListenTogetherCommand,
   sendListenTogetherHeartbeat,
+  syncListenTogetherPlaylist,
 } from "../api/listenTogether.ts";
 import type { ListenTogetherRoom, Song } from "../api/types.ts";
 import { usePlayerStore } from "./playerStore.ts";
@@ -35,6 +36,7 @@ interface ListenTogetherState {
   syncing: boolean;
   error: string;
   lastCommandSeq: number;
+  syncPlaylistVersion: number;
   setRoomIdInput: (value: string) => void;
   setInviterIdInput: (value: string) => void;
   createRoom: () => Promise<void>;
@@ -44,7 +46,7 @@ interface ListenTogetherState {
   syncPlaylist: () => Promise<void>;
   playSynchronizedSong: (song: Song) => Promise<void>;
   sendPlaybackCommand: (
-    commandType: "play" | "pause" | "seek" | "next" | "prev",
+    commandType: "play" | "pause" | "seek" | "goto" | "next" | "prev",
   ) => Promise<void>;
   endRoom: () => Promise<void>;
   clearError: () => void;
@@ -84,6 +86,7 @@ export const useListenTogetherStore = create<ListenTogetherState>(
     syncing: false,
     error: "",
     lastCommandSeq: 0,
+    syncPlaylistVersion: 0,
 
     setRoomIdInput: (value) => set({ roomIdInput: value }),
     setInviterIdInput: (value) => set({ inviterIdInput: value }),
@@ -175,11 +178,13 @@ export const useListenTogetherStore = create<ListenTogetherState>(
           () => [],
         );
         if (token !== requestToken) return;
+        const remotePlaylist = playlist.length
+          ? playlist
+          : (status?.playlist ?? []);
+        await applyRemotePlayback(status, remotePlaylist);
         set({
           room,
-          playlist: playlist.length
-            ? playlist
-            : (status?.playlist ?? get().playlist),
+          playlist: remotePlaylist.length ? remotePlaylist : get().playlist,
           syncing: false,
         });
         startHeartbeat(room.roomId);
@@ -198,6 +203,23 @@ export const useListenTogetherStore = create<ListenTogetherState>(
       if (!roomId) return;
       set({ syncing: true, error: "" });
       try {
+        const player = usePlayerStore.getState();
+        const localIds = player.queue.map((song) => song.id);
+        const ownerId =
+          get().room?.ownerId ??
+          get().room?.inviterId ??
+          player.profile?.userId ??
+          0;
+        if (ownerId > 0 && localIds.length) {
+          const version = get().syncPlaylistVersion + 1;
+          await syncListenTogetherPlaylist({
+            roomId,
+            userId: ownerId,
+            version,
+            songIds: localIds,
+          });
+          set({ syncPlaylistVersion: version });
+        }
         const playlist = await getListenTogetherPlaylist(roomId);
         set({ playlist, syncing: false });
         usePlayerStore
@@ -213,6 +235,7 @@ export const useListenTogetherStore = create<ListenTogetherState>(
       await usePlayerStore
         .getState()
         .playSong(song, playlist.length ? playlist : [song]);
+      await get().sendPlaybackCommand("goto");
       await get().sendPlaybackCommand("play");
     },
 
@@ -222,10 +245,18 @@ export const useListenTogetherStore = create<ListenTogetherState>(
       const player = usePlayerStore.getState();
       const nextSeq = get().lastCommandSeq + 1;
       set({ lastCommandSeq: nextSeq });
+      const wireCommand =
+        commandType === "play"
+          ? "PLAY"
+          : commandType === "pause"
+            ? "PAUSE"
+            : commandType === "goto"
+              ? "GOTO"
+              : commandType;
       try {
         await sendListenTogetherCommand({
           roomId,
-          commandType,
+          commandType: wireCommand,
           progress: player.progress,
           playStatus: player.playing,
           formerSongId: player.currentSong?.id,
@@ -259,3 +290,26 @@ export const useListenTogetherStore = create<ListenTogetherState>(
     },
   }),
 );
+
+async function applyRemotePlayback(
+  status: Awaited<ReturnType<typeof getListenTogetherStatus>> | null,
+  playlist: Song[],
+) {
+  if (!status || !status.inRoom) return;
+  const player = usePlayerStore.getState();
+  const remoteSong = playlist.find((song) => song.id === status.currentSongId);
+  if (remoteSong && player.currentSong?.id !== remoteSong.id) {
+    await player.playSong(remoteSong, playlist);
+  }
+  const latest = usePlayerStore.getState();
+  if (status.progress > 0) {
+    const audio = latest.audioEl;
+    if (audio && Number.isFinite(audio.duration)) {
+      audio.currentTime = status.progress / 1000;
+    }
+    usePlayerStore.setState({ progress: status.progress });
+  }
+  if (latest.currentSong && latest.playing !== status.playing) {
+    usePlayerStore.setState({ playing: status.playing });
+  }
+}
