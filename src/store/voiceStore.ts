@@ -39,6 +39,7 @@ interface VoiceState {
 }
 
 let loadToken = 0;
+let detailToken = 0;
 
 export const useVoiceStore = create<VoiceState>((set, get) => ({
   lists: [],
@@ -188,13 +189,13 @@ export const useVoiceStore = create<VoiceState>((set, get) => ({
   },
 
   openDetail: async (voice) => {
-    const token = ++loadToken;
+    const token = ++detailToken;
     set({ activeVoice: voice, activeLyric: "", detailLoading: true });
     const [detail, lyric] = await Promise.allSettled([
       getVoiceDetail(voice.id),
       getVoiceLyric(voice.id),
     ]);
-    if (token !== loadToken) return;
+    if (token !== detailToken) return;
     set({
       activeVoice:
         detail.status === "fulfilled" && detail.value ? detail.value : voice,

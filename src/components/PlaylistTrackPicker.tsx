@@ -39,6 +39,8 @@ export default function PlaylistTrackPicker({
     try {
       setSongs(await searchSongs(value, 20));
       setSelected(new Set());
+    } catch {
+      setSongs([]);
     } finally {
       setLoading(false);
     }

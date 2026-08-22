@@ -65,8 +65,8 @@ export const useBroadcastStore = create<BroadcastState>((set, get) => ({
   },
   toggle: async (channel) => {
     try {
-      await toggleBroadcastSubscription(channel.id, channel.subscribed);
       const next = !channel.subscribed;
+      await toggleBroadcastSubscription(channel.id, next);
       set({
         channels: get().channels.map((item) =>
           item.id === channel.id ? { ...item, subscribed: next } : item,

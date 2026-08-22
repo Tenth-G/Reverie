@@ -653,10 +653,10 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
 
   // --- playback ---
   togglePlay: () => {
-    const { playing, currentUrl, currentSong } = get();
+    const { playing, currentUrl, currentSong, queue, queueSource } = get();
     if (!currentSong) return;
     if (!currentUrl) {
-      get().playSong(currentSong);
+      get().playSong(currentSong, queue, queueSource);
       return;
     }
     set({ playing: !playing });
@@ -1256,6 +1256,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     try {
       const incoming = await requestPersonalFmBatch();
       const latest = get();
+      if (latest.queueSource !== "fm") return;
       if (latest.index + 1 < latest.queue.length) {
         await get().playQueueAt(latest.index + 1);
         return;

@@ -279,7 +279,7 @@ export default function PlayerBar() {
             className={`icon-btn ${liked ? "active" : ""}`}
             onClick={() => {
               setRemoteLiked(!liked);
-              void toggleLike();
+              void toggleLike().then(() => setRemoteLiked(null));
             }}
             title={liked ? "取消喜欢" : "喜欢"}
             style={liked ? { color: "#ec4141" } : undefined}

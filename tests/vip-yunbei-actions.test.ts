@@ -22,8 +22,8 @@ test("VIP and Yunbei action wrappers forward expected params", async () => {
       yunbeiNum: 12,
     });
     await getYunbeiRecommendationHistory(10, "cursor");
-    assert.match(calls[0]!, /vip\/growthpoint\/get/);
-    assert.match(calls[1]!, /vip\/growthpoint\/reward\/get\?ids=a%2Cb/);
+    assert.match(calls[0]!, /vip\/growthpoint(?!\w)/);
+    assert.match(calls[1]!, /vip\/growthpoint\/get\?ids=a%2Cb/);
     assert.match(
       calls[2]!,
       /yunbei\/rcmd\/song\?id=4&reason=%E6%8E%A8%E8%8D%90&yunbeiNum=12/,

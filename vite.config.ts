@@ -4,7 +4,7 @@ import pkg from "./package.json" with { type: "json" };
 
 export default defineConfig({
   plugins: [react()],
-  // Relative base so the built index.html works when loaded via file:// in Electron
+  // Relative base so the built index.html resolves assets inside the Tauri webview
   base: "./",
   define: {
     // App version injected at build time (used by About / update checker).
