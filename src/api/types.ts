@@ -36,6 +36,14 @@ export interface PlaylistInfo {
   tags?: string[];
 }
 
+export interface PlaylistCategory {
+  id: number;
+  name: string;
+  category: number;
+  hot: boolean;
+  resourceCount: number;
+}
+
 export interface PlaylistDynamicStats {
   playCount: number;
   subscribedCount: number;
