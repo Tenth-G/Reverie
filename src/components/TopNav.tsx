@@ -73,6 +73,8 @@ const preloadView = (view: View) => {
       return import("./YunbeiPage");
     case "recommendHistory":
       return import("./RecommendHistoryPage");
+    case "vip":
+      return import("./VipPage");
     case "likes":
       return import("./LikesPage");
     case "recent":
