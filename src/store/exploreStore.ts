@@ -25,6 +25,7 @@ import {
   subscribePlaylist,
   subscribeRadio,
   updatePlaylist as apiUpdatePlaylist,
+  publishPlaylist as apiPublishPlaylist,
 } from "../api/extended";
 import type {
   AlbumInfo,
@@ -93,6 +94,7 @@ interface ExploreState {
     playlist: PlaylistInfo,
     name: string,
     description: string,
+    publishPrivate?: boolean,
   ) => Promise<boolean>;
   deletePlaylist: (playlist: PlaylistInfo) => Promise<boolean>;
   togglePlaylistSubscription: (playlist: PlaylistInfo) => Promise<boolean>;
@@ -500,9 +502,12 @@ export const useExploreStore = create<ExploreState>()((set, get) => ({
       return false;
     }
   },
-  updatePlaylist: async (playlist, name, description) => {
+  updatePlaylist: async (playlist, name, description, publishPrivate = false) => {
     try {
       await apiUpdatePlaylist(playlist.id, name.trim(), description.trim());
+      if (publishPrivate && playlist.privacy === 10) {
+        await apiPublishPlaylist(playlist.id);
+      }
       if (usePlayerStore.getState().playlistId === playlist.id) {
         usePlayerStore.setState({
           playlistName: name.trim(),

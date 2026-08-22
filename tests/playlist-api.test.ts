@@ -9,6 +9,7 @@ import {
   manipulatePlaylistTracks,
   updatePlaylistOrder,
 } from "../src/api/playlist.ts";
+import { publishPlaylist } from "../src/api/extended.ts";
 
 test("playlist track mutations forward ids and operation parameters", async () => {
   const originalFetch = globalThis.fetch;
@@ -106,6 +107,22 @@ test("playlist subscribers normalize user records and pagination", async () => {
     const users = await getPlaylistSubscribers(10, 5, 5);
     assert.equal(users[0]?.userId, 3);
     assert.equal(users[0]?.nickname, "收藏者");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("publishPlaylist opens a private playlist through the privacy endpoint", async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (input) => {
+      const url = new URL(String(input));
+      assert.equal(url.pathname, "/playlist/privacy");
+      assert.equal(url.searchParams.get("id"), "10");
+      assert.equal(url.searchParams.get("privacy"), "0");
+      return Response.json({ code: 200 });
+    };
+    await publishPlaylist(10);
   } finally {
     globalThis.fetch = originalFetch;
   }

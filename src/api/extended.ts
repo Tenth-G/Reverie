@@ -313,6 +313,12 @@ export async function updatePlaylist(
   ]);
 }
 
+/** Publish a private playlist. The upstream endpoint only supports privacy=0. */
+export async function publishPlaylist(id: number): Promise<void> {
+  if (!id) return;
+  await request("/playlist/privacy", { id, privacy: 0 }, false);
+}
+
 export async function deletePlaylist(id: number): Promise<void> {
   await request("/playlist/delete", { id }, false);
 }
