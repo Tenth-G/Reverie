@@ -1,5 +1,6 @@
 import { Heart } from "lucide-react";
 import { useExploreStore } from "../store/exploreStore";
+import { useMediaStore } from "../store/mediaStore.ts";
 import { sizedImage } from "../utils/image";
 import { LoadingState, Page } from "./Page";
 import SongList from "./SongList";
@@ -9,9 +10,11 @@ export default function ArtistPage() {
   const artist = useExploreStore((s) => s.artist);
   const songs = useExploreStore((s) => s.artistSongs);
   const albums = useExploreStore((s) => s.artistAlbums);
+  const videos = useExploreStore((s) => s.artistVideos);
   const loading = useExploreStore((s) => s.loading);
   const toggleSubscription = useExploreStore((s) => s.toggleArtistSubscription);
   const openAlbum = useExploreStore((s) => s.openAlbum);
+  const openMedia = useMediaStore((s) => s.open);
 
   return (
     <Page>
@@ -83,6 +86,29 @@ export default function ArtistPage() {
               </button>
             ))}
           </div>
+          {videos.length > 0 && (
+            <>
+              <div className="list-header">
+                <h3>相关视频</h3>
+                <span className="count">{videos.length} 个</span>
+              </div>
+              <div className="media-grid compact">
+                {videos.map((video) => (
+                  <button
+                    className="media-card"
+                    key={video.id}
+                    onClick={() => void openMedia(video)}
+                  >
+                    <div className="card-cover">
+                      <img src={sizedImage(video.coverUrl, 320)} alt="" />
+                    </div>
+                    <strong>{video.name}</strong>
+                    <span>{video.creatorName || "视频"}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
         </>
       )}
     </Page>
