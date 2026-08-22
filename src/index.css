@@ -5113,6 +5113,10 @@ input {
 .cloud-match-control input { width: 104px; height: 30px; padding: 0 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-1); color: var(--text); font: inherit; font-size: 11px; }
 .cloud-match-control input:focus { outline: 2px solid color-mix(in srgb, var(--accent) 30%, transparent); border-color: var(--accent); }
 .cloud-import-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.cloud-detail-list { display: grid; gap: 8px; margin-top: 16px; }
+.cloud-detail-list > div { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border-light); font-size: 12px; }
+.cloud-detail-list span { color: var(--text-faint); }
+.cloud-detail-list strong { min-width: 0; overflow: hidden; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
 .cloud-load-more { display: block; margin: 14px auto 0; }
 .cloud-empty { display: grid; justify-items: center; gap: 8px; padding: 72px 20px; color: var(--text-faint); }
 .cloud-empty strong { color: var(--text-2); }

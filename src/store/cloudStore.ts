@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import {
   deleteCloudSong,
+  getCloudSongDetails,
   getCloudSongs,
   importCloudSong,
   matchCloudSong,
@@ -22,6 +23,8 @@ interface CloudState {
   uploadName: string;
   uploadError: string;
   importing: boolean;
+  detail: CloudSong | null;
+  detailLoading: boolean;
   matchingId: number;
   deletingId: number;
   load: (refresh?: boolean) => Promise<void>;
@@ -30,6 +33,8 @@ interface CloudState {
   match: (song: CloudSong, adjustSongId: number) => Promise<boolean>;
   upload: (file: File) => Promise<boolean>;
   importSong: (input: Parameters<typeof importCloudSong>[0]) => Promise<boolean>;
+  openDetail: (song: CloudSong) => Promise<void>;
+  closeDetail: () => void;
   resetUpload: () => void;
 }
 
@@ -51,6 +56,8 @@ export const useCloudStore = create<CloudState>()((set, get) => ({
   uploadName: "",
   uploadError: "",
   importing: false,
+  detail: null,
+  detailLoading: false,
   matchingId: 0,
   deletingId: 0,
 
@@ -163,6 +170,19 @@ export const useCloudStore = create<CloudState>()((set, get) => ({
       set({ importing: false });
     }
   },
+
+  openDetail: async (song) => {
+    set({ detail: song, detailLoading: true });
+    try {
+      const details = await getCloudSongDetails([song.cloudId || song.id]);
+      set({ detail: details[0] ?? song, detailLoading: false });
+    } catch {
+      set({ detail: song, detailLoading: false });
+      toast("加载云盘歌曲详情失败", "error");
+    }
+  },
+
+  closeDetail: () => set({ detail: null, detailLoading: false }),
 
   resetUpload: () =>
     set({ uploadPhase: "idle", uploadName: "", uploadError: "" }),
