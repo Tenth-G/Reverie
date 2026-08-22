@@ -163,7 +163,9 @@ export type View =
   | "social"
   | "cloud"
   | "yunbei"
-  | "recommendHistory";
+  | "recommendHistory"
+  | "vip";
+  
   
 
 export type SearchCategory =
@@ -253,6 +255,29 @@ export interface RecommendHistoryDay {
   date: string;
   displayDate: string;
   songCount: number;
+}
+
+export interface VipTask {
+  id: string;
+  name: string;
+  description: string;
+  reward: number;
+  completed: boolean;
+}
+
+export interface VipGrowthInfo {
+  level: number;
+  growth: number;
+  nextLevelGrowth: number;
+  progress: number;
+  expireTime: number;
+}
+
+export interface VipGrowthEntry {
+  id: string;
+  title: string;
+  amount: number;
+  time: number;
 }
 
 export interface SearchResultPage {

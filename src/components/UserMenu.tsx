@@ -35,6 +35,8 @@ export default function UserMenu() {
   const setShowLogin = usePlayerStore((s) => s.setShowLogin);
   const openProfile = useProfileStore((s) => s.openProfile);
   const openCollections = useCollectionStore((s) => s.openCollections);
+  const openVip = () =>
+    usePlayerStore.setState({ activeView: "vip", prevView: "home" });
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -134,6 +136,15 @@ export default function UserMenu() {
             }}
           >
             收藏中心
+          </button>
+          <button
+            className="user-dropdown-item"
+            onClick={() => {
+              setOpen(false);
+              openVip();
+            }}
+          >
+            会员中心
           </button>
           <button className="user-dropdown-item" onClick={switchAccount}>
             切换账号
