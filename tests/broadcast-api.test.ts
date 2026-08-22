@@ -8,6 +8,12 @@ import {
   getDifmSubscribedChannels,
   getDifmTracks,
   getPodcastProgramDetail,
+  getPodcastExcludeHotCategories,
+  getPodcastHomeCategoryRecommendations,
+  getPodcastLegacyHotRadios,
+  getDjRadioTop,
+  getPersonalizedDjPrograms,
+  getProgramRecommendations,
   getPodcastProgramHoursToplist,
   getPodcastProgramToplist,
   getPodcastAdvancedToplist,
@@ -204,6 +210,36 @@ test("podcast subscriber and paid radio APIs normalize their responses", async (
     assert.equal(subscribers.hasMore, true);
     assert.equal(paid[0]?.name, "付费电台");
     assert.deepEqual(paths, ["/dj/subscriber", "/dj/paygift"]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("legacy podcast discovery routes normalize categories, radios and programs", async () => {
+  const originalFetch = globalThis.fetch;
+  const paths: string[] = [];
+  try {
+    globalThis.fetch = async (input) => {
+      const url = new URL(String(input));
+      paths.push(url.pathname);
+      if (url.pathname === "/dj/category/excludehot") return Response.json({ data: [{ id: 1, name: "知识" }] });
+      if (url.pathname === "/dj/category/recommend" || url.pathname === "/dj/hot" || url.pathname === "/djRadio/top") return Response.json({ data: { list: [{ id: 2, name: "推荐电台" }] } });
+      return Response.json({ data: [{ id: 3, name: "推荐节目", mainSong: { id: 4, name: "节目歌曲", ar: [{ name: "主播" }] } }] });
+    };
+    assert.equal((await getPodcastExcludeHotCategories())[0]?.name, "知识");
+    assert.equal((await getPodcastHomeCategoryRecommendations())[0]?.name, "推荐电台");
+    assert.equal((await getPodcastLegacyHotRadios())[0]?.name, "推荐电台");
+    assert.equal((await getDjRadioTop())[0]?.name, "推荐电台");
+    assert.equal((await getPersonalizedDjPrograms())[0]?.name, "推荐节目");
+    assert.equal((await getProgramRecommendations())[0]?.song?.name, "节目歌曲");
+    assert.deepEqual(paths, [
+      "/dj/category/excludehot",
+      "/dj/category/recommend",
+      "/dj/hot",
+      "/djRadio/top",
+      "/personalized/djprogram",
+      "/program/recommend",
+    ]);
   } finally {
     globalThis.fetch = originalFetch;
   }

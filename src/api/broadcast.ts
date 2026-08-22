@@ -130,6 +130,21 @@ export async function getPodcastCategories(): Promise<BroadcastCategory[]> {
     .filter((item) => item.id > 0 && item.name);
 }
 
+export async function getPodcastExcludeHotCategories(): Promise<BroadcastCategory[]> {
+  const response = await request<Obj>("/dj/category/excludehot", {}, false);
+  const value = obj(response.data ?? response.result ?? response);
+  return arr(value.categories ?? value.list ?? response.categories ?? response.data)
+    .map((raw) => {
+      const item = obj(raw);
+      return { id: Number(item.id ?? item.categoryId ?? 0), name: String(item.name ?? item.categoryName ?? "") };
+    })
+    .filter((item) => item.id > 0 && item.name);
+}
+
+export async function getPodcastHomeCategoryRecommendations(): Promise<RadioInfo[]> {
+  return normalizeRadioList(await request<Obj>("/dj/category/recommend", {}, false));
+}
+
 export async function getPodcastCategoryRecommendations(categoryId: number): Promise<RadioInfo[]> {
   const response = await request<Obj>("/dj/recommend/type", { type: categoryId }, false);
   return normalizeRadioList(response);
@@ -138,6 +153,18 @@ export async function getPodcastCategoryRecommendations(categoryId: number): Pro
 export async function getPodcastHotRadios(categoryId?: number, limit = 30, offset = 0): Promise<RadioInfo[]> {
   const response = await request<Obj>("/dj/radio/hot", { cateId: categoryId, limit, offset }, false);
   return normalizeRadioList(response);
+}
+
+export async function getPodcastLegacyHotRadios(limit = 30, offset = 0): Promise<RadioInfo[]> {
+  return normalizeRadioList(await request<Obj>("/dj/hot", { limit, offset }, false));
+}
+
+export async function getDjRadioTop(
+  djRadioId?: number,
+  sortIndex = 1,
+  dataGapDays = 7,
+): Promise<RadioInfo[]> {
+  return normalizeRadioList(await request<Obj>("/djRadio/top", { djRadioId, sortIndex, dataGapDays, dataType: 3 }, false));
 }
 
 export async function getPodcastBanners(): Promise<Array<{ imageUrl: string; title: string; url: string }>> {
@@ -291,6 +318,18 @@ export async function getPodcastPaidRadios(
 ): Promise<RadioInfo[]> {
   const response = await request<Obj>("/dj/paygift", { limit, offset }, false);
   return normalizeRadioList(response);
+}
+
+export async function getPersonalizedDjPrograms(): Promise<PodcastProgramRank[]> {
+  return normalizeProgramList(await request<Obj>("/personalized/djprogram", {}, false));
+}
+
+export async function getProgramRecommendations(
+  categoryId?: number,
+  limit = 10,
+  offset = 0,
+): Promise<PodcastProgramRank[]> {
+  return normalizeProgramList(await request<Obj>("/program/recommend", { type: categoryId, limit, offset }, false));
 }
 
 function normalizeDifmChannel(raw: unknown, source: number): DifmChannel | null {
