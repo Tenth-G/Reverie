@@ -24,7 +24,7 @@ import {
   subscribeArtist,
   subscribePlaylist,
   subscribeRadio,
-  updatePlaylist as apiUpdatePlaylist,
+  updatePlaylistBatch as apiUpdatePlaylistBatch,
   publishPlaylist as apiPublishPlaylist,
 } from "../api/extended";
 import type {
@@ -94,6 +94,7 @@ interface ExploreState {
     playlist: PlaylistInfo,
     name: string,
     description: string,
+    tags?: string,
     publishPrivate?: boolean,
   ) => Promise<boolean>;
   deletePlaylist: (playlist: PlaylistInfo) => Promise<boolean>;
@@ -502,9 +503,14 @@ export const useExploreStore = create<ExploreState>()((set, get) => ({
       return false;
     }
   },
-  updatePlaylist: async (playlist, name, description, publishPrivate = false) => {
+  updatePlaylist: async (playlist, name, description, tags = "", publishPrivate = false) => {
     try {
-      await apiUpdatePlaylist(playlist.id, name.trim(), description.trim());
+      await apiUpdatePlaylistBatch(
+        playlist.id,
+        name.trim(),
+        description.trim(),
+        tags.trim(),
+      );
       if (publishPrivate && playlist.privacy === 10) {
         await apiPublishPlaylist(playlist.id);
       }

@@ -3,7 +3,6 @@ import type { PlaylistInfo } from "../api/types";
 import { useExploreStore } from "../store/exploreStore";
 import {
   updatePlaylistCover,
-  updatePlaylistTags,
 } from "../api/playlistMetadata.ts";
 import { usePlayerStore } from "../store/playerStore";
 
@@ -40,16 +39,21 @@ export default function PlaylistEditorModal({
     if (!name.trim() || saving) return;
     setSaving(true);
     const ok = playlist
-      ? await updatePlaylist(playlist, name, description, playlist.privacy === 10 && !privateList)
+      ? await updatePlaylist(
+          playlist,
+          name,
+          description,
+          tags,
+          playlist.privacy === 10 && !privateList,
+        )
       : await createPlaylist(name, privateList ? 10 : 0);
     if (ok && playlist) {
       try {
-        await updatePlaylistTags(playlist.id, tags.trim());
         if (cover) await updatePlaylistCover(playlist.id, cover);
       } catch {
         usePlayerStore
           .getState()
-          .toast("歌单名称已保存，但标签或封面更新失败", "error");
+          .toast("歌单信息已保存，但封面更新失败", "error");
       }
     }
     setSaving(false);
