@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import {
   getDigitalAlbumDetail,
+  getDigitalAlbumSales,
   getPurchasedDigitalAlbums,
   orderDigitalAlbum,
 } from "../api/digitalAlbum.ts";
@@ -27,7 +28,14 @@ export const useDigitalAlbumStore = create<DigitalAlbumState>((set, get) => ({
   loadDetail: async (id) => {
     set({ loading: true, error: "" });
     try {
-      set({ detail: await getDigitalAlbumDetail(id), loading: false });
+      const detail = await getDigitalAlbumDetail(id);
+      if (detail) {
+        const sales = await getDigitalAlbumSales([id]).catch(
+          () => ({}) as Record<number, number>,
+        );
+        if (sales[id] !== undefined) detail.sales = sales[id];
+      }
+      set({ detail, loading: false });
     } catch (error) {
       set({
         loading: false,
