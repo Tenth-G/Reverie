@@ -432,6 +432,7 @@ export interface SatiResource { id: number; name: string; description: string; c
 
 export interface BroadcastCategory { id: number; name: string; }
 export interface BroadcastChannel { id: number; name: string; description: string; coverUrl: string; subscribed: boolean; categoryName: string; regionName: string; currentSong?: Song; }
+export interface ChartSummary { id: number; name: string; coverUrl: string; updateFrequency: string; description: string; trackCount: number; }
 
 export interface UgcResource { kind: "song" | "album" | "artist" | "mv"; id: number; name: string; description: string; coverUrl: string; extra: string; }
 export interface UgcContribution { id: string; type: number; title: string; status: string; createTime: number; description: string; }
