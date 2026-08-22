@@ -48,3 +48,10 @@ export async function getPrivateContent(): Promise<SearchMediaInfo[]> {
     "video",
   );
 }
+
+export async function getPrivateContentList(limit = 12, offset = 0): Promise<SearchMediaInfo[]> {
+  return mediaList(
+    await request<Obj>("/personalized/privatecontent/list", { limit, offset }, false),
+    "video",
+  );
+}

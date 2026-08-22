@@ -4,6 +4,7 @@ import {
   getPersonalizedMvs,
   getPersonalizedNewSongs,
   getPrivateContent,
+  getPrivateContentList,
 } from "../src/api/discovery.ts";
 
 test("discovery endpoints normalize new songs, MVs and private content", async () => {
@@ -22,6 +23,12 @@ test("discovery endpoints normalize new songs, MVs and private content", async (
           { id: 2, name: "推荐 MV", picUrl: "cover", artistName: "导演" },
         ],
       });
+    if (url.includes("personalized/privatecontent/list"))
+      return Response.json({
+        result: [
+          { id: 4, name: "独家列表", cover: "cover", artistName: "创作者" },
+        ],
+      });
     return Response.json({
       result: [
         { id: 3, name: "独家放送", cover: "cover", artistName: "创作者" },
@@ -32,6 +39,7 @@ test("discovery endpoints normalize new songs, MVs and private content", async (
     assert.equal((await getPersonalizedNewSongs())[0]?.name, "新歌");
     assert.equal((await getPersonalizedMvs())[0]?.kind, "mv");
     assert.equal((await getPrivateContent())[0]?.kind, "video");
+    assert.equal((await getPrivateContentList())[0]?.name, "独家列表");
   } finally {
     globalThis.fetch = originalFetch;
   }

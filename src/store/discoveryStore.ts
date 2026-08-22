@@ -3,6 +3,7 @@ import {
   getPersonalizedMvs,
   getPersonalizedNewSongs,
   getPrivateContent,
+  getPrivateContentList,
 } from "../api/discovery.ts";
 import type { SearchMediaInfo, Song } from "../api/types.ts";
 
@@ -21,16 +22,20 @@ export const useDiscoveryStore = create<DiscoveryState>()((set) => ({
   loading: false,
   load: async () => {
     set({ loading: true });
-    const [newSongs, mvs, privateContent] = await Promise.allSettled([
+    const [newSongs, mvs, privateContent, privateContentList] = await Promise.allSettled([
       getPersonalizedNewSongs(),
       getPersonalizedMvs(),
       getPrivateContent(),
+      getPrivateContentList(),
     ]);
+    const privateItems = [
+      ...(privateContent.status === "fulfilled" ? privateContent.value : []),
+      ...(privateContentList.status === "fulfilled" ? privateContentList.value : []),
+    ].filter((item, index, items) => items.findIndex((entry) => entry.id === item.id) === index);
     set({
       newSongs: newSongs.status === "fulfilled" ? newSongs.value : [],
       mvs: mvs.status === "fulfilled" ? mvs.value : [],
-      privateContent:
-        privateContent.status === "fulfilled" ? privateContent.value : [],
+      privateContent: privateItems,
       loading: false,
     });
   },
