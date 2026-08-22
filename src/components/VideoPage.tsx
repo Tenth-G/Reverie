@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Clapperboard, RefreshCw } from "lucide-react";
+import { Clapperboard, Film, RefreshCw } from "lucide-react";
 import { useVideoStore } from "../store/videoStore.ts";
 import { useMediaStore } from "../store/mediaStore.ts";
 import { Page, PageHeader } from "./Page";
@@ -14,6 +14,10 @@ export default function VideoPage() {
   const load = useVideoStore((s) => s.load);
   const setMode = useVideoStore((s) => s.setMode);
   const selectGroup = useVideoStore((s) => s.selectGroup);
+  const mvArea = useVideoStore((s) => s.mvArea);
+  const mvType = useVideoStore((s) => s.mvType);
+  const mvOrder = useVideoStore((s) => s.mvOrder);
+  const setMvFilters = useVideoStore((s) => s.setMvFilters);
   const openMedia = useMediaStore((s) => s.open);
   useEffect(() => {
     void load();
@@ -32,10 +36,38 @@ export default function VideoPage() {
       <div className="collection-tabs" role="tablist" aria-label="视频分类">
         <button className={mode === "recommend" ? "active" : ""} onClick={() => void setMode("recommend")}>推荐</button>
         <button className={mode === "all" ? "active" : ""} onClick={() => void setMode("all")}>全部</button>
+        <button className={mode === "mv-top" ? "active" : ""} onClick={() => void setMode("mv-top")}><Film size={14} /> MV榜单</button>
+        <button className={mode === "mv-first" ? "active" : ""} onClick={() => void setMode("mv-first")}><Film size={14} /> 最新MV</button>
+        <button className={mode === "mv-exclusive" ? "active" : ""} onClick={() => void setMode("mv-exclusive")}><Film size={14} /> 网易出品</button>
+        <button className={mode === "mv-all" ? "active" : ""} onClick={() => void setMode("mv-all")}><Film size={14} /> 全部MV</button>
         {groups.map((group) => (
           <button key={group.id} className={mode === "group" && selectedGroup === group.id ? "active" : ""} onClick={() => void selectGroup(group.id)}>{group.name}</button>
         ))}
       </div>
+      {mode.startsWith("mv-") && (
+        <div className="video-mv-filters">
+          <label>
+            地区
+            <select value={mvArea} onChange={(event) => void setMvFilters({ mvArea: event.target.value as typeof mvArea })} disabled={loading}>
+              {(["全部", "内地", "港台", "欧美", "日本", "韩国"] as const).map((area) => <option key={area} value={area}>{area}</option>)}
+            </select>
+          </label>
+          {mode === "mv-all" && <>
+            <label>
+              类型
+              <select value={mvType} onChange={(event) => void setMvFilters({ mvType: event.target.value as typeof mvType })} disabled={loading}>
+                {(["全部", "官方版", "原生", "现场版", "网易出品"] as const).map((type) => <option key={type} value={type}>{type}</option>)}
+              </select>
+            </label>
+            <label>
+              排序
+              <select value={mvOrder} onChange={(event) => void setMvFilters({ mvOrder: event.target.value as typeof mvOrder })} disabled={loading}>
+                {(["上升最快", "最热", "最新"] as const).map((order) => <option key={order} value={order}>{order}</option>)}
+              </select>
+            </label>
+          </>}
+        </div>
+      )}
       {loading && !videos.length ? (
         <div className="loading-hint">正在加载视频…</div>
       ) : videos.length ? (
