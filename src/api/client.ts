@@ -48,10 +48,17 @@ export function clearCookie(): void {
   }
 }
 
+export interface RequestOptions {
+  method?: "GET" | "POST";
+  body?: BodyInit;
+  headers?: HeadersInit;
+}
+
 export async function request<T = unknown>(
   path: string,
   params: Record<string, string | number | boolean | null | undefined> = {},
   cacheBust = true,
+  options: RequestOptions = {},
 ): Promise<T> {
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
@@ -60,12 +67,21 @@ export async function request<T = unknown>(
   if (cookie) q.set("cookie", cookie);
   if (cacheBust) q.set("timestamp", String(Date.now()));
 
-  const url = `${API_BASE}${path}?${q.toString()}`;
+  const query = q.toString();
+  const url = `${API_BASE}${path}${query ? `?${query}` : ""}`;
+  const method = options.method ?? "GET";
+  const fetchOptions: RequestInit = {
+    method,
+    headers: options.headers,
+    body: options.body,
+    signal: AbortSignal.timeout(15000),
+  };
+  if (method === "GET") delete fetchOptions.body;
   let res: Response | null = null;
   let lastError: unknown;
   for (let attempt = 0; attempt < 8; attempt++) {
     try {
-      res = await fetch(url, { signal: AbortSignal.timeout(15000) });
+      res = await fetch(url, fetchOptions);
       break;
     } catch (error) {
       lastError = error;
