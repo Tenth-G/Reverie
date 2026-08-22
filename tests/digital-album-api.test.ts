@@ -68,7 +68,7 @@ test("digital album sales board forwards period and normalizes rank entries", as
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (input) => {
     const url = new URL(String(input));
-    assert.equal(url.pathname, "/album_songsaleboard");
+    assert.equal(url.pathname, "/album/songsaleboard");
     assert.equal(url.searchParams.get("type"), "year");
     assert.equal(url.searchParams.get("year"), "2026");
     return Response.json({ data: { list: [{ id: 6, name: "年度专辑", artistName: "歌手", sales: 123, position: 2 }] } });
