@@ -98,9 +98,8 @@ export default function TopNav() {
 
   useEffect(() => {
     const onPageScroll = (event: Event) => {
-      const { scrollTop = 0 } = (
-        event as CustomEvent<{ scrollTop?: number }>
-      ).detail;
+      const { scrollTop = 0 } = (event as CustomEvent<{ scrollTop?: number }>)
+        .detail;
       setCondensed((current) => {
         if (current) return scrollTop >= 4;
         return scrollTop > 18;

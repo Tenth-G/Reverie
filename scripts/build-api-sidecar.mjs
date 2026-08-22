@@ -1,11 +1,5 @@
 import { execFileSync } from "node:child_process";
-import {
-  existsSync,
-  mkdirSync,
-  renameSync,
-  rmSync,
-  statSync,
-} from "node:fs";
+import { existsSync, mkdirSync, renameSync, rmSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 
 const targets = {
@@ -57,6 +51,7 @@ const temporaryOutput = join(
   `reverie-api-${target.triple}.tmp${target.extension}`,
 );
 const config = join(root, "package.json");
+const lockfile = join(root, "package-lock.json");
 const apiPackage = join(
   root,
   "node_modules",
@@ -80,6 +75,7 @@ const newestInput = Math.max(
   statSync(import.meta.filename).mtimeMs,
   statSync(input).mtimeMs,
   statSync(config).mtimeMs,
+  statSync(lockfile).mtimeMs,
   statSync(apiPackage).mtimeMs,
 );
 if (existsSync(output) && statSync(output).mtimeMs >= newestInput) {

@@ -326,7 +326,9 @@ export const useExploreStore = create<ExploreState>()((set, get) => ({
     set({ loading: true, currentRadio: null, radioPrograms: [] });
     try {
       const result = await getRadioDetail(id);
-      const subscribed = get().subscribedRadios.some((radio) => radio.id === id);
+      const subscribed = get().subscribedRadios.some(
+        (radio) => radio.id === id,
+      );
       set({
         currentRadio: {
           ...result.radio,

@@ -117,6 +117,8 @@ npm run build    # 生成 Tauri Windows 安装包与更新产物
 
 ## 项目结构
 
+目录职责、命名约定和提交前检查见 [工程结构与命名约定](./docs/ARCHITECTURE.md)。
+
 ```text
 src/                           React 页面、组件、状态和 API 客户端
 src/api/                       音乐接口类型、请求封装和扩展接口
