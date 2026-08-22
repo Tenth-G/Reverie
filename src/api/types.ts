@@ -121,6 +121,7 @@ export interface SocialEvent {
   commentCount: number;
   forwardCount: number;
   likedCount: number;
+  liked: boolean;
   resourceTitle?: string;
   resourceType?: "song" | "album" | "playlist" | "other";
   resourceId?: number;

@@ -5081,6 +5081,8 @@ input {
 .event-comment-button {
   margin: 0;
 }
+.event-like-button { display: inline-flex; align-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: var(--text-faint); font: inherit; font-size: 11px; cursor: pointer; }
+.event-like-button:hover, .event-like-button.active { color: var(--accent); }
 
 /* Cloud drive */
 .cloud-header-actions { display: flex; align-items: center; gap: 8px; }

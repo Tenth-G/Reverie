@@ -41,6 +41,7 @@ export default function SocialPage() {
   const loadSocial = useExploreStore((s) => s.loadSocial);
   const openAlbum = useExploreStore((s) => s.openAlbum);
   const openComments = useCommentStore((s) => s.openResourceComments);
+  const toggleEventLike = useExploreStore((s) => s.toggleEventLike);
 
   useEffect(() => {
     void loadSocial();
@@ -103,9 +104,12 @@ export default function SocialPage() {
                   </button>
                 )}
                 <div className="event-stats">
-                  <span>
+                  <button
+                    className={`event-like-button ${event.liked ? "active" : ""}`}
+                    onClick={() => void toggleEventLike(event)}
+                  >
                     <Heart size={13} /> {event.likedCount}
-                  </span>
+                  </button>
                   <button
                     className="event-comment-button"
                     disabled={!event.threadId}
