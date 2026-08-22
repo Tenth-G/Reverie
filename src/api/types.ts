@@ -253,7 +253,8 @@ export type View =
   | "style"
   | "topics"
   | "library"
-  | "calendar";
+  | "calendar"
+  | "privateDj";
 
 export type SearchCategory =
   | "songs"
@@ -573,6 +574,16 @@ export interface DifmChannel {
   coverUrl: string;
   source: number;
   subscribed: boolean;
+}
+export interface PrivateDjItem {
+  id: string;
+  kind: "song" | "program";
+  title: string;
+  subtitle: string;
+  coverUrl: string;
+  programId: number;
+  audioUrl: string;
+  song: Song | null;
 }
 
 export interface SearchResultPage {
