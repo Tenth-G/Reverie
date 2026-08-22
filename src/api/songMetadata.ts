@@ -1,16 +1,41 @@
 import { request } from "./client.ts";
-import type { SongChorusInfo, SongCreatorInfo, SongMetadata } from "./types.ts";
+import type {
+  SongChorusInfo,
+  SongCreatorInfo,
+  SongMetadata,
+  SongMusicDetail,
+} from "./types.ts";
 
 type Obj = Record<string, unknown>;
 const obj = (value: unknown): Obj =>
   value && typeof value === "object" ? (value as Obj) : {};
 const arr = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
 
+function normalizeMusicDetail(raw: unknown, songId: number): SongMusicDetail | undefined {
+  const value = obj(raw);
+  const data = obj(value.data ?? value.result ?? value);
+  const row = obj(Array.isArray(value.data) ? value.data[0] : data);
+  const bitrate = Number(row.bitrate ?? row.br ?? row.bitRate ?? 0);
+  const size = Number(row.size ?? row.fileSize ?? 0);
+  const level = String(row.level ?? row.quality ?? "");
+  if (!bitrate && !size && !level) return undefined;
+  return {
+    songId,
+    level,
+    bitrate,
+    format: String(row.format ?? row.type ?? ""),
+    size,
+    url: String(row.url ?? "") || undefined,
+  };
+}
+
 export async function getSongMetadata(id: number): Promise<SongMetadata> {
-  const [wiki, creators, chorus] = await Promise.allSettled([
+  const [wiki, creators, chorus, musicDetail, redCount] = await Promise.allSettled([
     request<Obj>("/song/wiki/summary", { id }, false),
     request<Obj>("/song/creators", { songId: id }, false),
     request<Obj>("/song/chorus", { ids: JSON.stringify([id]) }, false),
+    request<Obj>("/song/music/detail", { id }, false),
+    request<Obj>("/song/red/count", { id }, false),
   ]);
   const wikiValue =
     wiki.status === "fulfilled" ? obj(wiki.value.data ?? wiki.value) : {};
@@ -48,5 +73,21 @@ export async function getSongMetadata(id: number): Promise<SongMetadata> {
       } satisfies SongChorusInfo;
     })
     .filter((item) => item.end > item.start);
-  return { summary, creators: creatorItems, chorus: chorusItems };
+  const detail = musicDetail.status === "fulfilled"
+    ? normalizeMusicDetail(musicDetail.value, id)
+    : undefined;
+  const redValue = redCount.status === "fulfilled"
+    ? obj(redCount.value.data ?? redCount.value.result ?? redCount.value)
+    : {};
+  const red = Number(
+    redValue.count ?? redValue.redCount ?? redValue.total ??
+      (redCount.status === "fulfilled" ? redCount.value.count : 0) ?? 0,
+  );
+  return {
+    summary,
+    creators: creatorItems,
+    chorus: chorusItems,
+    musicDetail: detail,
+    redCount: Number.isFinite(red) ? red : 0,
+  };
 }

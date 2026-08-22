@@ -424,9 +424,24 @@ export interface SongMetadata {
   summary: string;
   creators: SongCreatorInfo[];
   chorus: SongChorusInfo[];
+  musicDetail?: SongMusicDetail;
+  redCount?: number;
 }
 
-export type DownloadHistoryCategory = "all" | "month" | "purchased";
+export interface SongMusicDetail {
+  songId: number;
+  level: string;
+  bitrate: number;
+  format: string;
+  size: number;
+  url?: string;
+}
+
+export type DownloadHistoryCategory =
+  | "all"
+  | "month"
+  | "purchased"
+  | "singlePurchased";
 
 export interface ListenTogetherRoom {
   roomId: string;
