@@ -24,6 +24,7 @@
     "build": "tauri build",
     "build:web": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && vite build",
     "prepare:sidecar": "node scripts/build-api-sidecar.mjs",
+    "generate:api": "node scripts/generate-api-registry.mjs",
     "tauri": "tauri",
     "format": "prettier --write \"src/**/*.{ts,tsx,css}\" \"scripts/*.{cjs,mjs}\" \"vite.config.ts\" \"*.{json,html,md}\" \"docs/**/*.md\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\" \"scripts/*.{cjs,mjs}\" \"vite.config.ts\" \"*.{json,html,md}\" \"docs/**/*.md\"",

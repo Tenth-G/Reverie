@@ -50,7 +50,7 @@ export function clearCookie(): void {
 
 export async function request<T = unknown>(
   path: string,
-  params: Record<string, string | number> = {},
+  params: Record<string, string | number | boolean | null | undefined> = {},
   cacheBust = true,
 ): Promise<T> {
   const q = new URLSearchParams();
