@@ -14,6 +14,32 @@ const obj = (value: unknown): Obj =>
   value && typeof value === "object" ? (value as Obj) : {};
 const arr = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
 
+export interface NotificationCounts {
+  private: number;
+  comments: number;
+  forwards: number;
+  notices: number;
+  total: number;
+}
+
+/** Read the account-wide unread counters exposed by `/pl/count`. */
+export async function getNotificationCounts(): Promise<NotificationCounts> {
+  const response = await request<Obj>("/pl/count", {}, false);
+  const value = obj(response.data ?? response.result ?? response);
+  const counts = {
+    private: Number(value.private ?? value.privateCount ?? value.msg ?? 0),
+    comments: Number(value.comment ?? value.comments ?? value.commentCount ?? 0),
+    forwards: Number(value.forward ?? value.forwards ?? value.forwardCount ?? 0),
+    notices: Number(value.notice ?? value.notices ?? value.noticeCount ?? 0),
+    total: 0,
+  };
+  counts.total = Number(
+    value.total ??
+      counts.private + counts.comments + counts.forwards + counts.notices,
+  );
+  return counts;
+}
+
 function ensureSuccess(response: Obj, path: string): Obj {
   const code = Number(response.code ?? 200);
   if (code !== 200) throw new Error(`${path} 返回业务码 ${code}`);

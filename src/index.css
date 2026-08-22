@@ -5743,6 +5743,8 @@ input {
 .recommend-history-days span { font-size: 11px; white-space: nowrap; }
 .recommend-history-days small { color: var(--text-faint); font-size: 10px; }
 .discovery-media-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
+.home-entry-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.home-entry-grid .link-btn { min-height: 32px; padding: 6px 11px; border: 1px solid var(--border-light); border-radius: 7px; background: var(--bg-1); }
 .discovery-media-grid > button { display: grid; gap: 5px; min-width: 0; padding: 0; border: 0; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
 .discovery-media-cover { position: relative; display: grid; place-items: center; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 7px; background: var(--bg-3); color: var(--text-faint); }
 .discovery-media-cover img { width: 100%; height: 100%; object-fit: cover; }

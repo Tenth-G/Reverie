@@ -55,3 +55,4 @@ export * from "./artist";
 export * from "./privateDj";
 export * from "./playbackReport";
 export * from "./userDiscovery";
+export * from "./homepage";

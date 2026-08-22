@@ -388,6 +388,7 @@ function NotificationFeed() {
 
 export default function NotificationPage() {
   const category = useNotificationStore((state) => state.category);
+  const unreadTotal = useNotificationStore((state) => state.unreadTotal);
   const total = useNotificationStore((state) => state.total);
   const conversationTotal = useNotificationStore(
     (state) => state.conversationTotal,
@@ -397,7 +398,7 @@ export default function NotificationPage() {
     <Page>
       <BackButton />
       <PageHeader
-        title="消息中心"
+        title={unreadTotal > 0 ? `消息中心 · ${unreadTotal} 条未读` : "消息中心"}
         subtitle={
           category === "private"
             ? `${conversationTotal} 个私信会话`
