@@ -44,6 +44,19 @@ export interface PlaylistCategory {
   resourceCount: number;
 }
 
+export interface StyleTag {
+  id: number;
+  name: string;
+  parentId?: number;
+}
+
+export interface StyleDetail {
+  id: number;
+  name: string;
+  description: string;
+  coverUrl: string;
+}
+
 export interface PlaylistDynamicStats {
   playCount: number;
   subscribedCount: number;
@@ -195,7 +208,8 @@ export type View =
   | "ugc"
   | "listenReports"
   | "videos"
-  | "fans";
+  | "fans"
+  | "style";
 
 export type SearchCategory =
   | "songs"

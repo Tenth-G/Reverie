@@ -2803,6 +2803,43 @@ input {
 .related-section {
   margin-top: 30px;
 }
+.style-tag-strip {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 0 14px;
+  scrollbar-width: thin;
+}
+.style-tag-strip button,
+.style-content-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 11px;
+  color: var(--text-dim);
+  background: var(--bg-2);
+  font-size: 12px;
+}
+.style-tag-strip button:hover,
+.style-tag-strip button.active,
+.style-content-tabs button:hover,
+.style-content-tabs button.active {
+  color: var(--accent-2);
+  border-color: rgba(236, 65, 65, 0.45);
+  background: rgba(236, 65, 65, 0.1);
+}
+.style-content-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 6px 0 20px;
+}
+.style-content-tabs button span {
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
 
 .icon-action {
   width: 30px;
