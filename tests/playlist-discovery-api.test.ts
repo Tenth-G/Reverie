@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   getHighQualityPlaylists,
+  getHighQualityPlaylistTags,
   getHotPlaylistTags,
   getPlaylistCatlist,
   getPlaylistCategoryList,
@@ -22,6 +23,9 @@ test("playlist discovery wrappers normalize categories, tags and high quality pl
     if (url.pathname === "/playlist/hot") {
       return Response.json({ tags: [{ id: 2, name: "华语", hot: true }] });
     }
+    if (url.pathname === "/playlist/highquality/tags") {
+      return Response.json({ tags: [{ id: 3, name: "电子", hot: true }] });
+    }
     return Response.json({
       playlists: [
         {
@@ -40,6 +44,7 @@ test("playlist discovery wrappers normalize categories, tags and high quality pl
     assert.equal((await getPlaylistCategoryList())[0]?.name, "语种");
     assert.equal((await getPlaylistCatlist())[0]?.name, "流行");
     assert.equal((await getHotPlaylistTags())[0]?.hot, true);
+    assert.equal((await getHighQualityPlaylistTags())[0]?.name, "电子");
     const page = await getHighQualityPlaylists("华语", 30);
     assert.equal(page.playlists[0]?.creatorName, "创建者");
     assert.equal(page.before, 123);
@@ -48,6 +53,7 @@ test("playlist discovery wrappers normalize categories, tags and high quality pl
       "/playlist/category/list",
       "/playlist/catlist",
       "/playlist/hot",
+      "/playlist/highquality/tags",
       "/top/playlist/highquality",
     ]);
   } finally {

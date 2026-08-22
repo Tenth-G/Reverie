@@ -105,6 +105,15 @@ export async function getHotPlaylistTags(): Promise<PlaylistCategory[]> {
   );
 }
 
+export async function getHighQualityPlaylistTags(): Promise<PlaylistCategory[]> {
+  const response = await request<Obj>("/playlist/highquality/tags", {}, false);
+  return dedupeCategories(
+    valuesFrom(response, "tags", "data", "list", "result")
+      .map(normalizeCategory)
+      .filter((item): item is PlaylistCategory => item !== null),
+  );
+}
+
 export async function getHighQualityPlaylists(
   cat = "全部",
   limit = 30,
@@ -130,14 +139,17 @@ export async function getHighQualityPlaylists(
 export async function getPlaylistDiscoveryCategories(): Promise<{
   categories: PlaylistCategory[];
   hotTags: PlaylistCategory[];
+  highQualityTags: PlaylistCategory[];
 }> {
-  const [categoryList, catlist, hotTags] = await Promise.all([
+  const [categoryList, catlist, hotTags, highQualityTags] = await Promise.all([
     getPlaylistCategoryList(),
     getPlaylistCatlist(),
     getHotPlaylistTags(),
+    getHighQualityPlaylistTags(),
   ]);
   return {
     categories: dedupeCategories([...categoryList, ...catlist]),
     hotTags,
+    highQualityTags,
   };
 }

@@ -129,7 +129,9 @@ export default function UserListPage() {
         <>
           <div className="playlist-discovery-toolbar">
             <div className="playlist-discovery-tags" role="tablist" aria-label="热门歌单标签">
-              {[{ id: 0, name: "全部" }, ...discovery.hotTags].map((tag) => (
+              {[{ id: 0, name: "全部" }, ...discovery.highQualityTags, ...discovery.hotTags]
+                .filter((tag, index, items) => items.findIndex((item) => item.name === tag.name) === index)
+                .map((tag) => (
                 <button
                   key={`${tag.id}-${tag.name}`}
                   className={discovery.selectedTag === tag.name ? "active" : ""}
