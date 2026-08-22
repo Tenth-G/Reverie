@@ -92,6 +92,12 @@ export interface SongSheet {
   description: string;
 }
 
+export interface SongAvailability {
+  songId: number;
+  available: boolean;
+  message: string;
+}
+
 export interface PlaylistDynamicStats {
   playCount: number;
   subscribedCount: number;

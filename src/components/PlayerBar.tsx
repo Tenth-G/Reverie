@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getIntelligentPlaylist } from "../api/playback";
+import { checkSongAvailability, getDynamicSongCover, getSongLikeStatus } from "../api/songStatus";
 import { usePlayerStore } from "../store/playerStore";
 import { formatTime } from "../utils/lyrics";
 import { sizedImage } from "../utils/image";
@@ -18,6 +19,7 @@ import {
   Shuffle,
   Sparkles,
   Music2,
+  BadgeCheck,
   SkipBack,
   SkipForward,
   Volume2,
@@ -40,6 +42,9 @@ export default function PlayerBar() {
   const [failedCover, setFailedCover] = useState("");
   const [smartLoading, setSmartLoading] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [dynamicCover, setDynamicCover] = useState("");
+  const [remoteLiked, setRemoteLiked] = useState<boolean | null>(null);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const currentSong = usePlayerStore((s) => s.currentSong);
   const playing = usePlayerStore((s) => s.playing);
   const loadingUrl = usePlayerStore((s) => s.loadingUrl);
@@ -67,6 +72,39 @@ export default function PlayerBar() {
   const toast = usePlayerStore((s) => s.toast);
   const playSong = usePlayerStore((s) => s.playSong);
   const playlistId = usePlayerStore((s) => s.playlistId);
+  const loggedIn = usePlayerStore((s) => s.loggedIn);
+
+  useEffect(() => {
+    let alive = true;
+    setDynamicCover("");
+    setRemoteLiked(null);
+    if (!currentSong) return;
+    void getDynamicSongCover(currentSong.id)
+      .then((url) => { if (alive && url) setDynamicCover(url); })
+      .catch(() => {});
+    if (loggedIn) {
+      void getSongLikeStatus([currentSong.id])
+        .then((status) => { if (alive && currentSong.id in status) setRemoteLiked(status[currentSong.id]!); })
+        .catch(() => {});
+    }
+    return () => { alive = false; };
+  }, [currentSong?.id, loggedIn]);
+
+  const checkAvailability = async () => {
+    if (!currentSong || availabilityLoading) {
+      if (!currentSong) toast("请先播放一首歌曲", "info");
+      return;
+    }
+    setAvailabilityLoading(true);
+    try {
+      const result = await checkSongAvailability(currentSong.id);
+      toast(result.available ? "歌曲当前可播放" : result.message || "暂无版权", result.available ? "success" : "info");
+    } catch {
+      toast("歌曲可用性检查失败", "error");
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  };
 
   const startIntelligentPlayback = async () => {
     if (!currentSong || smartLoading) {
@@ -93,8 +131,8 @@ export default function PlayerBar() {
   };
 
   const pct = duration > 0 ? Math.min(100, (progress / duration) * 100) : 0;
-  const liked = currentSong ? likedIds.includes(currentSong.id) : false;
-  const coverUrl = currentSong?.picUrl ?? "";
+  const liked = currentSong ? remoteLiked ?? likedIds.includes(currentSong.id) : false;
+  const coverUrl = dynamicCover || currentSong?.picUrl || "";
   const showCover = Boolean(
     currentSong && coverUrl && failedCover !== coverUrl,
   );
@@ -226,11 +264,22 @@ export default function PlayerBar() {
           </button>
           <button
             className={`icon-btn ${liked ? "active" : ""}`}
-            onClick={toggleLike}
+            onClick={() => {
+              setRemoteLiked(!liked);
+              void toggleLike();
+            }}
             title={liked ? "取消喜欢" : "喜欢"}
             style={liked ? { color: "#ec4141" } : undefined}
           >
             <Heart size={18} fill={liked ? "currentColor" : "none"} />
+          </button>
+          <button
+            className={`icon-btn ${availabilityLoading ? "active" : ""}`}
+            onClick={() => void checkAvailability()}
+            disabled={availabilityLoading}
+            title="检查歌曲可用性"
+          >
+            {availabilityLoading ? <span className="spin-dot" /> : <BadgeCheck size={17} />}
           </button>
           <div
             className="vol-wrap"
