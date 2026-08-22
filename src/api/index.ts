@@ -26,3 +26,4 @@ export * from "./playlistMetadata";
 export * from "./songMetadata";
 export * from "./downloadHistory";
 export * from "./listenTogether";
+export * from "./voice";

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../store/playerStore";
 import { sizedImage } from "../utils/image";
-import { CircleUserRound, Link2 } from "lucide-react";
+import { CircleUserRound, Link2, Mic2 } from "lucide-react";
 import { useProfileStore } from "../store/profileStore";
 import { useCollectionStore } from "../store/collectionStore";
 
@@ -170,6 +170,19 @@ export default function UserMenu() {
           >
             <Link2 size={15} />
             一起听
+          </button>
+          <button
+            className="user-dropdown-item"
+            onClick={() => {
+              setOpen(false);
+              usePlayerStore.setState({
+                activeView: "voiceWorkbench",
+                prevView: "home",
+              });
+            }}
+          >
+            <Mic2 size={15} />
+            声音工作台
           </button>
           <button className="user-dropdown-item" onClick={switchAccount}>
             切换账号

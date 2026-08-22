@@ -169,7 +169,8 @@ export type View =
   | "vip"
   | "commentHistory"
   | "downloadHistory"
-  | "listenTogether";
+  | "listenTogether"
+  | "voiceWorkbench";
 
 export type SearchCategory =
   | "songs"
@@ -328,6 +329,29 @@ export interface ListenTogetherState {
   playing: boolean;
   progress: number;
   playlist: Song[];
+}
+
+export interface VoiceListInfo {
+  id: number;
+  name: string;
+  coverUrl: string;
+  description: string;
+  voiceCount: number;
+  subscribed: boolean;
+}
+
+export interface VoiceItem {
+  id: number;
+  name: string;
+  description: string;
+  coverUrl: string;
+  duration: number;
+  playCount: number;
+  voiceListId?: number;
+  voiceListName: string;
+  status: string;
+  transcribed: boolean;
+  createdAt: number;
 }
 
 export interface SearchResultPage {

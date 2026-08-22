@@ -40,6 +40,9 @@ const DownloadHistoryPage = lazy(
 const ListenTogetherPage = lazy(
   () => import("./components/ListenTogetherPage"),
 );
+const VoiceWorkbenchPage = lazy(
+  () => import("./components/VoiceWorkbenchPage"),
+);
 const NowPlayingView = lazy(() => import("./components/NowPlayingView"));
 const PlayerCommentsDrawer = lazy(
   () => import("./components/PlayerCommentsDrawer"),
@@ -316,6 +319,8 @@ export default function App() {
         return <DownloadHistoryPage />;
       case "listenTogether":
         return <ListenTogetherPage />;
+      case "voiceWorkbench":
+        return <VoiceWorkbenchPage />;
       default:
         return <HomePage />;
     }
