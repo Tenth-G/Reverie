@@ -6179,3 +6179,18 @@ input {
 .podcast-subscriber strong, .podcast-subscriber small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .podcast-subscriber strong { font-size: 12px; }
 .podcast-subscriber small { color: var(--text-dim); font-size: 10px; }
+
+/* Digital album sales board */
+.digital-album-board { max-width: 960px; margin: 0 auto 18px; padding: 14px 18px 18px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); }
+.digital-album-board .digital-album-section-head h2 { display: inline-flex; align-items: center; gap: 6px; }
+.digital-album-board-grid { display: grid; gap: 6px; }
+.digital-album-board-card { display: flex; align-items: center; gap: 9px; min-width: 0; padding: 8px; border-radius: 6px; background: var(--bg-3); color: var(--text); text-align: left; }
+.digital-album-board-card:hover { background: var(--bg-4); }
+.digital-album-board-card > b { width: 24px; flex: 0 0 24px; color: var(--text-faint); text-align: center; }
+.digital-album-board-card > img, .digital-album-board-card > span { width: 46px; height: 46px; flex: 0 0 46px; border-radius: 5px; object-fit: cover; }
+.digital-album-board-card > span { display: grid; place-items: center; background: var(--bg-4); color: var(--text-faint); }
+.digital-album-board-card > div { display: grid; min-width: 0; flex: 1; gap: 3px; }
+.digital-album-board-card strong, .digital-album-board-card small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.digital-album-board-card strong { font-size: 12px; }
+.digital-album-board-card small { color: var(--text-dim); font-size: 10px; }
+.digital-album-board-card em { color: var(--accent); font-size: 11px; font-style: normal; }

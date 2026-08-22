@@ -1,12 +1,12 @@
 import { normalizeSong, request } from "./client.ts";
-import type { DigitalAlbum, Song } from "./types.ts";
+import type { DigitalAlbum, DigitalAlbumRank, Song } from "./types.ts";
 
 type Obj = Record<string, unknown>;
 const obj = (value: unknown): Obj =>
   value && typeof value === "object" ? (value as Obj) : {};
 const arr = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
 
-function normalizeAlbum(raw: unknown): DigitalAlbum | null {
+export function normalizeDigitalAlbum(raw: unknown): DigitalAlbum | null {
   const value = obj(raw);
   const id = Number(value.id ?? value.albumId ?? value.resourceId ?? 0);
   if (!Number.isSafeInteger(id) || id <= 0) return null;
@@ -33,7 +33,34 @@ export async function getDigitalAlbumDetail(
   id: number,
 ): Promise<DigitalAlbum | null> {
   const response = await request<Obj>("/digitalAlbum/detail", { id });
-  return normalizeAlbum(response.data ?? response.result ?? response);
+  return normalizeDigitalAlbum(response.data ?? response.result ?? response);
+}
+
+export type DigitalAlbumSalesPeriod = "daily" | "week" | "year" | "total";
+
+export async function getDigitalAlbumSalesBoard(
+  period: DigitalAlbumSalesPeriod = "daily",
+  year?: number,
+  albumType: 0 | 1 = 0,
+): Promise<DigitalAlbumRank[]> {
+  const response = await request<Obj>(
+    "/album_songsaleboard",
+    { type: period, year: period === "year" ? year : undefined, albumType },
+    false,
+  );
+  const value = obj(response.data ?? response.result ?? response);
+  return arr(value.list ?? value.albums ?? value.records ?? value.data ?? response.data ?? response)
+    .map((raw, index) => {
+      const album = normalizeDigitalAlbum(obj(raw).album ?? raw);
+      if (!album) return null;
+      const value = obj(raw);
+      return {
+        ...album,
+        rank: Number(value.rank ?? value.position ?? index + 1),
+        score: Number(value.score ?? value.sales ?? album.sales),
+      } satisfies DigitalAlbumRank;
+    })
+    .filter((item): item is DigitalAlbumRank => item !== null);
 }
 
 export async function getDigitalAlbumSales(
@@ -66,7 +93,7 @@ export async function getPurchasedDigitalAlbums(
       response.data ??
       response,
   )
-    .map(normalizeAlbum)
+    .map(normalizeDigitalAlbum)
     .filter((item): item is DigitalAlbum => item !== null);
 }
 
