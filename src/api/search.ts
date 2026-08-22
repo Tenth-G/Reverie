@@ -9,6 +9,7 @@ import type {
   SearchResultPage,
   SearchSuggestion,
   SocialUser,
+  Song,
 } from "./types";
 
 type Obj = Record<string, unknown>;
@@ -209,9 +210,13 @@ export async function getDefaultSearchKeyword(): Promise<string> {
 export async function getSearchSuggestions(keyword: string): Promise<SearchSuggestion[]> {
   const value = keyword.trim();
   if (!value) return [];
-  const response = await request<Obj>("/search/suggest", { keywords: value, type: "web" }, false);
+  const [suggestions, multimatch] = await Promise.allSettled([
+    request<Obj>("/search/suggest", { keywords: value, type: "web" }, false),
+    getSearchMultimatch(value),
+  ]);
+  const response = suggestions.status === "fulfilled" ? suggestions.value : {};
   const data = obj(response.result ?? response.data ?? response);
-  return arr(data.allMatch ?? data.songs ?? data.playlists ?? response.result ?? response.data)
+  const base = arr(data.allMatch ?? data.songs ?? data.playlists ?? response.result ?? response.data)
     .map((raw) => {
       const item = obj(raw);
       return {
@@ -221,6 +226,47 @@ export async function getSearchSuggestions(keyword: string): Promise<SearchSugge
       } satisfies SearchSuggestion;
     })
     .filter((item) => item.keyword);
+  const extra = multimatch.status === "fulfilled" ? multimatch.value : [];
+  return [...base, ...extra].filter(
+    (item, index, items) => items.findIndex((entry) => entry.keyword === item.keyword && entry.type === item.type) === index,
+  );
+}
+
+export async function getSearchMultimatch(
+  keywords: string,
+  type = 1,
+): Promise<SearchSuggestion[]> {
+  if (!keywords.trim()) return [];
+  const response = await request<Obj>(
+    "/search/multimatch",
+    { keywords: keywords.trim(), type },
+    false,
+  );
+  const value = obj(response.result ?? response.data ?? response);
+  return arr(value.allMatch ?? value.songs ?? value.artists ?? value.albums ?? response.data ?? response)
+    .map((raw) => {
+      const item = obj(raw);
+      return {
+        keyword: String(item.keyword ?? item.name ?? item.artistName ?? item.albumName ?? ""),
+        type: String(item.type ?? item.resourceType ?? "匹配"),
+        source: String(item.source ?? item.artistName ?? item.albumName ?? ""),
+      } satisfies SearchSuggestion;
+    })
+    .filter((item) => item.keyword);
+}
+
+export async function matchLocalSong(input: {
+  title?: string;
+  album?: string;
+  artist?: string;
+  duration?: number;
+  md5?: string;
+}): Promise<Song[]> {
+  const response = await request<Obj>("/search/match", input, false);
+  const value = obj(response.result ?? response.data ?? response);
+  return arr(value.songs ?? value.result ?? response.data ?? response)
+    .map((raw) => normalizeSong(obj(raw).song ?? raw))
+    .filter((song): song is Song => song !== null);
 }
 
 export async function getSearchMediaUrl(

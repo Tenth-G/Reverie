@@ -6,6 +6,7 @@ import {
   getArtistNewMvs,
   getArtistMvs,
   getArtistNewSongs,
+  getArtistSongs,
   getArtistTopSongs,
 } from "../src/api/artist.ts";
 
@@ -60,6 +61,24 @@ test("artist MV and new-song endpoints normalize artist content", async () => {
     const songs = await getArtistNewSongs(5);
     assert.equal(mvs[0]?.id, "12");
     assert.equal(songs[0]?.name, "新作品");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("artist full song endpoint forwards ordering and pagination", async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (input) => {
+      const url = new URL(String(input));
+      assert.equal(url.pathname, "/artist/songs");
+      assert.equal(url.searchParams.get("id"), "7");
+      assert.equal(url.searchParams.get("order"), "time");
+      assert.equal(url.searchParams.get("limit"), "5");
+      return Response.json({ data: { songs: [{ id: 14, name: "全部歌曲", ar: [{ name: "歌手" }], al: { name: "专辑" } }] } });
+    };
+    const songs = await getArtistSongs(7, "time", 5, 10);
+    assert.equal(songs[0]?.name, "全部歌曲");
   } finally {
     globalThis.fetch = originalFetch;
   }

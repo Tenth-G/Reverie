@@ -6,6 +6,7 @@ import {
   getArtistNewMvs,
   getArtistMvs,
   getArtistNewSongs,
+  getArtistSongs,
   getArtistTopSongs,
   type ArtistDynamic,
   type ArtistIntroduction,
@@ -40,6 +41,7 @@ export default function ArtistPage() {
   const [newMvs, setNewMvs] = useState<typeof videos>([]);
   const [artistMvs, setArtistMvs] = useState<typeof videos>([]);
   const [newSongs, setNewSongs] = useState<typeof songs>([]);
+  const [allSongs, setAllSongs] = useState<typeof songs>([]);
 
   useEffect(() => {
     let alive = true;
@@ -68,6 +70,7 @@ export default function ArtistPage() {
       setNewMvs([]);
       setArtistMvs([]);
       setNewSongs([]);
+      setAllSongs([]);
       return;
     }
     void Promise.allSettled([
@@ -77,7 +80,8 @@ export default function ArtistPage() {
       getArtistNewMvs(),
       getArtistMvs(artist.id),
       getArtistNewSongs(),
-    ]).then(([description, stats, songsResult, mvsResult, artistMvsResult, newSongsResult]) => {
+      getArtistSongs(artist.id),
+    ]).then(([description, stats, songsResult, mvsResult, artistMvsResult, newSongsResult, allSongsResult]) => {
       if (!alive) return;
       setIntroduction(description.status === "fulfilled" ? description.value : null);
       setDynamic(stats.status === "fulfilled" ? stats.value : null);
@@ -85,6 +89,7 @@ export default function ArtistPage() {
       setNewMvs(mvsResult.status === "fulfilled" ? mvsResult.value : []);
       setArtistMvs(artistMvsResult.status === "fulfilled" ? artistMvsResult.value : []);
       setNewSongs(newSongsResult.status === "fulfilled" ? newSongsResult.value : []);
+      setAllSongs(allSongsResult.status === "fulfilled" ? allSongsResult.value : []);
     });
     return () => {
       alive = false;
@@ -202,6 +207,7 @@ export default function ArtistPage() {
           ) : null}
           <SongList songs={topSongs.length ? topSongs : songs} title="热门歌曲" />
           {newSongs.length > 0 && <SongList songs={newSongs} title="网易云最新作品" />}
+          {allSongs.length > 0 && <SongList songs={allSongs} title="全部歌曲" />}
           <div className="list-header">
             <h3>专辑</h3>
             <span className="count">{albums.length} 张</span>
