@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Cloud,
+  Download,
   FileAudio,
   Play,
   RefreshCw,
@@ -127,6 +128,100 @@ function DeleteButton({ song }: { song: CloudSong }) {
   );
 }
 
+type ImportValues = {
+  md5: string;
+  id: string;
+  bitrate: string;
+  fileSize: string;
+  song: string;
+  artist: string;
+  album: string;
+  fileType: string;
+};
+
+const emptyImport: ImportValues = {
+  md5: "",
+  id: "",
+  bitrate: "320000",
+  fileSize: "",
+  song: "",
+  artist: "",
+  album: "",
+  fileType: "mp3",
+};
+
+function CloudImportDialog({
+  open,
+  importing,
+  onClose,
+  onSubmit,
+}: {
+  open: boolean;
+  importing: boolean;
+  onClose: () => void;
+  onSubmit: (input: ImportValues) => Promise<boolean>;
+}) {
+  const [values, setValues] = useState<ImportValues>(emptyImport);
+  useEffect(() => {
+    if (open) setValues(emptyImport);
+  }, [open]);
+  if (!open) return null;
+  const update = (key: keyof ImportValues, value: string) =>
+    setValues((current) => ({ ...current, [key]: value }));
+  const submit = async () => {
+    if (!values.md5.trim() || !values.song.trim() || !values.artist.trim()) return;
+    if (await onSubmit(values)) onClose();
+  };
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal entity-editor" onClick={(event) => event.stopPropagation()}>
+        <h2>导入已有歌曲</h2>
+        <p className="sub">使用歌曲文件的 MD5 和元数据，将已存在的资源加入云盘。</p>
+        <label className="field-label">
+          MD5（必填）
+          <input value={values.md5} onChange={(event) => update("md5", event.target.value.trim())} />
+        </label>
+        <label className="field-label">
+          歌曲 ID（可选）
+          <input inputMode="numeric" value={values.id} onChange={(event) => update("id", event.target.value.replace(/\D/g, ""))} />
+        </label>
+        <label className="field-label">
+          歌曲名
+          <input value={values.song} onChange={(event) => update("song", event.target.value)} />
+        </label>
+        <label className="field-label">
+          歌手
+          <input value={values.artist} onChange={(event) => update("artist", event.target.value)} />
+        </label>
+        <label className="field-label">
+          专辑
+          <input value={values.album} onChange={(event) => update("album", event.target.value)} />
+        </label>
+        <div className="cloud-import-grid">
+          <label className="field-label">
+            比特率
+            <input inputMode="numeric" value={values.bitrate} onChange={(event) => update("bitrate", event.target.value.replace(/\D/g, ""))} />
+          </label>
+          <label className="field-label">
+            文件大小
+            <input inputMode="numeric" value={values.fileSize} onChange={(event) => update("fileSize", event.target.value.replace(/\D/g, ""))} />
+          </label>
+          <label className="field-label">
+            文件类型
+            <input value={values.fileType} onChange={(event) => update("fileType", event.target.value)} />
+          </label>
+        </div>
+        <div className="modal-actions">
+          <button className="btn" onClick={onClose} disabled={importing}>取消</button>
+          <button className="btn primary" onClick={() => void submit()} disabled={importing || !values.md5.trim() || !values.song.trim() || !values.artist.trim()}>
+            {importing ? "导入中…" : "导入云盘"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CloudPage() {
   const songs = useCloudStore((state) => state.songs);
   const total = useCloudStore((state) => state.total);
@@ -139,7 +234,10 @@ export default function CloudPage() {
   const load = useCloudStore((state) => state.load);
   const loadMore = useCloudStore((state) => state.loadMore);
   const upload = useCloudStore((state) => state.upload);
+  const importing = useCloudStore((state) => state.importing);
+  const importSong = useCloudStore((state) => state.importSong);
   const resetUpload = useCloudStore((state) => state.resetUpload);
+  const [importOpen, setImportOpen] = useState(false);
 
   useEffect(() => {
     void load(true);
@@ -173,6 +271,9 @@ export default function CloudPage() {
                 }}
               />
             </label>
+            <button className="btn" title="导入已有歌曲" onClick={() => setImportOpen(true)}>
+              <Download size={15} /> 导入已有歌曲
+            </button>
           </div>
         }
       />
@@ -221,6 +322,23 @@ export default function CloudPage() {
           )}
         </>
       )}
+      <CloudImportDialog
+        open={importOpen}
+        importing={importing}
+        onClose={() => setImportOpen(false)}
+        onSubmit={async (values) =>
+          importSong({
+            md5: values.md5.trim(),
+            id: values.id ? Number(values.id) : undefined,
+            bitrate: Number(values.bitrate) || 0,
+            fileSize: Number(values.fileSize) || 0,
+            song: values.song.trim(),
+            artist: values.artist.trim(),
+            album: values.album.trim(),
+            fileType: values.fileType.trim() || "mp3",
+          })
+        }
+      />
     </Page>
   );
 }

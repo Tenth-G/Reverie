@@ -2,6 +2,7 @@ import { create } from "zustand";
 import {
   deleteCloudSong,
   getCloudSongs,
+  importCloudSong,
   matchCloudSong,
   uploadCloudSong,
 } from "../api/cloud.ts";
@@ -20,6 +21,7 @@ interface CloudState {
   uploadPhase: CloudUploadPhase;
   uploadName: string;
   uploadError: string;
+  importing: boolean;
   matchingId: number;
   deletingId: number;
   load: (refresh?: boolean) => Promise<void>;
@@ -27,6 +29,7 @@ interface CloudState {
   remove: (song: CloudSong) => Promise<boolean>;
   match: (song: CloudSong, adjustSongId: number) => Promise<boolean>;
   upload: (file: File) => Promise<boolean>;
+  importSong: (input: Parameters<typeof importCloudSong>[0]) => Promise<boolean>;
   resetUpload: () => void;
 }
 
@@ -47,6 +50,7 @@ export const useCloudStore = create<CloudState>()((set, get) => ({
   uploadPhase: "idle",
   uploadName: "",
   uploadError: "",
+  importing: false,
   matchingId: 0,
   deletingId: 0,
 
@@ -141,6 +145,22 @@ export const useCloudStore = create<CloudState>()((set, get) => ({
       set({ uploadPhase: "error", uploadError: message });
       toast("上传云盘歌曲失败", "error");
       return false;
+    }
+  },
+
+  importSong: async (input) => {
+    if (get().importing) return false;
+    set({ importing: true });
+    try {
+      await importCloudSong(input);
+      toast("歌曲已导入云盘", "success");
+      await get().load(true);
+      return true;
+    } catch {
+      toast("导入云盘歌曲失败", "error");
+      return false;
+    } finally {
+      set({ importing: false });
     }
   },
 

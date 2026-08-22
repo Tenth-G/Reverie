@@ -5112,6 +5112,7 @@ input {
 .cloud-match-control { display: flex; align-items: center; gap: 3px; padding-left: 4px; border-left: 1px solid var(--border-light); }
 .cloud-match-control input { width: 104px; height: 30px; padding: 0 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-1); color: var(--text); font: inherit; font-size: 11px; }
 .cloud-match-control input:focus { outline: 2px solid color-mix(in srgb, var(--accent) 30%, transparent); border-color: var(--accent); }
+.cloud-import-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .cloud-load-more { display: block; margin: 14px auto 0; }
 .cloud-empty { display: grid; justify-items: center; gap: 8px; padding: 72px 20px; color: var(--text-faint); }
 .cloud-empty strong { color: var(--text-2); }
@@ -5122,6 +5123,7 @@ input {
   .cloud-song-row { align-items: flex-start; }
   .cloud-song-actions { flex-wrap: wrap; justify-content: flex-end; }
   .cloud-match-control { border-left: 0; padding-left: 0; }
+  .cloud-import-grid { grid-template-columns: 1fr; }
 }
 
 .playlist-track-picker { width: min(620px, calc(100vw - 32px)); }
