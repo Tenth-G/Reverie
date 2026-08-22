@@ -14,6 +14,9 @@ import {
   getRadioDetail,
   getRadioHome,
   getSongComments,
+  getMixedFollows,
+  getMutualFollow,
+  type FollowScene,
   getUserEvents,
   likeSongComment,
   sendSongComment,
@@ -62,6 +65,8 @@ interface ExploreState {
   followers: SocialUser[];
   events: SocialEvent[];
   myEvents: SocialEvent[];
+  followScene: FollowScene;
+  mutualFollow: Record<number, boolean | undefined>;
 
   openAlbum: (id: number) => Promise<void>;
   toggleAlbumSubscription: () => Promise<void>;
@@ -77,6 +82,8 @@ interface ExploreState {
   openRadio: (id: number) => Promise<void>;
   toggleRadioSubscription: (radio?: RadioInfo) => Promise<void>;
   setSocialTab: (tab: SocialTab) => void;
+  setFollowScene: (scene: FollowScene) => Promise<void>;
+  checkMutualFollow: (userId: number) => Promise<boolean>;
   loadSocial: () => Promise<void>;
   toggleFollow: (user: SocialUser) => Promise<void>;
   toggleEventLike: (event: SocialEvent) => Promise<void>;
@@ -131,6 +138,8 @@ export const useExploreStore = create<ExploreState>()((set, get) => ({
   followers: [],
   events: [],
   myEvents: [],
+  followScene: 0,
+  mutualFollow: {},
 
   openAlbum: async (id) => {
     if (!id) return;
@@ -385,19 +394,41 @@ export const useExploreStore = create<ExploreState>()((set, get) => ({
     }
   },
   setSocialTab: (tab) => set({ socialTab: tab }),
+  setFollowScene: async (scene) => {
+    if (scene === get().followScene) return;
+    set({ followScene: scene });
+    await get().loadSocial();
+  },
+  checkMutualFollow: async (userId) => {
+    if (!userId) return false;
+    const cached = get().mutualFollow[userId];
+    if (cached !== undefined) return cached;
+    try {
+      const mutual = await getMutualFollow(userId);
+      set((state) => ({ mutualFollow: { ...state.mutualFollow, [userId]: mutual } }));
+      return mutual;
+    } catch {
+      toastError("查询互相关注失败");
+      return false;
+    }
+  },
   loadSocial: async () => {
     const uid = usePlayerStore.getState().profile?.userId;
     if (!uid) return;
     showView("social");
     set({ loading: true });
     try {
-      const [events, myEvents, follows, followers] = await Promise.all([
+      const [events, myEvents, mixed, followers] = await Promise.all([
         getEvents(),
         getUserEvents(uid).catch(() => []),
-        getFollows(uid),
+        getMixedFollows(get().followScene).catch(async () => ({
+          users: await getFollows(uid),
+          cursor: 0,
+          more: false,
+        })),
         getFollowers(uid),
       ]);
-      set({ events, myEvents, follows, followers });
+      set({ events, myEvents, follows: mixed.users, followers });
     } catch {
       toastError("加载社交动态失败");
     } finally {

@@ -400,6 +400,54 @@ export async function getFollowers(uid: number): Promise<SocialUser[]> {
   return arr(res.followeds).map(normalizeUser);
 }
 
+export type FollowScene = 0 | 1 | 2;
+
+export interface MixedFollowResult {
+  users: SocialUser[];
+  cursor: number;
+  more: boolean;
+}
+
+/** Read the current account's mixed follow list (users and/or artists). */
+export async function getMixedFollows(
+  scene: FollowScene = 0,
+  size = 100,
+  cursor = 0,
+): Promise<MixedFollowResult> {
+  const res = await request<Obj>(
+    "/user/follow/mixed",
+    { scene, size, cursor },
+    true,
+  );
+  const data = obj(res.data ?? res.result);
+  const rows =
+    res.follow ??
+    res.users ??
+    res.list ??
+    data.follow ??
+    data.users ??
+    data.list ??
+    data.records ??
+    [];
+  return {
+    users: arr(rows).map(normalizeUser).filter((user) => user.userId > 0),
+    cursor: Number(res.cursor ?? data.cursor ?? data.nextCursor ?? cursor),
+    more: Boolean(res.more ?? data.more),
+  };
+}
+
+/** Check whether the signed-in account mutually follows a user. */
+export async function getMutualFollow(uid: number): Promise<boolean> {
+  if (!uid) return false;
+  const res = await request<Obj>(
+    "/user/mutualfollow/get",
+    { uid },
+    true,
+  );
+  const data = obj(res.data ?? res.result);
+  return Boolean(res.mutual ?? res.isMutual ?? data.mutual ?? data.isMutual);
+}
+
 export async function followUser(id: number, follow: boolean): Promise<void> {
   await request("/follow", { id, t: follow ? 1 : 0 }, false);
 }

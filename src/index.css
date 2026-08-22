@@ -3371,6 +3371,21 @@ input {
 .social-tabs {
   margin-bottom: 16px;
 }
+.social-follow-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+.social-follow-filter select {
+  min-width: 88px;
+}
+.social-mutual-badge {
+  color: var(--accent-2);
+  white-space: nowrap;
+}
 .social-user {
   align-items: center;
 }
