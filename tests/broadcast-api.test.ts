@@ -11,6 +11,8 @@ import {
   getPodcastProgramHoursToplist,
   getPodcastProgramToplist,
   getPodcastAdvancedToplist,
+  getPodcastPaidRadios,
+  getPodcastSubscribers,
   getPodcastTodayPreferred,
   getSportRadio,
   toggleBroadcastSubscription,
@@ -178,6 +180,30 @@ test("advanced podcast rankings select the documented toplist routes", async () 
       "/dj/toplist/newcomer",
       "/dj/toplist/pay",
     ]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("podcast subscriber and paid radio APIs normalize their responses", async () => {
+  const originalFetch = globalThis.fetch;
+  const paths: string[] = [];
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    paths.push(url.pathname);
+    if (url.pathname === "/dj/subscriber") {
+      return Response.json({ data: { total: 12, more: true, time: 123, list: [{ userId: 4, nickname: "订阅者", avatarUrl: "avatar" }] } });
+    }
+    return Response.json({ data: { list: [{ id: 8, name: "付费电台", dj: { nickname: "主播" } }] } });
+  };
+  try {
+    const subscribers = await getPodcastSubscribers(99, -1, 20);
+    const paid = await getPodcastPaidRadios(10, 0);
+    assert.equal(subscribers.subscribers[0]?.nickname, "订阅者");
+    assert.equal(subscribers.total, 12);
+    assert.equal(subscribers.hasMore, true);
+    assert.equal(paid[0]?.name, "付费电台");
+    assert.deepEqual(paths, ["/dj/subscriber", "/dj/paygift"]);
   } finally {
     globalThis.fetch = originalFetch;
   }

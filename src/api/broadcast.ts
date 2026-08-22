@@ -4,6 +4,7 @@ import type {
   BroadcastCategory,
   DifmChannel,
   PodcastProgramRank,
+  PodcastSubscriber,
   PodcastProgramDetail,
   RadioInfo,
   Song,
@@ -249,6 +250,47 @@ export async function getPodcastTodayPreferred(
     false,
   );
   return normalizeProgramList(response);
+}
+
+function normalizeSubscriber(raw: unknown): PodcastSubscriber | null {
+  const value = obj(raw);
+  const user = obj(value.user ?? value.profile);
+  const userId = Number(value.userId ?? value.uid ?? user.userId ?? user.id ?? 0);
+  if (!userId) return null;
+  return {
+    userId,
+    nickname: String(value.nickname ?? user.nickname ?? "网易云用户"),
+    avatarUrl: String(value.avatarUrl ?? value.avatar ?? user.avatarUrl ?? ""),
+    signature: String(value.signature ?? user.signature ?? ""),
+    time: Number(value.time ?? value.subscribeTime ?? value.createTime ?? 0),
+  };
+}
+
+export async function getPodcastSubscribers(
+  radioId: number,
+  time = -1,
+  limit = 20,
+): Promise<{ subscribers: PodcastSubscriber[]; total: number; hasMore: boolean; nextTime: number }> {
+  const response = await request<Obj>(
+    "/dj/subscriber",
+    { id: radioId, time, limit },
+    false,
+  );
+  const value = obj(response.data ?? response.result ?? response);
+  const subscribers = arr(value.list ?? value.subscribers ?? value.data ?? response.data ?? response)
+    .map(normalizeSubscriber)
+    .filter((item): item is PodcastSubscriber => item !== null);
+  const nextTime = Number(value.time ?? value.lastTime ?? subscribers.at(-1)?.time ?? time);
+  const total = Number(value.total ?? value.totalCount ?? subscribers.length);
+  return { subscribers, total, hasMore: Boolean(value.more ?? value.hasMore), nextTime };
+}
+
+export async function getPodcastPaidRadios(
+  limit = 30,
+  offset = 0,
+): Promise<RadioInfo[]> {
+  const response = await request<Obj>("/dj/paygift", { limit, offset }, false);
+  return normalizeRadioList(response);
 }
 
 function normalizeDifmChannel(raw: unknown, source: number): DifmChannel | null {

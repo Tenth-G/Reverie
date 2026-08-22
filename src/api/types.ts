@@ -595,6 +595,13 @@ export interface PodcastProgramRank {
   score: number;
   song: Song | null;
 }
+export interface PodcastSubscriber {
+  userId: number;
+  nickname: string;
+  avatarUrl: string;
+  signature: string;
+  time: number;
+}
 
 export interface SearchResultPage {
   songs: Song[];
