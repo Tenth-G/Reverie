@@ -11,14 +11,19 @@ import {
   getDifmTracks,
   getPodcastBanners,
   getPodcastCategories,
+  getPodcastExcludeHotCategories,
+  getPodcastHomeCategoryRecommendations,
   getPodcastCategoryRecommendations,
   getPodcastAdvancedToplist,
   getPodcastHotRadios,
+  getPodcastLegacyHotRadios,
+  getPersonalizedDjPrograms,
   getPodcastProgramHoursToplist,
   getPodcastProgramToplist,
   getPodcastPaidRadios,
   getPodcastTodayPreferred,
   getPodcastToplist,
+  getProgramRecommendations,
   toggleDifmChannel,
 } from "../api/broadcast.ts";
 import type { DifmChannel, Song } from "../api/types.ts";
@@ -199,9 +204,13 @@ export default function RadioPage() {
   const [ranked, setRanked] = useState<RadioInfo[]>([]);
   const [rankingLoading, setRankingLoading] = useState(false);
   const [categories, setCategories] = useState<BroadcastCategory[]>([]);
+  const [excludeHotCategories, setExcludeHotCategories] = useState<BroadcastCategory[]>([]);
   const [categoryId, setCategoryId] = useState(0);
   const [categoryRadios, setCategoryRadios] = useState<RadioInfo[]>([]);
   const [hotRadios, setHotRadios] = useState<RadioInfo[]>([]);
+  const [legacyHotRadios, setLegacyHotRadios] = useState<RadioInfo[]>([]);
+  const [homeCategoryRadios, setHomeCategoryRadios] = useState<RadioInfo[]>([]);
+  const [personalizedPrograms, setPersonalizedPrograms] = useState<PodcastProgramRank[]>([]);
   const [banners, setBanners] = useState<Array<{ imageUrl: string; title: string; url: string }>>([]);
   const [discoveryLoading, setDiscoveryLoading] = useState(false);
   const [programRanking, setProgramRanking] = useState<"top" | "hours" | "today" | "">("");
@@ -217,12 +226,29 @@ export default function RadioPage() {
   useEffect(() => {
     let alive = true;
     setDiscoveryLoading(true);
-    void Promise.all([getPodcastCategories(), getPodcastHotRadios(), getPodcastBanners()])
-      .then(([nextCategories, nextHot, nextBanners]) => {
+    void Promise.allSettled([
+      getPodcastCategories(),
+      getPodcastHotRadios(),
+      getPodcastBanners(),
+      getPodcastExcludeHotCategories(),
+      getPodcastHomeCategoryRecommendations(),
+      getPodcastLegacyHotRadios(),
+      getPersonalizedDjPrograms(),
+      getProgramRecommendations(),
+    ])
+      .then(([nextCategories, nextHot, nextBanners, nextExclude, nextHome, nextLegacyHot, nextPersonalized, nextRecommended]) => {
         if (!alive) return;
-        setCategories(nextCategories);
-        setHotRadios(nextHot);
-        setBanners(nextBanners);
+        setCategories(nextCategories.status === "fulfilled" ? nextCategories.value : []);
+        setHotRadios(nextHot.status === "fulfilled" ? nextHot.value : []);
+        setBanners(nextBanners.status === "fulfilled" ? nextBanners.value : []);
+        setExcludeHotCategories(nextExclude.status === "fulfilled" ? nextExclude.value : []);
+        setHomeCategoryRadios(nextHome.status === "fulfilled" ? nextHome.value : []);
+        setLegacyHotRadios(nextLegacyHot.status === "fulfilled" ? nextLegacyHot.value : []);
+        const programs = [
+          ...(nextPersonalized.status === "fulfilled" ? nextPersonalized.value : []),
+          ...(nextRecommended.status === "fulfilled" ? nextRecommended.value : []),
+        ];
+        setPersonalizedPrograms(programs.filter((item, index, items) => items.findIndex((entry) => entry.id === item.id) === index));
       })
       .catch(() => {
         if (alive) setCategories([]);
@@ -295,8 +321,11 @@ export default function RadioPage() {
         <button className={!categoryId ? "active" : ""} onClick={() => void loadCategory(0)}>精选</button>
         {categories.map((category) => <button key={category.id} className={categoryId === category.id ? "active" : ""} onClick={() => void loadCategory(category.id)}>{category.name}</button>)}
       </div>
+      {excludeHotCategories.length > 0 && <div className="podcast-category-strip" aria-label="更多播客分类">{excludeHotCategories.slice(0, 12).map((category) => <span key={category.id}>{category.name}</span>)}</div>}
       {categoryId > 0 && <section className="content-section"><div className="list-header"><h3>分类精选</h3><span className="count">{categoryRadios.length} 个</span></div>{discoveryLoading ? <LoadingState label="正在加载分类电台…" /> : <RadioGrid radios={categoryRadios} />}</section>}
       {!categoryId && hotRadios.length > 0 && <section className="content-section"><div className="list-header"><h3>热门电台</h3><span className="count">{hotRadios.length} 个</span></div><RadioGrid radios={hotRadios} /></section>}
+      {homeCategoryRadios.length > 0 && <section className="content-section"><div className="list-header"><h3>分类推荐</h3><span className="count">{homeCategoryRadios.length} 个</span></div><RadioGrid radios={homeCategoryRadios} /></section>}
+      {legacyHotRadios.length > 0 && <section className="content-section"><div className="list-header"><h3>热门声音</h3><span className="count">{legacyHotRadios.length} 个</span></div><RadioGrid radios={legacyHotRadios} /></section>}
       <div className="collection-tabs" role="tablist" aria-label="播客榜单">
         <button className={ranking === "new" ? "active" : ""} onClick={() => void loadRanking("new")}>新晋电台榜</button>
         <button className={ranking === "hot" ? "active" : ""} onClick={() => void loadRanking("hot")}>热门电台榜</button>
@@ -328,6 +357,7 @@ export default function RadioPage() {
           <ProgramRankGrid items={programRanks} loading={programRankingLoading} />
         </section>
       )}
+      {personalizedPrograms.length > 0 && <section className="content-section"><div className="list-header"><h3>推荐节目</h3><span className="count">{personalizedPrograms.length} 条</span></div><ProgramRankGrid items={personalizedPrograms.slice(0, 12)} loading={false} /></section>}
       <section className="content-section podcast-paid-section">
         <div className="list-header">
           <h3>付费精品电台</h3>
