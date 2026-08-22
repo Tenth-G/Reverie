@@ -76,6 +76,13 @@ export interface TopicEvent {
   commentCount: number;
 }
 
+export interface FirstListenInfo {
+  songId: number;
+  firstTime: number;
+  playCount: number;
+  description: string;
+}
+
 export interface PlaylistDynamicStats {
   playCount: number;
   subscribedCount: number;
