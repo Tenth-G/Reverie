@@ -236,7 +236,8 @@ export type View =
   | "videos"
   | "fans"
   | "style"
-  | "topics";
+  | "topics"
+  | "library";
 
 export type SearchCategory =
   | "songs"

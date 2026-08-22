@@ -2919,6 +2919,56 @@ input {
 .topic-card small,
 .topic-detail header small,
 .topic-event small { color: var(--text-faint); font-size: 11px; }
+.library-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.library-tabs button,
+.library-filters > button,
+.library-initials button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: var(--text-dim);
+  background: var(--bg-2);
+  font-size: 12px;
+}
+.library-tabs button:hover,
+.library-tabs button.active,
+.library-filters > button:hover,
+.library-filters > button.active,
+.library-initials button:hover,
+.library-initials button.active {
+  color: var(--accent-2);
+  border-color: rgba(236, 65, 65, 0.45);
+  background: rgba(236, 65, 65, 0.1);
+}
+.library-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.library-filters select {
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-2);
+  color: var(--text);
+  font-size: 12px;
+}
+.library-initials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.library-initials button { padding: 5px 7px; }
+.library-more { display: flex; justify-content: center; padding: 26px 0 8px; }
 .topic-detail {
   min-width: 0;
   border-left: 1px solid var(--border);
