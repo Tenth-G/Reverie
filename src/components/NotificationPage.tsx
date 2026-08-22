@@ -403,6 +403,19 @@ export default function NotificationPage() {
             ? `${conversationTotal} 个私信会话`
             : `${total} 条消息`
         }
+        actions={
+          <button
+            className="btn"
+            onClick={() =>
+              usePlayerStore.setState({
+                activeView: "commentHistory",
+                prevView: "notifications",
+              })
+            }
+          >
+            我的评论
+          </button>
+        }
       />
       <div className="notification-tabs" role="tablist">
         {TABS.map((tab) => (

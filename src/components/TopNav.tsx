@@ -75,6 +75,8 @@ const preloadView = (view: View) => {
       return import("./RecommendHistoryPage");
     case "vip":
       return import("./VipPage");
+    case "commentHistory":
+      return import("./CommentHistoryPage");
     case "likes":
       return import("./LikesPage");
     case "recent":

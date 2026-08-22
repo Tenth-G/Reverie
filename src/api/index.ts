@@ -21,3 +21,4 @@ export * from "./recent";
 export * from "./recommendHistory";
 export * from "./discovery";
 export * from "./vip";
+export * from "./commentHistory";

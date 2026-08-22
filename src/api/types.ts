@@ -165,7 +165,9 @@ export type View =
   | "cloud"
   | "yunbei"
   | "recommendHistory"
-  | "vip";
+  | "vip"
+  | "commentHistory";
+  
   
   
 
@@ -279,6 +281,15 @@ export interface VipGrowthEntry {
   title: string;
   amount: number;
   time: number;
+}
+
+export interface UserCommentHistoryItem {
+  id: number;
+  content: string;
+  time: number;
+  resourceTitle: string;
+  resourceType?: string;
+  resourceId?: number;
 }
 
 export interface SearchResultPage {

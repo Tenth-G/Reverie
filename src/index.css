@@ -5252,6 +5252,13 @@ input {
 .vip-time-machine > div { display: flex; align-items: center; gap: 7px; color: var(--accent); }
 .vip-time-machine pre { max-height: 160px; margin: 10px 0 0; overflow: auto; color: var(--text-faint); font-size: 10px; white-space: pre-wrap; }
 @media (max-width: 700px) { .vip-task { grid-template-columns: 1fr auto; } .vip-task-status { grid-column: 2; } }
+.comment-history-list { display: grid; gap: 8px; }
+.comment-history-list article { display: flex; gap: 10px; padding: 12px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-1); }
+.comment-history-icon { display: grid; place-items: center; width: 30px; height: 30px; flex: none; border-radius: 50%; background: color-mix(in srgb, var(--accent) 14%, transparent); color: var(--accent); }
+.comment-history-list article > div { display: grid; min-width: 0; gap: 4px; }
+.comment-history-list p { margin: 0; color: var(--text); font-size: 13px; line-height: 1.5; white-space: pre-wrap; }
+.comment-history-list strong { overflow: hidden; color: var(--text-2); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.comment-history-list time { color: var(--text-faint); font-size: 10px; }
 @media (max-width: 700px) { .recent-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 700px) {
   .comment-page-heading {
