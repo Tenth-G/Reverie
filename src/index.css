@@ -5422,3 +5422,29 @@ input {
 .digital-album-card small { color: var(--text-dim); font-size: 10px; }
 .digital-album-empty, .digital-album-error { color: var(--text-faint); font-size: 12px; }
 .digital-album-error { max-width: 960px; margin: 0 auto 18px; color: #ff8585; }
+
+/* Musician center */
+.musician-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 9px; max-width: 1100px; margin: 10px auto 16px; }
+.musician-summary > div { display: grid; gap: 5px; padding: 13px; border: 1px solid var(--border); border-radius: 7px; background: var(--bg-2); }
+.musician-summary svg { color: var(--accent); }
+.musician-summary span { color: var(--text-dim); font-size: 11px; }
+.musician-summary strong { font-size: 18px; }
+.musician-summary > button { align-self: center; }
+.musician-section { max-width: 1100px; margin: 0 auto 16px; padding: 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); }
+.musician-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 13px; }
+.musician-section-head h2 { margin: 0; font-size: 16px; }
+.musician-section-head span { color: var(--text-faint); font-size: 11px; }
+.musician-trend { display: flex; align-items: end; gap: 7px; height: 150px; padding: 8px 2px 0; border-bottom: 1px solid var(--border); }
+.musician-trend-bar { display: grid; align-content: end; justify-items: center; gap: 5px; min-width: 22px; flex: 1; height: 100%; }
+.musician-trend-bar i { display: block; width: min(20px, 100%); min-height: 8px; border-radius: 4px 4px 0 0; background: var(--accent); }
+.musician-trend-bar small { color: var(--text-faint); font-size: 9px; }
+.musician-task-list { display: grid; gap: 5px; }
+.musician-task { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px; border-radius: 6px; background: var(--bg-3); }
+.musician-task > div:first-child { display: grid; min-width: 0; gap: 4px; }
+.musician-task strong { font-size: 12px; }
+.musician-task span { color: var(--text-dim); font-size: 11px; }
+.musician-task > div:last-child { display: flex; align-items: center; gap: 8px; }
+.musician-task b { color: var(--accent); font-size: 12px; }
+.musician-empty, .musician-error { color: var(--text-faint); font-size: 12px; }
+.musician-error { max-width: 1100px; margin: 0 auto 16px; color: #ff8585; }
+@media (max-width: 760px) { .musician-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .musician-summary > button { grid-column: 1 / -1; justify-self: start; } }
