@@ -56,6 +56,42 @@
   --titlebar-hover: #e7e9f2;
 }
 
+/* ============================ Layout tokens ============================ */
+/* Skeleton dimensions and rhythm of the app shell. Visual identity (color,
+   type, glass) stays in the theme tokens above; everything below only
+   describes where structural surfaces sit. */
+:root {
+  /* page scaffolding */
+  --layout-gutter: 32px; /* horizontal page gutter */
+  --layout-page-top: 20px; /* first row of scrollable page content */
+  --layout-bottom-reserve: 144px; /* keep clear of the floating player pill */
+  --layout-content-max: 940px; /* centered home hero column */
+
+  /* top navigation */
+  --nav-h: 52px;
+  --nav-pad: 30px;
+  --nav-gap: 12px;
+
+  /* floating player pill */
+  --bar-h: 84px;
+  --bar-max: 980px;
+  --bar-inset: 24px; /* per-side inset from the window edge */
+  --bar-float: 12px; /* lift above the bottom edge */
+  --radius-bar: 28px;
+
+  /* radii ladder */
+  --radius-pill: 999px;
+  --radius-card: 18px;
+  --radius-surface: 8px;
+
+  /* spacing ladder for layout-level gaps */
+  --gap-xs: 3px;
+  --gap-sm: 4px;
+  --gap-md: 8px;
+  --gap-lg: 12px;
+  --gap-xl: 16px;
+}
+
 /* ============================ Base ============================ */
 * {
   box-sizing: border-box;
@@ -230,17 +266,24 @@ textarea {
 }
 
 /* ============================ Top navigation ============================ */
+/* The bar itself is a transparent structural row; the visible surface is the
+   ::before pill below (full-bleed at rest, floating glass when condensed). */
 .topnav {
   flex: none;
   position: relative;
-  height: 54px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 18px;
-  border-bottom: 1px solid var(--border);
-  background: var(--glass-nav);
-  backdrop-filter: blur(20px) saturate(1.4);
+  gap: var(--nav-gap);
+  width: 100%;
+  height: var(--nav-h);
+  margin: 0 auto;
+  padding-inline: var(--nav-pad);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  isolation: isolate;
   z-index: 40;
 }
 .topnav-brand {
@@ -265,6 +308,7 @@ textarea {
   gap: 4px;
   flex: none;
   min-width: 0;
+  transform: translateZ(0);
 }
 .topnav-item {
   display: flex;
@@ -295,6 +339,7 @@ textarea {
   align-items: center;
   gap: 6px;
   margin-left: auto;
+  transform: translateZ(0);
 }
 .topnav-icon-btn {
   width: 36px;
@@ -386,7 +431,7 @@ textarea {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 6px 0 14px;
+  padding: 0 14px;
   height: 36px;
   border-radius: 999px;
   background: var(--bg-3);
@@ -596,13 +641,13 @@ textarea {
 .page-scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 32px 144px;
+  padding: var(--layout-page-top) var(--layout-gutter) var(--layout-bottom-reserve);
 }
 .page-header {
   display: flex;
   align-items: flex-end;
-  gap: 16px;
-  padding: 22px 32px 10px;
+  gap: var(--gap-xl);
+  padding: 22px var(--layout-gutter) 10px;
 }
 .page-heading h1 {
   font-size: 26px;
@@ -620,12 +665,14 @@ textarea {
   gap: 8px;
 }
 
-/* home hero (time/date/location + lyric quote) */
+/* home hero (time/date/location + lyric quote): one centered two-column group */
 .home-hero {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
+  width: min(var(--layout-content-max), 100%);
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(320px, 1.1fr);
+  align-items: end;
+  gap: 52px;
   padding: 26px 24px 10px;
 }
 .hero-left {
@@ -656,10 +703,8 @@ textarea {
   color: var(--accent-2);
 }
 .hero-right {
-  flex: 1;
-  max-width: 48%;
-  text-align: right;
   min-width: 0;
+  text-align: right;
 }
 .hero-quote {
   margin: 0;
@@ -927,21 +972,25 @@ textarea {
 
 .playlist-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 18px 16px;
+  padding-top: 8px;
 }
+/* Card shells are inert; hover motion lives on .card-cover below. */
 .playlist-card {
+  position: relative;
   cursor: pointer;
-  border-radius: 12px;
-  transition: transform 0.16s ease;
-}
-.playlist-card:hover {
-  transform: translateY(-3px);
+  overflow: visible;
+  border-radius: 0;
+  contain: none;
+  content-visibility: visible;
+  transform: none;
+  transition: none;
 }
 .playlist-card img {
   width: 100%;
   aspect-ratio: 1;
-  border-radius: 16px;
+  border-radius: 14px;
   object-fit: cover;
   background: var(--bg-3);
   box-shadow: 0 6px 20px var(--shadow);
@@ -2025,12 +2074,14 @@ textarea {
   display: none;
 }
 .song-card {
+  position: relative;
   cursor: pointer;
-  border-radius: 14px;
-  transition: transform 0.15s ease;
-}
-.song-card:hover {
-  transform: translateY(-3px);
+  overflow: visible;
+  border-radius: 0;
+  contain: none;
+  content-visibility: visible;
+  transform: none;
+  transition: none;
 }
 .song-card img {
   width: 100%;
@@ -2072,27 +2123,36 @@ textarea {
 /* ============================ Player bar (floating pill) ============================ */
 .player-bar {
   position: fixed;
-  bottom: 16px;
+  bottom: var(--bar-float);
   left: 50%;
   transform: translateX(-50%);
-  width: min(1060px, calc(100% - 48px));
-  border-radius: 30px;
+  width: min(var(--bar-max), calc(100% - var(--bar-inset) * 2));
+  height: var(--bar-h);
+  min-height: var(--bar-h);
+  max-height: var(--bar-h);
+  border-radius: var(--radius-bar);
   border: 1px solid var(--border);
   background: var(--glass-player);
   backdrop-filter: blur(32px) saturate(1.4);
   box-shadow: 0 18px 50px var(--shadow);
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px 20px 12px;
+  gap: var(--gap-sm);
+  padding: 7px 16px 9px;
+  contain: layout style;
+  overflow: visible;
+  box-sizing: border-box;
   z-index: 60;
 }
 /* progress row blended into the top of the pill */
 .pb-progress {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--gap-md);
   width: 100%;
+  height: 14px;
+  min-height: 14px;
+  flex: none;
 }
 .pb-time {
   font-size: 11px;
@@ -2100,51 +2160,60 @@ textarea {
   font-variant-numeric: tabular-nums;
   min-width: 34px;
   text-align: center;
+  line-height: 14px;
 }
 .pb-slider {
   flex: 1;
   margin: 0;
 }
+/* Three-track row: song info | transport controls | actions. */
 .pb-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: var(--gap-lg);
   width: 100%;
+  height: 48px;
+  min-height: 48px;
+  flex: none;
 }
 .pb-left {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex: 1;
+  gap: 10px;
   min-width: 0;
 }
 .pb-right {
   display: flex;
   align-items: center;
-  gap: 8px;
-  flex: 1;
-  justify-content: flex-end;
+  gap: var(--gap-xs);
+  justify-self: end;
 }
 .pb-cover {
   position: relative;
   flex: none;
-  transition: transform 0.15s ease;
+  line-height: 0;
+  border-radius: var(--radius-card);
+  will-change: transform;
+  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .pb-cover:hover {
-  transform: scale(1.07);
+  transform: translateY(-2px) scale(1.06);
+}
+.pb-cover,
+.pb-cover img,
+.pb-cover-ph {
+  width: 48px;
+  height: 48px;
 }
 .pb-cover img {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
+  display: block;
+  border-radius: var(--radius-card);
   object-fit: cover;
   box-shadow: 0 4px 14px var(--shadow);
 }
 .pb-cover-ph {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
+  border-radius: var(--radius-card);
   background: var(--bg-3);
   display: flex;
   align-items: center;
@@ -2152,16 +2221,30 @@ textarea {
   color: var(--text-faint);
   font-size: 20px;
 }
-.pb-cover.spinning img {
-  animation: spin 14s linear infinite;
+.pb-cover img,
+.pb-cover.spinning img,
+.pb-cover.paused img {
+  animation: pb-cover-rotation 14s linear infinite;
 }
+.pb-cover.spinning img {
+  animation-play-state: running;
+}
+.pb-cover.paused img {
+  animation-play-state: paused;
+}
+@keyframes pb-cover-rotation {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* shared spinner (loading states, refresh icons) */
 @keyframes spin {
   to {
     transform: rotate(360deg);
   }
 }
 .pb-info {
-  width: 190px;
+  width: 170px;
   min-width: 0;
 }
 .pb-info .t {
@@ -2199,8 +2282,8 @@ textarea {
   background: var(--hover);
 }
 .icon-btn.primary {
-  width: 46px;
-  height: 46px;
+  width: 42px;
+  height: 42px;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: var(--text-on-accent);
   box-shadow: 0 6px 20px var(--accent-glow);
@@ -3138,9 +3221,6 @@ textarea {
   opacity: 1;
 }
 
-.playlist-card {
-  position: relative;
-}
 .playlist-card-actions {
   position: absolute;
   right: 6px;
@@ -3275,6 +3355,7 @@ textarea {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 16px;
+  padding-top: 8px;
 }
 .media-grid.compact {
   grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
@@ -3284,12 +3365,18 @@ textarea {
   min-width: 0;
   text-align: left;
   cursor: pointer;
+  overflow: visible;
+  border-radius: 0;
+  contain: none;
+  content-visibility: visible;
+  transform: none;
+  transition: none;
 }
 .media-card img {
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
-  border-radius: 8px;
+  border-radius: 14px;
   background: var(--bg-3);
   display: block;
   margin-bottom: 8px;
@@ -3493,9 +3580,10 @@ textarea {
 }
 
 /* ============================ Toasts ============================ */
+/* Capsule notifications float centered below the navigation. */
 .toast-wrap {
   position: fixed;
-  top: 52px;
+  top: 106px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 200;
@@ -3503,6 +3591,8 @@ textarea {
   flex-direction: column;
   gap: 8px;
   align-items: center;
+  width: min(460px, calc(100vw - 48px));
+  pointer-events: none;
 }
 .toast {
   padding: 10px 18px;
@@ -3756,62 +3846,7 @@ textarea {
   }
 }
 
-/* Match the navigation surface to the floating playback glass. */
-.topnav {
-  margin: 0 14px;
-  height: 52px;
-  border: 1px solid color-mix(in srgb, var(--border) 82%, transparent);
-  border-radius: 8px;
-  background: var(--glass-player);
-  backdrop-filter: blur(32px) saturate(1.4);
-  box-shadow: 0 10px 30px color-mix(in srgb, var(--shadow) 52%, transparent);
-}
-.search-capsule {
-  padding-right: 14px;
-}
-
-/* Bring the home dashboard anchors into one readable central group. */
-.home-hero {
-  width: min(940px, 100%);
-  margin-inline: auto;
-  display: grid;
-  grid-template-columns: minmax(260px, 0.9fr) minmax(320px, 1.1fr);
-  align-items: end;
-  gap: 52px;
-}
-.hero-right {
-  max-width: none;
-}
-
-/* ============================ Compact player ============================ */
-.player-bar {
-  bottom: 26px;
-  width: min(980px, calc(100% - 48px));
-  border-radius: 24px;
-  gap: 4px;
-  padding: 7px 16px 9px;
-}
-.pb-progress {
-  gap: 8px;
-}
-.pb-cover img,
-.pb-cover-ph {
-  width: 48px;
-  height: 48px;
-}
-.pb-left {
-  gap: 10px;
-}
-.pb-info {
-  width: 170px;
-}
-.icon-btn.primary {
-  width: 42px;
-  height: 42px;
-}
-.pb-right {
-  gap: 3px;
-}
+/* ============================ Volume popover ============================ */
 .vol-wrap {
   position: relative;
   display: flex;
@@ -3832,13 +3867,14 @@ textarea {
   align-items: center;
   gap: 8px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 24px;
   background: var(--glass-strong);
   box-shadow: 0 16px 36px var(--shadow);
   backdrop-filter: blur(26px) saturate(1.35);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
+  z-index: 8;
   transition:
     opacity 0.16s ease,
     transform 0.16s ease,
@@ -3892,10 +3928,11 @@ textarea {
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 22px;
   background: var(--glass-strong);
   box-shadow: 0 24px 70px var(--shadow);
   backdrop-filter: blur(32px) saturate(1.35);
+  transform: translateX(-50%);
   transform-origin: bottom center;
   animation: comments-rise 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -3908,9 +3945,6 @@ textarea {
     opacity: 1;
     transform: translate(-50%, 0) scaleY(1);
   }
-}
-.player-comments-drawer {
-  transform: translateX(-50%);
 }
 .player-comments-header {
   display: flex;
@@ -4320,14 +4354,6 @@ textarea {
 }
 
 /* ============================ System notifications ============================ */
-.toast-wrap {
-  top: 58px;
-  right: 20px;
-  left: auto;
-  transform: none;
-  width: min(360px, calc(100vw - 40px));
-  align-items: stretch;
-}
 .toast {
   position: relative;
   min-height: 66px;
@@ -4455,18 +4481,6 @@ textarea {
 
 /* ============================ Refined motion and surfaces ============================ */
 
-.topnav {
-  width: calc(100% - 36px);
-  height: 52px;
-  margin: 8px auto 0;
-  padding: 0 12px;
-  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--glass-player) 86%, transparent);
-  box-shadow: 0 12px 36px color-mix(in srgb, var(--shadow) 46%, transparent);
-  backdrop-filter: blur(30px) saturate(1.45);
-}
-
 .topnav-item,
 .topnav-icon-btn,
 .topnav-user,
@@ -4564,65 +4578,10 @@ textarea {
   align-items: center;
 }
 
-.playlist-grid {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 18px 16px;
-}
-
-.playlist-card,
-.song-card {
-  content-visibility: auto;
-  contain-intrinsic-size: 220px;
-}
-
+/* Lazy-render offscreen home sections. */
 .home-section {
   content-visibility: auto;
   contain-intrinsic-size: 520px;
-}
-
-.playlist-card img,
-.song-card img,
-.song-card-ph {
-  border-radius: 20px;
-}
-
-.playlist-card,
-.song-card {
-  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.playlist-card:hover,
-.song-card:hover {
-  transform: translateY(-5px) scale(1.01);
-}
-
-.playlist-card:active,
-.song-card:active {
-  transform: translateY(0) scale(0.98);
-}
-
-.player-bar {
-  border-radius: 28px;
-  contain: layout paint style;
-}
-
-.pb-cover,
-.pb-cover img,
-.pb-cover-ph {
-  border-radius: 50%;
-}
-
-.pb-cover {
-  will-change: transform;
-  transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.pb-cover:hover {
-  transform: translateY(-2px) scale(1.06);
-}
-
-.volume-popover {
-  border-radius: 24px;
 }
 
 .modal,
@@ -4656,21 +4615,6 @@ textarea {
 .opt-btn,
 .btn {
   border-radius: 12px;
-}
-
-.player-comments-drawer {
-  border-radius: 22px;
-}
-
-/* Compact capsule notifications appear below the floating navigation. */
-.toast-wrap {
-  top: 106px;
-  right: auto;
-  left: 50%;
-  width: min(460px, calc(100vw - 48px));
-  align-items: center;
-  transform: translateX(-50%);
-  pointer-events: none;
 }
 
 .toast {
@@ -4910,19 +4854,7 @@ textarea {
 
 /* ============================ Interaction polish ============================ */
 
-.topnav {
-  width: 100%;
-  height: 52px;
-  margin: 0 auto;
-  padding-inline: 30px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
-  isolation: isolate;
-}
-
+/* Condensing surface: full-bleed row at rest, floating glass pill on scroll. */
 .topnav::before {
   content: "";
   position: absolute;
@@ -4953,46 +4885,17 @@ textarea {
   backdrop-filter: blur(30px) saturate(1.45);
 }
 
-.topnav-items,
-.topnav-actions {
-  transform: translateZ(0);
-}
-
 .topnav svg {
   display: block;
   flex: none;
   transform: translateZ(0);
 }
 
-.playlist-grid,
-.media-grid {
-  padding-top: 8px;
-}
-
 .song-cards {
   padding-top: 9px;
 }
 
-.playlist-card,
-.song-card,
-.media-card {
-  overflow: visible;
-  border-radius: 0;
-  contain: none;
-  content-visibility: visible;
-  transform: none;
-  transition: none;
-}
-
-.media-card:hover,
-.playlist-card:hover,
-.song-card:hover,
-.media-card:active,
-.playlist-card:active,
-.song-card:active {
-  transform: none;
-}
-
+/* Card hover motion: the shell stays put, the cover lifts. */
 .card-cover {
   position: relative;
   width: 100%;
@@ -5020,77 +4923,6 @@ textarea {
 
 .media-card .card-cover img {
   margin-bottom: 0;
-}
-
-.playlist-card img,
-.song-card img,
-.song-card-ph,
-.media-card img {
-  border-radius: 14px;
-}
-
-.player-bar {
-  contain: layout style;
-  overflow: visible;
-  box-sizing: border-box;
-  height: 84px;
-  min-height: 84px;
-  max-height: 84px;
-}
-
-.pb-progress {
-  height: 14px;
-  min-height: 14px;
-  flex: none;
-}
-
-.pb-time {
-  line-height: 14px;
-}
-
-.pb-row {
-  height: 48px;
-  min-height: 48px;
-  flex: none;
-}
-
-.pb-cover,
-.pb-cover img,
-.pb-cover-ph {
-  width: 48px;
-  height: 48px;
-}
-
-.pb-cover {
-  line-height: 0;
-}
-
-.pb-cover img {
-  display: block;
-}
-
-.pb-cover img,
-.pb-cover.spinning img,
-.pb-cover.paused img {
-  animation: pb-cover-rotation 14s linear infinite;
-}
-
-.pb-cover.spinning img {
-  animation-play-state: running;
-}
-
-.pb-cover.paused img {
-  animation-play-state: paused;
-}
-
-@keyframes pb-cover-rotation {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.volume-popover {
-  z-index: 8;
 }
 
 .user-vip-fallback {
@@ -5765,7 +5597,6 @@ textarea {
 .recent-card strong { font-size: 12px; }
 .recent-card span { color: var(--text-faint); font-size: 11px; }
 .recent-card button { cursor: pointer; }
-.song-card { position: relative; }
 .song-card-dislike { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: rgba(0,0,0,.52); color: #fff; opacity: 0; cursor: pointer; transition: opacity .15s ease; }
 .song-card:hover .song-card-dislike, .song-card-dislike:focus-visible { opacity: 1; }
 .recommend-history-days { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 16px; padding-bottom: 3px; }
