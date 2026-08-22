@@ -1,19 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
-import { MapPin, Palette, RefreshCw } from "lucide-react";
+import { MapPin, Palette, RefreshCw, UserRound } from "lucide-react";
 import {
+  getArtistToplist,
   getChartCities,
   getDimensionChartDetail,
   getDimensionChartSongs,
   type DimensionChartQuery,
 } from "../api/charts";
 import { getStyleTags } from "../api/style";
-import type { ChartCity, DimensionChartDetail, Song, StyleTag } from "../api/types";
+import type { ArtistInfo, ChartCity, DimensionChartDetail, Song, StyleTag } from "../api/types";
+import { useExploreStore } from "../store/exploreStore";
+import { sizedImage } from "../utils/image";
 import { usePlayerStore } from "../store/playerStore";
 import { useChartStore } from "../store/chartStore";
 import { Page, PageHeader } from "./Page";
 import SongList from "./SongList";
 
-type ChartMode = "global" | "city" | "style";
+type ChartMode = "global" | "city" | "style" | "artist";
 
 function flattenCities(cities: ChartCity[]): ChartCity[] {
   return cities.flatMap((city) => (city.children.length ? flattenCities(city.children) : [city]));
@@ -28,6 +31,9 @@ export default function ChartPage() {
   const [dimensionDetail, setDimensionDetail] = useState<DimensionChartDetail | null>(null);
   const [dimensionSongs, setDimensionSongs] = useState<Song[]>([]);
   const [dimensionLoading, setDimensionLoading] = useState(false);
+  const [artistType, setArtistType] = useState(1);
+  const [artistRanks, setArtistRanks] = useState<ArtistInfo[]>([]);
+  const [artistLoading, setArtistLoading] = useState(false);
   const topSongs = usePlayerStore((s) => s.topSongs);
   const topSongsLoading = usePlayerStore((s) => s.topSongsLoading);
   const charts = useChartStore((s) => s.charts);
@@ -37,6 +43,7 @@ export default function ChartPage() {
   const songsLoading = useChartStore((s) => s.songsLoading);
   const load = useChartStore((s) => s.load);
   const select = useChartStore((s) => s.select);
+  const openArtist = useExploreStore((s) => s.openArtist);
   useEffect(() => {
     void load();
   }, [load]);
@@ -92,6 +99,18 @@ export default function ChartPage() {
     }
   };
 
+  const loadArtist = async (type = artistType) => {
+    setArtistLoading(true);
+    try {
+      setArtistRanks(await getArtistToplist(type));
+    } catch {
+      setArtistRanks([]);
+      usePlayerStore.getState().toast("加载歌手榜失败", "error");
+    } finally {
+      setArtistLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (mode === "global" || !dimensionQuery) return;
     void loadDimension();
@@ -99,11 +118,18 @@ export default function ChartPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, dimensionQuery]);
 
+  useEffect(() => {
+    if (mode === "artist") void loadArtist();
+    // Artist type changes are handled by the selector below.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode]);
+
   const selected = charts.find((chart) => chart.id === selectedId);
   const songs = mode === "global" ? (selectedId ? chartSongs : topSongs) : dimensionSongs;
   const subtitle = mode === "global"
     ? selected?.updateFrequency || selected?.name || "飙升榜 · 热门歌曲"
-    : dimensionDetail?.name || (mode === "style" ? "城市风格榜" : "城市榜");
+    : mode === "artist" ? "歌手榜"
+      : dimensionDetail?.name || (mode === "style" ? "城市风格榜" : "城市榜");
 
   return (
     <Page>
@@ -114,15 +140,16 @@ export default function ChartPage() {
           <button
             className="icon-button"
             title="刷新榜单"
-            onClick={() => void (mode === "global" ? load() : loadDimension())}
-            disabled={mode === "global" ? loading || songsLoading : dimensionLoading}
+            onClick={() => void (mode === "global" ? load() : mode === "artist" ? loadArtist() : loadDimension())}
+            disabled={mode === "global" ? loading || songsLoading : mode === "artist" ? artistLoading : dimensionLoading}
           >
-            <RefreshCw size={17} className={(mode === "global" ? loading : dimensionLoading) ? "spin" : ""} />
+            <RefreshCw size={17} className={(mode === "global" ? loading : mode === "artist" ? artistLoading : dimensionLoading) ? "spin" : ""} />
           </button>
         }
       />
       <div className="collection-tabs chart-tabs" role="tablist" aria-label="榜单类型">
         <button className={mode === "global" ? "active" : ""} onClick={() => setMode("global")}><RefreshCw size={14} /> 官方榜单</button>
+        <button className={mode === "artist" ? "active" : ""} onClick={() => setMode("artist")}><UserRound size={14} /> 歌手榜</button>
         <button className={mode === "city" ? "active" : ""} onClick={() => setMode("city")}><MapPin size={14} /> 城市榜</button>
         <button className={mode === "style" ? "active" : ""} onClick={() => setMode("style")}><Palette size={14} /> 城市风格榜</button>
       </div>
@@ -143,7 +170,7 @@ export default function ChartPage() {
           ))}
           </div>
       )}
-      {mode !== "global" && (
+      {(mode === "city" || mode === "style") && (
         <div className="chart-dimension-controls">
           <label>
             城市
@@ -162,11 +189,36 @@ export default function ChartPage() {
           {dimensionDetail?.description && <small>{dimensionDetail.description}</small>}
         </div>
       )}
-      <SongList
-        songs={songs}
-        loading={mode === "global" ? songsLoading || (!charts.length && topSongsLoading) : dimensionLoading}
-        emptyText="暂无排行数据"
-      />
+      {mode === "artist" ? (
+        <>
+          <div className="chart-dimension-controls">
+            <label>
+              地区
+              <select value={artistType} onChange={(event) => { const type = Number(event.target.value); setArtistType(type); void loadArtist(type); }} disabled={artistLoading}>
+                <option value={1}>华语</option><option value={2}>欧美</option><option value={3}>韩国</option><option value={4}>日本</option>
+              </select>
+            </label>
+          </div>
+          {artistLoading ? <div className="loading-hint">正在加载歌手榜…</div> : artistRanks.length ? (
+            <div className="artist-ranking-grid">
+              {artistRanks.map((item, index) => (
+                <button className="artist-ranking-card" key={item.id} onClick={() => void openArtist(item.id)}>
+                  <b>{index + 1}</b>
+                  {item.picUrl ? <img src={sizedImage(item.picUrl, 180)} alt="" loading="lazy" /> : <span><UserRound size={20} /></span>}
+                  <strong>{item.name}</strong>
+                  <small>{item.musicSize ? `${item.musicSize} 首歌曲` : "歌手"}</small>
+                </button>
+              ))}
+            </div>
+          ) : <div className="empty">暂无歌手榜数据</div>}
+        </>
+      ) : (
+        <SongList
+          songs={songs}
+          loading={mode === "global" ? songsLoading || (!charts.length && topSongsLoading) : dimensionLoading}
+          emptyText="暂无排行数据"
+        />
+      )}
     </Page>
   );
 }

@@ -5572,6 +5572,15 @@ input {
 .artist-introduction article + article { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-light); }
 .artist-introduction strong { color: var(--text); font-size: 13px; }
 .artist-introduction p { margin: 5px 0 0; color: var(--text-dim); font-size: 12px; line-height: 1.65; white-space: pre-line; }
+.artist-ranking-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+.artist-ranking-card { display: grid; grid-template-columns: 24px 42px minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; gap: 3px 8px; min-width: 0; padding: 8px; border: 1px solid var(--border-light); border-radius: 7px; background: var(--bg-2); color: var(--text); text-align: left; }
+.artist-ranking-card:hover { border-color: var(--border); background: var(--bg-3); }
+.artist-ranking-card > b { grid-row: 1 / span 2; color: var(--text-faint); text-align: center; }
+.artist-ranking-card img, .artist-ranking-card > span { grid-row: 1 / span 2; width: 42px; height: 42px; border-radius: 50%; object-fit: cover; }
+.artist-ranking-card > span { display: grid; place-items: center; background: var(--bg-4); color: var(--text-faint); }
+.artist-ranking-card strong, .artist-ranking-card small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.artist-ranking-card strong { font-size: 12px; }
+.artist-ranking-card small { color: var(--text-faint); font-size: 10px; }
 .profile-medal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
 .profile-medal { display: grid; justify-items: center; gap: 5px; min-width: 0; padding: 10px 8px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-1); text-align: center; }
 .profile-medal img, .profile-medal-placeholder { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
