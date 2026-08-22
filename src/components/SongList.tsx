@@ -2,15 +2,18 @@ import {
   ArrowDown,
   ArrowUp,
   Disc3,
+  Download,
   MessageCircle,
   Play,
   Trash2,
   UserRound,
 } from "lucide-react";
+import { useState } from "react";
 import type { Song } from "../api/types";
 import { useCommentStore } from "../store/commentStore";
 import { useExploreStore } from "../store/exploreStore";
 import { usePlayerStore } from "../store/playerStore";
+import { downloadSongFile } from "../api/client";
 import { formatTime } from "../utils/lyrics";
 import { sizedImage } from "../utils/image";
 import { LoadingState } from "./Page";
@@ -41,6 +44,7 @@ export default function SongList({
   const openAlbum = useExploreStore((s) => s.openAlbum);
   const openArtist = useExploreStore((s) => s.openArtist);
   const openComments = useCommentStore((s) => s.openResourceComments);
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
 
   return (
     <>
@@ -170,6 +174,28 @@ export default function SongList({
                       <Trash2 size={15} />
                     </button>
                   )}
+                  <button
+                    className="icon-action"
+                    title="下载歌曲"
+                    disabled={downloadingId === song.id}
+                    onClick={() => {
+                      setDownloadingId(song.id);
+                      void downloadSongFile(song)
+                        .then(() =>
+                          usePlayerStore
+                            .getState()
+                            .toast("已开始下载歌曲", "success"),
+                        )
+                        .catch(() =>
+                          usePlayerStore
+                            .getState()
+                            .toast("歌曲暂时无法下载", "error"),
+                        )
+                        .finally(() => setDownloadingId(null));
+                    }}
+                  >
+                    <Download size={15} />
+                  </button>
                 </div>
                 <span className="dur">{formatTime(song.duration)}</span>
               </div>
