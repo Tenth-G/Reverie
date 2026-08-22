@@ -1,6 +1,9 @@
 const routes = [
   ["/mv/detail/info?mvid=1", "GET"],
   ["/video/detail/info?vid=1", "GET"],
+  ["/resource/like?type=1&id=1&t=1", "POST"],
+  ["/mv/sub?mvid=1&t=1", "POST"],
+  ["/video/sub?id=1&t=1", "POST"],
 ];
 
 const base = process.env.NCM_API_BASE || "http://127.0.0.1:3939";

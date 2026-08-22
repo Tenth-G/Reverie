@@ -116,5 +116,39 @@ export async function getMediaStats(
     shareCount: Number(value.shareCount ?? value.share ?? 0),
     commentCount: Number(value.commentCount ?? value.comment ?? 0),
     subCount: Number(value.subCount ?? value.subscribeCount ?? 0),
+    liked: Boolean(value.liked ?? value.likedByUser ?? value.isLiked),
+    subscribed: Boolean(
+      value.subed ?? value.subscribed ?? value.isSubscribed ?? value.isSub,
+    ),
   };
+}
+
+export async function setMediaLiked(
+  item: SearchMediaInfo,
+  liked: boolean,
+): Promise<void> {
+  await request(
+    "/resource/like",
+    {
+      type: item.kind === "mv" ? 1 : 5,
+      id: item.id,
+      t: liked ? 1 : 0,
+    },
+    false,
+    { method: "POST" },
+  );
+}
+
+export async function setMediaSubscribed(
+  item: SearchMediaInfo,
+  subscribed: boolean,
+): Promise<void> {
+  await request(
+    item.kind === "mv" ? "/mv/sub" : "/video/sub",
+    item.kind === "mv"
+      ? { mvid: item.id, t: subscribed ? 1 : 0 }
+      : { id: item.id, t: subscribed ? 1 : 0 },
+    false,
+    { method: "POST" },
+  );
 }

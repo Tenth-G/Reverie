@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { Clapperboard, MessageCircle, Play, X } from "lucide-react";
+import {
+  Bookmark,
+  Clapperboard,
+  Heart,
+  MessageCircle,
+  Play,
+  X,
+} from "lucide-react";
 import type { CommentResource, SearchMediaInfo } from "../api/types.ts";
 import { useCommentStore } from "../store/commentStore";
 import { useMediaStore } from "../store/mediaStore.ts";
@@ -24,11 +31,14 @@ export default function MediaDetailDialog() {
   const related = useMediaStore((state) => state.related);
   const stats = useMediaStore((state) => state.stats);
   const loading = useMediaStore((state) => state.loading);
+  const actionLoading = useMediaStore((state) => state.actionLoading);
   const urlLoading = useMediaStore((state) => state.urlLoading);
   const resolution = useMediaStore((state) => state.resolution);
   const close = useMediaStore((state) => state.close);
   const open = useMediaStore((state) => state.open);
   const setResolution = useMediaStore((state) => state.setResolution);
+  const toggleLike = useMediaStore((state) => state.toggleLike);
+  const toggleSubscription = useMediaStore((state) => state.toggleSubscription);
   const openComments = useCommentStore((state) => state.openResourceComments);
   const [coverFailed, setCoverFailed] = useState(false);
   if (!item) return null;
@@ -103,6 +113,34 @@ export default function MediaDetailDialog() {
             >
               <MessageCircle size={14} /> 评论
             </button>
+            {stats && (
+              <>
+                <button
+                  className={`btn ${stats.liked ? "active" : ""}`}
+                  onClick={() => void toggleLike()}
+                  disabled={actionLoading !== ""}
+                  title={stats.liked ? "取消点赞" : "点赞"}
+                >
+                  <Heart
+                    size={14}
+                    fill={stats.liked ? "currentColor" : "none"}
+                  />
+                  {stats.liked ? "已赞" : "点赞"}
+                </button>
+                <button
+                  className={`btn ${stats.subscribed ? "active" : ""}`}
+                  onClick={() => void toggleSubscription()}
+                  disabled={actionLoading !== ""}
+                  title={stats.subscribed ? "取消收藏" : "收藏"}
+                >
+                  <Bookmark
+                    size={14}
+                    fill={stats.subscribed ? "currentColor" : "none"}
+                  />
+                  {stats.subscribed ? "已收藏" : "收藏"}
+                </button>
+              </>
+            )}
           </div>
           {loading ? (
             <LoadingState label="正在加载详情…" />

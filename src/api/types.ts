@@ -216,6 +216,8 @@ export interface MediaStats {
   shareCount: number;
   commentCount: number;
   subCount: number;
+  liked: boolean;
+  subscribed: boolean;
 }
 
 export interface YunbeiTask {
