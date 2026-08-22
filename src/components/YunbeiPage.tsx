@@ -1,6 +1,8 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Check, Coins, Gift, RefreshCw, Send, ShieldCheck } from "lucide-react";
+import { getSigninProgress } from "../api/yunbei.ts";
 import { useYunbeiStore } from "../store/yunbeiStore.ts";
+import type { SigninProgress } from "../api/types.ts";
 import { LoadingState, Page, PageHeader } from "./Page";
 
 function formatTime(value: number) {
@@ -28,9 +30,28 @@ export default function YunbeiPage() {
   const recommendCurrentSong = useYunbeiStore(
     (state) => state.recommendCurrentSong,
   );
+  const [progress, setProgress] = useState<SigninProgress | null>(null);
+  const [progressLoading, setProgressLoading] = useState(false);
+
+  const loadProgress = async () => {
+    setProgressLoading(true);
+    try {
+      setProgress(await getSigninProgress());
+    } catch {
+      setProgress(null);
+    } finally {
+      setProgressLoading(false);
+    }
+  };
+
   useEffect(() => {
     void load();
+    void loadProgress();
   }, [load]);
+
+  const refreshAll = async () => {
+    await Promise.all([load(), loadProgress()]);
+  };
 
   return (
     <Page>
@@ -41,8 +62,8 @@ export default function YunbeiPage() {
           <div className="page-action-row">
             <button
               className="btn"
-              onClick={() => void load()}
-              disabled={loading}
+              onClick={() => void refreshAll()}
+              disabled={loading || progressLoading}
             >
               <RefreshCw size={15} className={loading ? "spin" : ""} /> 刷新
             </button>
@@ -89,6 +110,28 @@ export default function YunbeiPage() {
         <LoadingState label="正在加载云贝信息…" />
       ) : (
         <div className="empty">暂时无法获取云贝信息</div>
+      )}
+      {(progressLoading || progress) && (
+        <section className="yunbei-progress-section">
+          <div className="list-header">
+            <h3>签到进度</h3>
+            {progress && <span className="count">{progress.current}{progress.total ? ` / ${progress.total}` : " 天"}</span>}
+          </div>
+          {progressLoading ? (
+            <LoadingState label="正在读取签到进度…" />
+          ) : progress ? (
+            <div className="yunbei-progress">
+              <div className="yunbei-progress-copy">
+                <strong>{progress.title}</strong>
+                <span>{progress.description || (progress.completed ? "本阶段已完成" : "持续签到可领取奖励")}</span>
+                {progress.reward && <small>奖励：{progress.reward}</small>}
+              </div>
+              <div className="yunbei-progress-track" aria-label="签到进度">
+                <i style={{ width: `${progress.total ? Math.min(100, Math.max(0, (progress.current / progress.total) * 100)) : progress.completed ? 100 : 0}%` }} />
+              </div>
+            </div>
+          ) : null}
+        </section>
       )}
       <section className="yunbei-section">
         <div className="list-header">

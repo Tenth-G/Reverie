@@ -1,5 +1,10 @@
 import { request } from "./client.ts";
-import type { YunbeiLedgerEntry, YunbeiOverview, YunbeiTask } from "./types.ts";
+import type {
+  SigninProgress,
+  YunbeiLedgerEntry,
+  YunbeiOverview,
+  YunbeiTask,
+} from "./types.ts";
 
 type Obj = Record<string, unknown>;
 const obj = (value: unknown): Obj =>
@@ -29,6 +34,30 @@ export async function getYunbeiOverview(): Promise<YunbeiOverview> {
 
 export async function dailySignIn(type: 0 | 1 = 1): Promise<Obj> {
   return request<Obj>("/daily_signin", { type }, false, { method: "POST" });
+}
+
+export async function getSigninProgress(
+  moduleId = "1207signin-1207signin",
+): Promise<SigninProgress> {
+  const response = await request<Obj>(
+    "/signin/progress",
+    { moduleId },
+    false,
+  );
+  const value = obj(response.data ?? response.result ?? response);
+  const current = Number(
+    value.current ?? value.progress ?? value.day ?? value.completedDays ?? 0,
+  );
+  const total = Number(value.total ?? value.totalDays ?? value.target ?? 0);
+  return {
+    moduleId: String(value.moduleId ?? moduleId),
+    title: String(value.title ?? value.name ?? "签到进度"),
+    description: String(value.description ?? value.desc ?? ""),
+    current,
+    total,
+    completed: Boolean(value.completed ?? value.finished ?? (total > 0 && current >= total)),
+    reward: String(value.reward ?? value.rewardText ?? value.nextReward ?? ""),
+  };
 }
 
 export async function yunbeiSign(): Promise<Obj> {

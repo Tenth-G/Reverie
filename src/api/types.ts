@@ -557,6 +557,15 @@ export interface ArtistFan {
   followed: boolean;
   signature: string;
 }
+export interface SigninProgress {
+  moduleId: string;
+  title: string;
+  description: string;
+  current: number;
+  total: number;
+  completed: boolean;
+  reward: string;
+}
 
 export interface SearchResultPage {
   songs: Song[];
