@@ -6153,3 +6153,17 @@ input {
 .private-dj-empty svg { color: var(--accent); }
 .private-dj-empty strong { color: var(--text-dim); font-size: 13px; }
 .private-dj-error { max-width: 1100px; margin: 0 auto 16px; color: #ff8585; font-size: 12px; }
+
+/* Podcast program rankings */
+.program-rank-grid { display: grid; gap: 6px; }
+.program-rank-card { display: flex; align-items: center; gap: 9px; min-width: 0; padding: 8px; border-radius: 6px; background: var(--bg-3); color: var(--text); text-align: left; }
+.program-rank-card:hover:not(:disabled) { background: var(--bg-4); }
+.program-rank-card:disabled { cursor: default; opacity: .75; }
+.program-rank-index { width: 22px; flex: 0 0 22px; color: var(--text-faint); font-size: 12px; text-align: center; }
+.program-rank-card > img, .program-rank-cover { width: 48px; height: 48px; flex: 0 0 48px; border-radius: 6px; object-fit: cover; }
+.program-rank-cover { display: grid; place-items: center; background: var(--bg-4); color: var(--accent); font-size: 10px; }
+.program-rank-copy { display: grid; min-width: 0; flex: 1; gap: 4px; }
+.program-rank-copy strong, .program-rank-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.program-rank-copy strong { font-size: 12px; }
+.program-rank-copy small { color: var(--text-dim); font-size: 10px; }
+.program-rank-card > b { color: var(--accent); font-size: 10px; }
