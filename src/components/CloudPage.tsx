@@ -46,6 +46,7 @@ function SongCover({ song }: { song: CloudSong }) {
 
 function SongRow({ song, songs }: { song: CloudSong; songs: CloudSong[] }) {
   const playSong = usePlayerStore((state) => state.playSong);
+  const openDetail = useCloudStore((state) => state.openDetail);
   const match = useCloudStore((state) => state.match);
   const matchingId = useCloudStore((state) => state.matchingId);
   const [matchId, setMatchId] = useState(
@@ -53,7 +54,19 @@ function SongRow({ song, songs }: { song: CloudSong; songs: CloudSong[] }) {
   );
   const busy = matchingId === (song.cloudId || song.id);
   return (
-    <article className="cloud-song-row">
+    <article
+      className="cloud-song-row"
+      role="button"
+      tabIndex={0}
+      title="查看云盘歌曲详情"
+      onClick={() => void openDetail(song)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          void openDetail(song);
+        }
+      }}
+    >
       <SongCover song={song} />
       <div className="cloud-song-main">
         <strong title={song.fileName}>{song.name}</strong>
@@ -69,7 +82,10 @@ function SongRow({ song, songs }: { song: CloudSong; songs: CloudSong[] }) {
         <button
           className="icon-action"
           title="播放"
-          onClick={() => void playSong(song, songs)}
+          onClick={(event) => {
+            event.stopPropagation();
+            void playSong(song, songs);
+          }}
         >
           <Play size={16} fill="currentColor" />
         </button>
@@ -82,12 +98,16 @@ function SongRow({ song, songs }: { song: CloudSong; songs: CloudSong[] }) {
             onChange={(event) =>
               setMatchId(event.target.value.replace(/\D/g, ""))
             }
+            onClick={(event) => event.stopPropagation()}
           />
           <button
             className="icon-action"
             title="匹配歌曲"
             disabled={busy || !matchId}
-            onClick={() => void match(song, Number(matchId))}
+            onClick={(event) => {
+              event.stopPropagation();
+              void match(song, Number(matchId));
+            }}
           >
             {busy ? (
               <RefreshCw size={15} className="spin" />
@@ -113,7 +133,10 @@ function DeleteButton({ song }: { song: CloudSong }) {
         className="icon-action danger"
         title="删除云盘歌曲"
         disabled={busy}
-        onClick={() => setOpen(true)}
+        onClick={(event) => {
+          event.stopPropagation();
+          setOpen(true);
+        }}
       >
         <Trash2 size={16} />
       </button>
@@ -125,6 +148,39 @@ function DeleteButton({ song }: { song: CloudSong }) {
         onConfirm={() => remove(song)}
       />
     </>
+  );
+}
+
+function CloudDetailDialog({
+  song,
+  loading,
+  onClose,
+}: {
+  song: CloudSong | null;
+  loading: boolean;
+  onClose: () => void;
+}) {
+  if (!song) return null;
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal entity-editor" onClick={(event) => event.stopPropagation()}>
+        <h2>{song.name}</h2>
+        <p className="sub">{loading ? "正在加载云盘详情…" : "云盘歌曲详情"}</p>
+        <div className="cloud-detail-list">
+          <div><span>歌手</span><strong>{song.artists || "未知歌手"}</strong></div>
+          <div><span>专辑</span><strong>{song.album || "未知专辑"}</strong></div>
+          <div><span>歌曲 ID</span><strong>{song.id || "-"}</strong></div>
+          <div><span>云盘 ID</span><strong>{song.cloudId || "-"}</strong></div>
+          <div><span>文件名</span><strong>{song.fileName || "-"}</strong></div>
+          <div><span>文件大小</span><strong>{formatBytes(song.fileSize)}</strong></div>
+          <div><span>比特率</span><strong>{song.bitrate ? `${Math.round(song.bitrate / 1000)} kbps` : "未知"}</strong></div>
+          <div><span>匹配歌曲</span><strong>{song.matchedSongId || "未匹配"}</strong></div>
+        </div>
+        <div className="modal-actions">
+          <button className="btn" onClick={onClose}>关闭</button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -236,6 +292,9 @@ export default function CloudPage() {
   const upload = useCloudStore((state) => state.upload);
   const importing = useCloudStore((state) => state.importing);
   const importSong = useCloudStore((state) => state.importSong);
+  const detail = useCloudStore((state) => state.detail);
+  const detailLoading = useCloudStore((state) => state.detailLoading);
+  const closeDetail = useCloudStore((state) => state.closeDetail);
   const resetUpload = useCloudStore((state) => state.resetUpload);
   const [importOpen, setImportOpen] = useState(false);
 
@@ -338,6 +397,11 @@ export default function CloudPage() {
             fileType: values.fileType.trim() || "mp3",
           })
         }
+      />
+      <CloudDetailDialog
+        song={detail}
+        loading={detailLoading}
+        onClose={closeDetail}
       />
     </Page>
   );
