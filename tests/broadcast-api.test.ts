@@ -8,6 +8,9 @@ import {
   getDifmSubscribedChannels,
   getDifmTracks,
   getPodcastProgramDetail,
+  getPodcastProgramHoursToplist,
+  getPodcastProgramToplist,
+  getPodcastTodayPreferred,
   getSportRadio,
   toggleBroadcastSubscription,
   toggleDifmChannel,
@@ -133,6 +136,24 @@ test("DIFM APIs normalize channels, tracks and subscription routes", async () =>
     assert.equal(calls.at(-2)?.method, "POST");
     assert.equal(calls.at(-1)?.method, "POST");
     assert.match(calls.at(-1)!.url, /channel\/unsubscribe/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("podcast program rankings forward routes and normalize program records", async () => {
+  const originalFetch = globalThis.fetch;
+  const paths: string[] = [];
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    paths.push(url.pathname);
+    return Response.json({ data: [{ id: 9, name: "节目榜", radio: { name: "电台" }, score: 88, mainSong: { id: 90, name: "榜单歌曲", ar: [{ name: "歌手" }] } }] });
+  };
+  try {
+    assert.equal((await getPodcastProgramToplist(10, 20))[0]?.name, "节目榜");
+    assert.equal((await getPodcastProgramHoursToplist(10))[0]?.song?.id, 90);
+    assert.equal((await getPodcastTodayPreferred(1))[0]?.radioName, "电台");
+    assert.deepEqual(paths, ["/dj/program/toplist", "/dj/program/toplist/hours", "/dj/today/perfered"]);
   } finally {
     globalThis.fetch = originalFetch;
   }

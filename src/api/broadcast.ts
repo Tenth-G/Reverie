@@ -3,6 +3,7 @@ import type {
   BroadcastChannel,
   BroadcastCategory,
   DifmChannel,
+  PodcastProgramRank,
   PodcastProgramDetail,
   RadioInfo,
   Song,
@@ -170,6 +171,67 @@ export async function getPodcastProgramDetail(
     commentCount: Number(value.commentCount ?? value.commentCountAll ?? 0),
     song: normalizeSong(value.mainSong ?? value.song),
   };
+}
+
+function normalizeProgramRank(raw: unknown): PodcastProgramRank | null {
+  const value = obj(raw);
+  const program = obj(value.program ?? value.djProgram);
+  const radio = obj(value.radio ?? program.radio);
+  const dj = obj(value.dj ?? program.dj);
+  const song = normalizeSong(value.mainSong ?? value.song ?? program.mainSong ?? program.song);
+  const id = Number(value.id ?? value.programId ?? program.id ?? song?.programId ?? 0);
+  if (!id) return null;
+  return {
+    id,
+    name: String(value.name ?? value.title ?? program.name ?? song?.name ?? "播客节目"),
+    description: String(value.description ?? value.desc ?? program.description ?? ""),
+    coverUrl: String(value.coverUrl ?? value.picUrl ?? program.coverUrl ?? song?.picUrl ?? ""),
+    radioName: String(value.radioName ?? radio.name ?? ""),
+    djName: String(value.djName ?? dj.nickname ?? ""),
+    score: Number(value.score ?? value.hotScore ?? value.playCount ?? 0),
+    song,
+  };
+}
+
+function normalizeProgramList(response: Obj): PodcastProgramRank[] {
+  const value = obj(response.data ?? response.result ?? response);
+  return arr(value.list ?? value.programs ?? value.data ?? response.data ?? response)
+    .map(normalizeProgramRank)
+    .filter((item): item is PodcastProgramRank => item !== null);
+}
+
+export async function getPodcastProgramToplist(
+  limit = 30,
+  offset = 0,
+): Promise<PodcastProgramRank[]> {
+  const response = await request<Obj>(
+    "/dj/program/toplist",
+    { limit, offset },
+    false,
+  );
+  return normalizeProgramList(response);
+}
+
+export async function getPodcastProgramHoursToplist(
+  limit = 30,
+): Promise<PodcastProgramRank[]> {
+  const response = await request<Obj>(
+    "/dj/program/toplist/hours",
+    { limit },
+    false,
+  );
+  return normalizeProgramList(response);
+}
+
+export async function getPodcastTodayPreferred(
+  page = 0,
+): Promise<PodcastProgramRank[]> {
+  const response = await request<Obj>(
+    "/dj/today/perfered",
+    { page },
+    false,
+  );
+  return normalizeProgramList(response);
 }
 
 function normalizeDifmChannel(raw: unknown, source: number): DifmChannel | null {

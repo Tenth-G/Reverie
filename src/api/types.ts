@@ -585,6 +585,16 @@ export interface PrivateDjItem {
   audioUrl: string;
   song: Song | null;
 }
+export interface PodcastProgramRank {
+  id: number;
+  name: string;
+  description: string;
+  coverUrl: string;
+  radioName: string;
+  djName: string;
+  score: number;
+  song: Song | null;
+}
 
 export interface SearchResultPage {
   songs: Song[];

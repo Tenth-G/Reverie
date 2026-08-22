@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Heart, RefreshCw } from "lucide-react";
-import type { BroadcastCategory, RadioInfo } from "../api/types";
+import type { BroadcastCategory, PodcastProgramRank, RadioInfo } from "../api/types";
 import { useExploreStore } from "../store/exploreStore";
 import { sizedImage } from "../utils/image";
 import { LoadingState, Page, PageHeader } from "./Page";
@@ -13,6 +13,9 @@ import {
   getPodcastCategories,
   getPodcastCategoryRecommendations,
   getPodcastHotRadios,
+  getPodcastProgramHoursToplist,
+  getPodcastProgramToplist,
+  getPodcastTodayPreferred,
   getPodcastToplist,
   toggleDifmChannel,
 } from "../api/broadcast.ts";
@@ -52,6 +55,27 @@ function RadioGrid({ radios }: { radios: RadioInfo[] }) {
           </span>
         </article>
       ))}
+    </div>
+  );
+}
+
+function ProgramRankGrid({ items, loading }: { items: PodcastProgramRank[]; loading: boolean }) {
+  const playSong = usePlayerStore((state) => state.playSong);
+  const songs = items.map((item) => item.song).filter((song): song is NonNullable<typeof song> => song !== null);
+  return loading ? <LoadingState label="正在加载节目榜…" /> : (
+    <div className="program-rank-grid">
+      {items.map((item, index) => (
+        <button className="program-rank-card" key={`${item.id}-${index}`} disabled={!item.song} onClick={() => item.song && void playSong(item.song, songs)}>
+          <span className="program-rank-index">{index + 1}</span>
+          {item.coverUrl ? <img src={sizedImage(item.coverUrl, 180)} alt="" /> : <span className="program-rank-cover">DJ</span>}
+          <span className="program-rank-copy">
+            <strong>{item.name}</strong>
+            <small>{item.radioName || item.djName || item.description || "播客节目"}</small>
+          </span>
+          {item.score > 0 && <b>{item.score.toLocaleString("zh-CN")}</b>}
+        </button>
+      ))}
+      {!items.length && <div className="empty">暂无节目榜数据</div>}
     </div>
   );
 }
@@ -178,6 +202,9 @@ export default function RadioPage() {
   const [hotRadios, setHotRadios] = useState<RadioInfo[]>([]);
   const [banners, setBanners] = useState<Array<{ imageUrl: string; title: string; url: string }>>([]);
   const [discoveryLoading, setDiscoveryLoading] = useState(false);
+  const [programRanking, setProgramRanking] = useState<"top" | "hours" | "today" | "">("");
+  const [programRanks, setProgramRanks] = useState<PodcastProgramRank[]>([]);
+  const [programRankingLoading, setProgramRankingLoading] = useState(false);
 
   useEffect(() => {
     void loadRadios();
@@ -223,6 +250,23 @@ export default function RadioPage() {
     }
   };
 
+  const loadProgramRanking = async (type: "top" | "hours" | "today") => {
+    setProgramRanking(type);
+    setProgramRankingLoading(true);
+    try {
+      const next = type === "top"
+        ? await getPodcastProgramToplist(30, 0)
+        : type === "hours"
+          ? await getPodcastProgramHoursToplist(30)
+          : await getPodcastTodayPreferred(0);
+      setProgramRanks(next);
+    } catch {
+      setProgramRanks([]);
+    } finally {
+      setProgramRankingLoading(false);
+    }
+  };
+
   return (
     <Page>
       <PageHeader
@@ -249,6 +293,20 @@ export default function RadioPage() {
             <span className="count">{ranked.length} 个</span>
           </div>
           {rankingLoading ? <LoadingState label="正在加载播客榜单…" /> : <RadioGrid radios={ranked} />}
+        </section>
+      )}
+      <div className="collection-tabs" role="tablist" aria-label="播客节目榜">
+        <button className={programRanking === "top" ? "active" : ""} onClick={() => void loadProgramRanking("top")}>节目榜</button>
+        <button className={programRanking === "hours" ? "active" : ""} onClick={() => void loadProgramRanking("hours")}>24 小时节目榜</button>
+        <button className={programRanking === "today" ? "active" : ""} onClick={() => void loadProgramRanking("today")}>今日优选</button>
+      </div>
+      {programRanking && (
+        <section className="content-section">
+          <div className="list-header">
+            <h3>{programRanking === "top" ? "节目榜" : programRanking === "hours" ? "24 小时节目榜" : "今日优选"}</h3>
+            <span className="count">{programRanks.length} 条</span>
+          </div>
+          <ProgramRankGrid items={programRanks} loading={programRankingLoading} />
         </section>
       )}
       {subscribed.length > 0 && (
