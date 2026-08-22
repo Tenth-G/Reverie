@@ -9,8 +9,13 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { useDigitalAlbumStore } from "../store/digitalAlbumStore.ts";
-import { getDigitalAlbumSalesBoard, type DigitalAlbumSalesPeriod } from "../api/digitalAlbum.ts";
-import type { DigitalAlbumRank } from "../api/types.ts";
+import {
+  getDigitalAlbumSalesBoard,
+  getDigitalAlbumStyleLibrary,
+  type DigitalAlbumSalesPeriod,
+  type DigitalAlbumStyleArea,
+} from "../api/digitalAlbum.ts";
+import type { DigitalAlbum, DigitalAlbumRank } from "../api/types.ts";
 import { sizedImage } from "../utils/image";
 import { LoadingState, Page, PageHeader } from "./Page";
 
@@ -30,6 +35,10 @@ export default function DigitalAlbumPage() {
   const [boardPeriod, setBoardPeriod] = useState<DigitalAlbumSalesPeriod>("daily");
   const [board, setBoard] = useState<DigitalAlbumRank[]>([]);
   const [boardLoading, setBoardLoading] = useState(false);
+  const [styleArea, setStyleArea] = useState<DigitalAlbumStyleArea>("Z_H");
+  const [styleAlbums, setStyleAlbums] = useState<DigitalAlbum[]>([]);
+  const [styleLoading, setStyleLoading] = useState(false);
+  const [styleMore, setStyleMore] = useState(false);
 
   const loadBoard = async (period = boardPeriod) => {
     setBoardLoading(true);
@@ -46,6 +55,26 @@ export default function DigitalAlbumPage() {
     void loadPurchased();
     void loadBoard();
   }, [loadPurchased]);
+
+  const loadStyleLibrary = async (area = styleArea, offset = 0) => {
+    setStyleLoading(true);
+    try {
+      const albums = await getDigitalAlbumStyleLibrary(area, 30, offset);
+      setStyleAlbums((current) => offset ? [...current, ...albums.filter((item) => !current.some((entry) => entry.id === item.id))] : albums);
+      setStyleMore(albums.length >= 30);
+    } catch {
+      if (!offset) setStyleAlbums([]);
+      setStyleMore(false);
+    } finally {
+      setStyleLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadStyleLibrary(styleArea, 0);
+    // The area is the only input that should reload this list.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [styleArea]);
 
   return (
     <Page>
@@ -100,6 +129,35 @@ export default function DigitalAlbumPage() {
             ))}
           </div>
         ) : <div className="digital-album-empty">暂无销量榜数据</div>}
+      </section>
+      <section className="digital-album-style-library">
+        <div className="digital-album-section-head">
+          <h2><Album size={17} /> 语种风格馆</h2>
+          <div className="collection-tabs" role="tablist" aria-label="数字专辑语种">
+            {([
+              ["Z_H", "华语"],
+              ["E_A", "欧美"],
+              ["KR", "韩国"],
+              ["JP", "日本"],
+            ] as const).map(([area, label]) => (
+              <button key={area} className={styleArea === area ? "active" : ""} onClick={() => setStyleArea(area)} disabled={styleLoading}>{label}</button>
+            ))}
+          </div>
+        </div>
+        {styleLoading && !styleAlbums.length ? (
+          <LoadingState label="正在加载风格馆…" />
+        ) : styleAlbums.length ? (
+          <div className="digital-album-grid">
+            {styleAlbums.map((album) => (
+              <button className="digital-album-card" key={album.id} onClick={() => { setId(String(album.id)); void loadDetail(album.id); }}>
+                {album.coverUrl ? <img src={sizedImage(album.coverUrl, 180)} alt="" /> : <span><Album size={24} /></span>}
+                <strong>{album.name}</strong>
+                <small>{album.artistName || "数字专辑"}</small>
+              </button>
+            ))}
+          </div>
+        ) : <div className="digital-album-empty">暂无该语种的数字专辑</div>}
+        {styleMore && <div className="digital-album-more"><button className="btn" onClick={() => void loadStyleLibrary(styleArea, styleAlbums.length)} disabled={styleLoading}>{styleLoading ? "加载中…" : "加载更多"}</button></div>}
       </section>
       {detail && (
         <section className="digital-album-detail">

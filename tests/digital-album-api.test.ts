@@ -4,6 +4,7 @@ import {
   getDigitalAlbumDetail,
   getDigitalAlbumSalesBoard,
   getDigitalAlbumSales,
+  getDigitalAlbumStyleLibrary,
   getPurchasedDigitalAlbums,
   orderDigitalAlbum,
 } from "../src/api/digitalAlbum.ts";
@@ -77,6 +78,26 @@ test("digital album sales board forwards period and normalizes rank entries", as
     assert.equal(board[0]?.name, "年度专辑");
     assert.equal(board[0]?.rank, 2);
     assert.equal(board[0]?.score, 123);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("digital album style library forwards area and normalizes albums", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    assert.equal(url.pathname, "/album/list/style");
+    assert.equal(url.searchParams.get("area"), "KR");
+    assert.equal(url.searchParams.get("limit"), "10");
+    assert.equal(url.searchParams.get("offset"), "20");
+    return Response.json({ data: { albums: [{ albumId: 12, albumName: "韩国数字专辑", artistName: "歌手", picUrl: "cover" }] } });
+  };
+  try {
+    const albums = await getDigitalAlbumStyleLibrary("KR", 10, 20);
+    assert.equal(albums[0]?.id, 12);
+    assert.equal(albums[0]?.name, "韩国数字专辑");
+    assert.equal(albums[0]?.artistName, "歌手");
   } finally {
     globalThis.fetch = originalFetch;
   }
