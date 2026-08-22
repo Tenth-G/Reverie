@@ -168,11 +168,8 @@ export type View =
   | "recommendHistory"
   | "vip"
   | "commentHistory"
-  | "downloadHistory";
-  
-  
-  
-  
+  | "downloadHistory"
+  | "listenTogether";
 
 export type SearchCategory =
   | "songs"
@@ -231,7 +228,8 @@ export interface YunbeiOverview {
   signDays: number;
 }
 
-export type RecentCategory = "songs" | "albums" | "playlists" | "radios" | "videos" | "voices";
+export type RecentCategory =
+  "songs" | "albums" | "playlists" | "radios" | "videos" | "voices";
 
 export interface RecentAlbum {
   id: number;
@@ -313,6 +311,24 @@ export interface SongMetadata {
 }
 
 export type DownloadHistoryCategory = "all" | "month" | "purchased";
+
+export interface ListenTogetherRoom {
+  roomId: string;
+  inviterId?: number;
+  ownerId?: number;
+  status: string;
+  memberCount: number;
+  maxMemberCount: number;
+  createdAt: number;
+}
+
+export interface ListenTogetherState {
+  room: ListenTogetherRoom | null;
+  currentSongId: number;
+  playing: boolean;
+  progress: number;
+  playlist: Song[];
+}
 
 export interface SearchResultPage {
   songs: Song[];

@@ -1,0 +1,261 @@
+import { create } from "zustand";
+import {
+  acceptListenTogetherInvitation,
+  checkListenTogetherRoom,
+  createListenTogetherRoom,
+  endListenTogetherRoom,
+  getListenTogetherPlaylist,
+  getListenTogetherStatus,
+  sendListenTogetherCommand,
+  sendListenTogetherHeartbeat,
+} from "../api/listenTogether.ts";
+import type { ListenTogetherRoom, Song } from "../api/types.ts";
+import { usePlayerStore } from "./playerStore.ts";
+
+let heartbeatTimer: number | undefined;
+let requestToken = 0;
+
+function stopHeartbeat() {
+  if (heartbeatTimer !== undefined) {
+    window.clearInterval(heartbeatTimer);
+    heartbeatTimer = undefined;
+  }
+}
+
+function errorMessage(error: unknown, fallback: string) {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
+interface ListenTogetherState {
+  room: ListenTogetherRoom | null;
+  playlist: Song[];
+  roomIdInput: string;
+  inviterIdInput: string;
+  loading: boolean;
+  syncing: boolean;
+  error: string;
+  lastCommandSeq: number;
+  setRoomIdInput: (value: string) => void;
+  setInviterIdInput: (value: string) => void;
+  createRoom: () => Promise<void>;
+  checkRoom: () => Promise<void>;
+  joinRoom: () => Promise<void>;
+  refresh: () => Promise<void>;
+  syncPlaylist: () => Promise<void>;
+  playSynchronizedSong: (song: Song) => Promise<void>;
+  sendPlaybackCommand: (
+    commandType: "play" | "pause" | "seek" | "next" | "prev",
+  ) => Promise<void>;
+  endRoom: () => Promise<void>;
+  clearError: () => void;
+}
+
+function startHeartbeat(roomId: string) {
+  stopHeartbeat();
+  const send = () => {
+    const player = usePlayerStore.getState();
+    void sendListenTogetherHeartbeat({
+      roomId,
+      songId: player.currentSong?.id ?? 0,
+      playStatus: player.playing,
+      progress: player.progress,
+    }).catch(() => {
+      // Heartbeats are best effort; the next refresh surfaces a real failure.
+    });
+  };
+  send();
+  heartbeatTimer = window.setInterval(send, 10_000);
+}
+
+async function loadRoomData(room: ListenTogetherRoom, token: number) {
+  const playlist = await getListenTogetherPlaylist(room.roomId).catch(() => []);
+  if (token !== requestToken) return;
+  useListenTogetherStore.setState({ room, playlist, error: "" });
+  startHeartbeat(room.roomId);
+}
+
+export const useListenTogetherStore = create<ListenTogetherState>(
+  (set, get) => ({
+    room: null,
+    playlist: [],
+    roomIdInput: "",
+    inviterIdInput: "",
+    loading: false,
+    syncing: false,
+    error: "",
+    lastCommandSeq: 0,
+
+    setRoomIdInput: (value) => set({ roomIdInput: value }),
+    setInviterIdInput: (value) => set({ inviterIdInput: value }),
+    clearError: () => set({ error: "" }),
+
+    createRoom: async () => {
+      const token = ++requestToken;
+      set({ loading: true, error: "" });
+      try {
+        const room = await createListenTogetherRoom();
+        if (token !== requestToken) return;
+        set({ room, roomIdInput: room.roomId, loading: false });
+        await loadRoomData(room, token);
+        usePlayerStore.getState().toast("一起听房间已创建", "success");
+      } catch (error) {
+        if (token === requestToken) {
+          set({
+            loading: false,
+            error: errorMessage(error, "创建一起听房间失败"),
+          });
+          usePlayerStore.getState().toast("创建一起听房间失败", "error");
+        }
+      }
+    },
+
+    checkRoom: async () => {
+      const roomId = get().roomIdInput.trim();
+      if (!roomId) {
+        set({ error: "请输入房间号" });
+        return;
+      }
+      const token = ++requestToken;
+      set({ loading: true, error: "" });
+      try {
+        const room = await checkListenTogetherRoom(roomId);
+        if (token !== requestToken) return;
+        set({ room, loading: false });
+        await loadRoomData(room, token);
+      } catch (error) {
+        if (token === requestToken) {
+          set({
+            loading: false,
+            error: errorMessage(error, "一起听房间不存在"),
+          });
+        }
+      }
+    },
+
+    joinRoom: async () => {
+      const room = get().room;
+      if (!room) {
+        await get().checkRoom();
+        return;
+      }
+      const inviterId =
+        Number(get().inviterIdInput.trim()) || room.inviterId || room.ownerId;
+      if (!inviterId) {
+        set({ error: "请输入邀请人用户 ID" });
+        return;
+      }
+      const token = ++requestToken;
+      set({ loading: true, error: "" });
+      try {
+        await acceptListenTogetherInvitation(room.roomId, inviterId);
+        const checked = await checkListenTogetherRoom(room.roomId);
+        if (token !== requestToken) return;
+        set({ room: checked, loading: false });
+        await loadRoomData(checked, token);
+        usePlayerStore.getState().toast("已加入一起听房间", "success");
+      } catch (error) {
+        if (token === requestToken) {
+          set({
+            loading: false,
+            error: errorMessage(error, "加入一起听房间失败"),
+          });
+        }
+      }
+    },
+
+    refresh: async () => {
+      const roomId = get().room?.roomId || get().roomIdInput.trim();
+      if (!roomId) return;
+      const token = ++requestToken;
+      set({ syncing: true, error: "" });
+      try {
+        const room = await checkListenTogetherRoom(roomId);
+        const status = await getListenTogetherStatus().catch(() => null);
+        const playlist = await getListenTogetherPlaylist(room.roomId).catch(
+          () => [],
+        );
+        if (token !== requestToken) return;
+        set({
+          room,
+          playlist: playlist.length
+            ? playlist
+            : (status?.playlist ?? get().playlist),
+          syncing: false,
+        });
+        startHeartbeat(room.roomId);
+      } catch (error) {
+        if (token === requestToken) {
+          set({
+            syncing: false,
+            error: errorMessage(error, "刷新一起听状态失败"),
+          });
+        }
+      }
+    },
+
+    syncPlaylist: async () => {
+      const roomId = get().room?.roomId;
+      if (!roomId) return;
+      set({ syncing: true, error: "" });
+      try {
+        const playlist = await getListenTogetherPlaylist(roomId);
+        set({ playlist, syncing: false });
+        usePlayerStore
+          .getState()
+          .toast(`已同步 ${playlist.length} 首歌曲`, "success");
+      } catch (error) {
+        set({ syncing: false, error: errorMessage(error, "同步歌单失败") });
+      }
+    },
+
+    playSynchronizedSong: async (song) => {
+      const playlist = get().playlist;
+      await usePlayerStore
+        .getState()
+        .playSong(song, playlist.length ? playlist : [song]);
+      await get().sendPlaybackCommand("play");
+    },
+
+    sendPlaybackCommand: async (commandType) => {
+      const roomId = get().room?.roomId;
+      if (!roomId) return;
+      const player = usePlayerStore.getState();
+      const nextSeq = get().lastCommandSeq + 1;
+      set({ lastCommandSeq: nextSeq });
+      try {
+        await sendListenTogetherCommand({
+          roomId,
+          commandType,
+          progress: player.progress,
+          playStatus: player.playing,
+          formerSongId: player.currentSong?.id,
+          targetSongId: player.currentSong?.id,
+          clientSeq: nextSeq,
+        });
+      } catch (error) {
+        set({ error: errorMessage(error, "发送播放同步指令失败") });
+      }
+    },
+
+    endRoom: async () => {
+      const roomId = get().room?.roomId;
+      if (!roomId) return;
+      const token = ++requestToken;
+      set({ loading: true, error: "" });
+      try {
+        await endListenTogetherRoom(roomId);
+        if (token !== requestToken) return;
+        stopHeartbeat();
+        set({ room: null, playlist: [], roomIdInput: "", loading: false });
+        usePlayerStore.getState().toast("一起听房间已结束", "info");
+      } catch (error) {
+        if (token === requestToken) {
+          set({
+            loading: false,
+            error: errorMessage(error, "结束一起听房间失败"),
+          });
+        }
+      }
+    },
+  }),
+);
