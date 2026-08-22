@@ -5,6 +5,7 @@ import {
   getChartCities,
   getChartSongs,
   getChartSummaries,
+  getChartSummariesV2,
   getDimensionChartDetail,
   getDimensionChartSongs,
 } from "../src/api/charts.ts";
@@ -46,6 +47,22 @@ test("chart APIs normalize chart summaries and songs", async () => {
     const songs = await getChartSongs(19723756);
     assert.equal(songs[0]?.name, "榜单歌曲");
     assert.equal(songs[0]?.artists, "歌手");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("chart summary v2 normalizes the enhanced ranking directory", async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (input) => {
+      const url = new URL(String(input));
+      assert.equal(url.pathname, "/toplist/detail/v2");
+      return Response.json({ data: { rankings: [{ id: 99, title: "V2 榜单", cover: "cover", frequency: "每日" }] } });
+    };
+    const charts = await getChartSummariesV2();
+    assert.equal(charts[0]?.name, "V2 榜单");
+    assert.equal(charts[0]?.updateFrequency, "每日");
   } finally {
     globalThis.fetch = originalFetch;
   }

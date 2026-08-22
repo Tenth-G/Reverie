@@ -39,6 +39,14 @@ export async function getChartSummaries(): Promise<ChartSummary[]> {
     .filter((item): item is ChartSummary => item !== null);
 }
 
+export async function getChartSummariesV2(): Promise<ChartSummary[]> {
+  const response = await request<Obj>("/toplist/detail/v2", {}, false);
+  const value = obj(response.data ?? response.result ?? response);
+  return firstArray(value, "list", "charts", "rankings", "data")
+    .map(normalizeChart)
+    .filter((item): item is ChartSummary => item !== null);
+}
+
 export async function getChartSongs(id: number): Promise<Song[]> {
   if (!id) return [];
   const response = await request<Obj>("/top/list", { id }, false);
