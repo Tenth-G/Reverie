@@ -5118,6 +5118,13 @@ input {
 .cloud-detail-list span { color: var(--text-faint); }
 .cloud-detail-list strong { min-width: 0; overflow: hidden; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
 .chart-tabs { overflow-x: auto; }
+.profile-medal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+.profile-medal { display: grid; justify-items: center; gap: 5px; min-width: 0; padding: 10px 8px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-1); text-align: center; }
+.profile-medal img, .profile-medal-placeholder { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
+.profile-medal-placeholder { display: grid; place-items: center; background: var(--bg-3); color: var(--text-faint); }
+.profile-medal strong, .profile-medal small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.profile-medal strong { font-size: 12px; }
+.profile-medal small { color: var(--text-faint); font-size: 10px; }
 .cloud-load-more { display: block; margin: 14px auto 0; }
 .cloud-empty { display: grid; justify-items: center; gap: 8px; padding: 72px 20px; color: var(--text-faint); }
 .cloud-empty strong { color: var(--text-2); }

@@ -2,10 +2,12 @@ import { create } from "zustand";
 import {
   getListeningRecords,
   getProfileCenter,
+  getUserMedals,
   type ListeningRecord,
   type ProfileDetail,
   type UserLevelInfo,
   type UserSubcount,
+  type UserMedal,
 } from "../api/profile";
 import { usePlayerStore } from "./playerStore";
 
@@ -15,6 +17,7 @@ interface ProfileState {
   detail: ProfileDetail | null;
   level: UserLevelInfo | null;
   subcount: UserSubcount | null;
+  medals: UserMedal[];
   records: ListeningRecord[];
   period: RecordPeriod;
   loading: boolean;
@@ -38,6 +41,7 @@ export const useProfileStore = create<ProfileState>()((set, get) => ({
   detail: null,
   level: null,
   subcount: null,
+  medals: [],
   records: [],
   period: "week",
   loading: false,
@@ -52,12 +56,16 @@ export const useProfileStore = create<ProfileState>()((set, get) => ({
     showProfileView();
     set({ loading: true, period: "week" });
     try {
-      const data = await getProfileCenter(uid);
+      const [data, medals] = await Promise.all([
+        getProfileCenter(uid),
+        getUserMedals(uid).catch(() => []),
+      ]);
       set({
         detail: data.detail,
         level: data.level,
         subcount: data.subcount,
         records: data.records,
+        medals,
       });
     } catch {
       usePlayerStore.getState().toast("加载个人中心失败", "error");

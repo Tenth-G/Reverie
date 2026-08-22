@@ -32,6 +32,7 @@ export default function ProfilePage() {
   const detail = useProfileStore((state) => state.detail);
   const level = useProfileStore((state) => state.level);
   const subcount = useProfileStore((state) => state.subcount);
+  const medals = useProfileStore((state) => state.medals);
   const records = useProfileStore((state) => state.records);
   const period = useProfileStore((state) => state.period);
   const loading = useProfileStore((state) => state.loading);
@@ -175,6 +176,28 @@ export default function ProfilePage() {
           <span>订阅播客</span>
         </button>
       </section>
+
+      {medals.length > 0 && (
+        <section className="content-section profile-medals-section">
+          <div className="list-header">
+            <h3>我的徽章</h3>
+            <span className="count">{medals.length} 枚</span>
+          </div>
+          <div className="profile-medal-grid">
+            {medals.map((medal) => (
+              <article className="profile-medal" key={medal.id} title={medal.description || medal.name}>
+                {medal.iconUrl ? (
+                  <img src={sizedImage(medal.iconUrl, 120)} alt="" loading="lazy" />
+                ) : (
+                  <span className="profile-medal-placeholder"><Disc3 size={18} /></span>
+                )}
+                <strong>{medal.name}</strong>
+                {medal.level > 0 && <small>Lv.{medal.level}</small>}
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="content-section">
         <div className="profile-record-heading">
