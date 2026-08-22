@@ -31,6 +31,7 @@ import type {
   SocialEvent,
   SocialUser,
   Song,
+  SearchMediaInfo,
 } from "../api/types";
 import { usePlayerStore } from "./playerStore";
 
@@ -44,6 +45,7 @@ interface ExploreState {
   artist: ArtistInfo | null;
   artistSongs: Song[];
   artistAlbums: AlbumInfo[];
+  artistVideos: SearchMediaInfo[];
   commentSong: Song | null;
   comments: CommentInfo[];
   commentTotal: number;
@@ -111,6 +113,7 @@ export const useExploreStore = create<ExploreState>()((set, get) => ({
   artist: null,
   artistSongs: [],
   artistAlbums: [],
+  artistVideos: [],
   commentSong: null,
   comments: [],
   commentTotal: 0,
@@ -156,13 +159,20 @@ export const useExploreStore = create<ExploreState>()((set, get) => ({
   openArtist: async (id) => {
     if (!id) return;
     showView("artist");
-    set({ loading: true, artist: null, artistSongs: [], artistAlbums: [] });
+    set({
+      loading: true,
+      artist: null,
+      artistSongs: [],
+      artistAlbums: [],
+      artistVideos: [],
+    });
     try {
       const result = await getArtist(id);
       set({
         artist: result.artist,
         artistSongs: result.songs,
         artistAlbums: result.albums,
+        artistVideos: result.videos,
       });
     } catch {
       toastError("加载歌手详情失败");
