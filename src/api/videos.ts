@@ -29,6 +29,51 @@ function extractVideos(response: Obj): SearchMediaInfo[] {
 
 export interface VideoGroup { id: number; name: string; }
 
+export type MvArea = "全部" | "内地" | "港台" | "欧美" | "日本" | "韩国";
+export type MvType = "全部" | "官方版" | "原生" | "现场版" | "网易出品";
+export type MvOrder = "上升最快" | "最热" | "最新";
+
+function extractMvs(response: Obj): SearchMediaInfo[] {
+  const data = obj(response.data ?? response.result ?? response);
+  return arr(data.data ?? data.mvs ?? data.list ?? response.data ?? response.mvs)
+    .map((raw) => {
+      const value = obj(raw);
+      const artist = obj(value.artist);
+      return {
+        id: String(value.id ?? value.mvId ?? value.vid ?? ""),
+        name: String(value.name ?? value.title ?? "未命名 MV"),
+        coverUrl: String(value.cover ?? value.coverUrl ?? value.imgurl ?? value.picUrl ?? ""),
+        creatorName: String(value.artistName ?? value.creatorName ?? artist.name ?? ""),
+        duration: Number(value.duration ?? value.durationms ?? 0),
+        playCount: Number(value.playCount ?? value.playTime ?? 0),
+        kind: "mv",
+      } satisfies SearchMediaInfo;
+    })
+    .filter((item) => item.id);
+}
+
+export async function getMvToplist(area: MvArea = "全部", limit = 30, offset = 0): Promise<SearchMediaInfo[]> {
+  return extractMvs(await request<Obj>("/top/mv", { area: area === "全部" ? undefined : area, limit, offset }, false));
+}
+
+export async function getMvFirst(area: MvArea = "全部", limit = 30, offset = 0): Promise<SearchMediaInfo[]> {
+  return extractMvs(await request<Obj>("/mv/first", { area: area === "全部" ? undefined : area, limit, offset }, false));
+}
+
+export async function getMvAll(
+  area: MvArea = "全部",
+  type: MvType = "全部",
+  order: MvOrder = "上升最快",
+  limit = 30,
+  offset = 0,
+): Promise<SearchMediaInfo[]> {
+  return extractMvs(await request<Obj>("/mv/all", { area, type, order, limit, offset }, false));
+}
+
+export async function getExclusiveMvs(limit = 30, offset = 0): Promise<SearchMediaInfo[]> {
+  return extractMvs(await request<Obj>("/mv/exclusive/rcmd", { limit, offset }, false));
+}
+
 export async function getVideoTimeline(
   mode: "recommend" | "all" = "recommend",
   offset = 0,
