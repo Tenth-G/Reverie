@@ -1,4 +1,4 @@
-import { normalizeSong, request } from "./client";
+import { normalizeSong, request } from "./client.ts";
 import type {
   AlbumInfo,
   ArtistInfo,
@@ -8,7 +8,7 @@ import type {
   SocialEvent,
   SocialUser,
   Song,
-} from "./types";
+} from "./types.ts";
 
 type Obj = Record<string, unknown>;
 
@@ -368,6 +368,19 @@ export async function followUser(id: number, follow: boolean): Promise<void> {
   await request("/follow", { id, t: follow ? 1 : 0 }, false);
 }
 
+export async function likeEvent(
+  eventId: number,
+  threadId: string,
+  like: boolean,
+): Promise<void> {
+  await request(
+    "/resource/like",
+    { type: 6, id: eventId, threadId, t: like ? 1 : 0 },
+    false,
+    { method: "POST" },
+  );
+}
+
 export async function getEvents(): Promise<SocialEvent[]> {
   const res = await request<Obj>(
     "/event",
@@ -393,6 +406,7 @@ export async function getEvents(): Promise<SocialEvent[]> {
           ? (obj(event.info).likedCount ?? 0)
           : (event.likedCount ?? 0),
       ),
+      liked: Boolean(event.info ? obj(event.info).liked : event.liked),
       threadId:
         String(event.threadId ?? obj(event.info).threadId ?? "") || undefined,
       ...resource,

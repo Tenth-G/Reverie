@@ -4,6 +4,7 @@ import {
   deletePlaylist as apiDeletePlaylist,
   deleteSongComment,
   followUser,
+  likeEvent,
   getAlbum,
   getArtist,
   getEvents,
@@ -73,6 +74,7 @@ interface ExploreState {
   setSocialTab: (tab: SocialTab) => void;
   loadSocial: () => Promise<void>;
   toggleFollow: (user: SocialUser) => Promise<void>;
+  toggleEventLike: (event: SocialEvent) => Promise<void>;
   createPlaylist: (name: string, privacy: number) => Promise<boolean>;
   updatePlaylist: (
     playlist: PlaylistInfo,
@@ -406,6 +408,26 @@ export const useExploreStore = create<ExploreState>()((set, get) => ({
         );
     } catch {
       toastError("关注操作失败");
+    }
+  },
+  toggleEventLike: async (event) => {
+    if (!event.threadId) return;
+    const next = !event.liked;
+    try {
+      await likeEvent(event.id, event.threadId, next);
+      set((state) => ({
+        events: state.events.map((item) =>
+          item.id === event.id
+            ? {
+                ...item,
+                liked: next,
+                likedCount: Math.max(0, item.likedCount + (next ? 1 : -1)),
+              }
+            : item,
+        ),
+      }));
+    } catch {
+      toastError("动态点赞操作失败");
     }
   },
   createPlaylist: async (name, privacy) => {
