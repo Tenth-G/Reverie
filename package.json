@@ -38,6 +38,7 @@
     "test:extended-api": "node scripts/test-extended-api.cjs",
     "test:search-api": "node scripts/test-search-api.cjs",
     "test:profile-api": "node scripts/test-profile-api.cjs",
+    "test:collection-api": "node scripts/test-collection-api.cjs",
     "test:sidecar": "node scripts/test-sidecar.mjs"
   },
   "dependencies": {

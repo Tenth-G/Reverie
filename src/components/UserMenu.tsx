@@ -3,6 +3,7 @@ import { usePlayerStore } from "../store/playerStore";
 import { sizedImage } from "../utils/image";
 import { CircleUserRound } from "lucide-react";
 import { useProfileStore } from "../store/profileStore";
+import { useCollectionStore } from "../store/collectionStore";
 
 function vipLabel(vipType?: number): string {
   if (!vipType || vipType === 0) return "普通用户";
@@ -33,6 +34,7 @@ export default function UserMenu() {
   const loadVipInfo = usePlayerStore((s) => s.loadVipInfo);
   const setShowLogin = usePlayerStore((s) => s.setShowLogin);
   const openProfile = useProfileStore((s) => s.openProfile);
+  const openCollections = useCollectionStore((s) => s.openCollections);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -123,6 +125,15 @@ export default function UserMenu() {
             }}
           >
             个人中心
+          </button>
+          <button
+            className="user-dropdown-item"
+            onClick={() => {
+              setOpen(false);
+              void openCollections();
+            }}
+          >
+            收藏中心
           </button>
           <button className="user-dropdown-item" onClick={switchAccount}>
             切换账号
