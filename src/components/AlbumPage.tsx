@@ -1,4 +1,7 @@
-import { Heart, MessageCircle, UserRound } from "lucide-react";
+import { useEffect, useState } from "react";
+import { AudioLines, Heart, MessageCircle, UserRound } from "lucide-react";
+import { getAlbumPrivileges } from "../api/library";
+import type { AlbumPrivilege } from "../api/types";
 import { useCommentStore } from "../store/commentStore";
 import { useExploreStore } from "../store/exploreStore";
 import { sizedImage } from "../utils/image";
@@ -13,6 +16,28 @@ export default function AlbumPage() {
   const toggleSubscription = useExploreStore((s) => s.toggleAlbumSubscription);
   const openArtist = useExploreStore((s) => s.openArtist);
   const openComments = useCommentStore((s) => s.openResourceComments);
+  const [privileges, setPrivileges] = useState<AlbumPrivilege[]>([]);
+
+  useEffect(() => {
+    let alive = true;
+    if (!album?.id) {
+      setPrivileges([]);
+      return;
+    }
+    void getAlbumPrivileges(album.id)
+      .then((items) => {
+        if (alive) setPrivileges(items);
+      })
+      .catch(() => {
+        if (alive) setPrivileges([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [album?.id]);
+
+  const highResCount = privileges.filter((item) => item.highRes).length;
+  const losslessCount = privileges.filter((item) => item.lossless).length;
 
   return (
     <Page>
@@ -49,6 +74,12 @@ export default function AlbumPage() {
                 {album.publishTime > 0 && (
                   <span>
                     {new Date(album.publishTime).toLocaleDateString()}
+                  </span>
+                )}
+                {privileges.length > 0 && (
+                  <span className="album-quality-summary" title="专辑歌曲可用音质">
+                    <AudioLines size={13} />
+                    {highResCount > 0 ? `Hi-Res ${highResCount}` : `无损 ${losslessCount}`}
                   </span>
                 )}
               </div>

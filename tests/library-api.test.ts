@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { getAlbumDirectory, getArtistDirectory, getNewestAlbums, getTopAlbums, getTopArtists } from "../src/api/library.ts";
+import { getAlbumDirectory, getAlbumPrivileges, getArtistDirectory, getNewestAlbums, getTopAlbums, getTopArtists } from "../src/api/library.ts";
 
 test("library APIs normalize album and artist directories", async () => {
   const originalFetch = globalThis.fetch;
@@ -18,6 +18,30 @@ test("library APIs normalize album and artist directories", async () => {
     assert.equal((await getTopAlbums())[0]?.id, 1);
     assert.equal((await getArtistDirectory()).artists[0]?.name, "男歌手");
     assert.equal((await getTopArtists())[0]?.name, "热门歌手");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("album privilege API normalizes available quality flags", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    assert.equal(url.pathname, "/album/privilege");
+    assert.equal(url.searchParams.get("id"), "99");
+    return Response.json({ data: [{ id: 8, maxbr: 999000, pl: 1, fl: 1, hr: 1, db: 1 }] });
+  };
+  try {
+    const privileges = await getAlbumPrivileges(99);
+    assert.deepEqual(privileges[0], {
+      songId: 8,
+      maxBitrate: 999000,
+      standard: true,
+      lossless: true,
+      highRes: true,
+      dolby: true,
+      spatialAudio: false,
+    });
   } finally {
     globalThis.fetch = originalFetch;
   }
