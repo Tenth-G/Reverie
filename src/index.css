@@ -656,6 +656,23 @@ input {
 .home-section {
   margin-bottom: 34px;
 }
+.home-comment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+.home-comment-card {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-2);
+}
+.home-comment-card p {
+  margin: 8px 0;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.home-comment-card small { color: var(--text-faint); }
 .section-title {
   display: flex;
   align-items: center;
