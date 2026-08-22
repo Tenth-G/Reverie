@@ -485,6 +485,10 @@ export interface DigitalAlbum {
   purchased: boolean;
   songs: Song[];
 }
+export interface DigitalAlbumRank extends DigitalAlbum {
+  rank: number;
+  score: number;
+}
 
 export interface MusicianOverview {
   songCount: number;

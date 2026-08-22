@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   getDigitalAlbumDetail,
+  getDigitalAlbumSalesBoard,
   getDigitalAlbumSales,
   getPurchasedDigitalAlbums,
   orderDigitalAlbum,
@@ -57,6 +58,25 @@ test("digital album ordering uses payment and quantity parameters", async () => 
     assert.equal(new URL(call!.url).searchParams.get("payment"), "alipay");
     assert.equal(new URL(call!.url).searchParams.get("quantity"), "2");
     assert.equal(call!.init?.method, "POST");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("digital album sales board forwards period and normalizes rank entries", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    assert.equal(url.pathname, "/album_songsaleboard");
+    assert.equal(url.searchParams.get("type"), "year");
+    assert.equal(url.searchParams.get("year"), "2026");
+    return Response.json({ data: { list: [{ id: 6, name: "年度专辑", artistName: "歌手", sales: 123, position: 2 }] } });
+  };
+  try {
+    const board = await getDigitalAlbumSalesBoard("year", 2026);
+    assert.equal(board[0]?.name, "年度专辑");
+    assert.equal(board[0]?.rank, 2);
+    assert.equal(board[0]?.score, 123);
   } finally {
     globalThis.fetch = originalFetch;
   }

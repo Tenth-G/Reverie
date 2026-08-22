@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import {
   Album,
+  BarChart3,
   BadgeCheck,
   Coins,
   CreditCard,
@@ -8,6 +9,8 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { useDigitalAlbumStore } from "../store/digitalAlbumStore.ts";
+import { getDigitalAlbumSalesBoard, type DigitalAlbumSalesPeriod } from "../api/digitalAlbum.ts";
+import type { DigitalAlbumRank } from "../api/types.ts";
 import { sizedImage } from "../utils/image";
 import { LoadingState, Page, PageHeader } from "./Page";
 
@@ -24,8 +27,24 @@ export default function DigitalAlbumPage() {
   const [payment, setPayment] = useState<"balance" | "alipay" | "wxpay">(
     "balance",
   );
+  const [boardPeriod, setBoardPeriod] = useState<DigitalAlbumSalesPeriod>("daily");
+  const [board, setBoard] = useState<DigitalAlbumRank[]>([]);
+  const [boardLoading, setBoardLoading] = useState(false);
+
+  const loadBoard = async (period = boardPeriod) => {
+    setBoardLoading(true);
+    try {
+      setBoard(await getDigitalAlbumSalesBoard(period, period === "year" ? new Date().getFullYear() : undefined));
+    } catch {
+      setBoard([]);
+    } finally {
+      setBoardLoading(false);
+    }
+  };
+
   useEffect(() => {
     void loadPurchased();
+    void loadBoard();
   }, [loadPurchased]);
 
   return (
@@ -55,6 +74,32 @@ export default function DigitalAlbumPage() {
           <Search size={15} />
           查询
         </button>
+      </section>
+      <section className="digital-album-board">
+        <div className="digital-album-section-head">
+          <h2><BarChart3 size={17} /> 销量榜</h2>
+          <div className="collection-tabs" role="tablist" aria-label="数字专辑销量周期">
+            {(["daily", "week", "year", "total"] as const).map((period) => (
+              <button key={period} className={boardPeriod === period ? "active" : ""} onClick={() => { setBoardPeriod(period); void loadBoard(period); }} disabled={boardLoading}>
+                {period === "daily" ? "日榜" : period === "week" ? "周榜" : period === "year" ? "年榜" : "总榜"}
+              </button>
+            ))}
+          </div>
+        </div>
+        {boardLoading ? (
+          <LoadingState label="正在加载销量榜…" />
+        ) : board.length ? (
+          <div className="digital-album-board-grid">
+            {board.slice(0, 20).map((album) => (
+              <button className="digital-album-board-card" key={album.id} onClick={() => { setId(String(album.id)); void loadDetail(album.id); }}>
+                <b>{album.rank}</b>
+                {album.coverUrl ? <img src={sizedImage(album.coverUrl, 180)} alt="" /> : <span><Album size={20} /></span>}
+                <div><strong>{album.name}</strong><small>{album.artistName || "数字专辑"}</small></div>
+                <em>{album.score.toLocaleString("zh-CN")}</em>
+              </button>
+            ))}
+          </div>
+        ) : <div className="digital-album-empty">暂无销量榜数据</div>}
       </section>
       {detail && (
         <section className="digital-album-detail">
