@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Reverie",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "identifier": "com.reverie.player",
   "build": {
     "frontendDist": "../dist",
@@ -45,13 +45,21 @@
     ],
     "publisher": "Tenth-G",
     "windows": {
-      "nsis": null
+      "nsis": {
+        "template": "installer/installer.nsi",
+        "headerImage": "installer/header.bmp",
+        "sidebarImage": "installer/sidebar.bmp",
+        "installerIcon": "installer/installer.ico",
+        "uninstallerIcon": "installer/uninstaller.ico",
+        "languages": ["SimpChinese"],
+        "displayLanguageSelector": false
+      }
     }
   },
   "plugins": {
     "updater": {
       "endpoints": [
-        "https://github.com/Tenth-G/Reverie/releases/latest/download/latest.json"
+        "https://github.com/oaggggg/Reverie/releases/latest/download/latest.json"
       ],
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDYxODMwN0MzOTEyQ0VFNkQKUldSdDdpeVJ3d2VEWVFwWkZ6cXMyRzNuRVc1dDFTNkNhMnNEM2orSDNkQlRQOW8zNFR0S1Zzc2gK",
       "windows": {

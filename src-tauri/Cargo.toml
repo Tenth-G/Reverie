@@ -1,10 +1,10 @@
 [package]
 name = "app"
-version = "1.0.2"
+version = "1.1.0"
 description = "Reverie — 一款音乐播放器"
 authors = ["Tenth-G"]
 license = "GPL-3.0"
-repository = "https://github.com/Tenth-G/Reverie"
+repository = "https://github.com/oaggggg/Reverie"
 edition = "2021"
 rust-version = "1.77.2"
 
