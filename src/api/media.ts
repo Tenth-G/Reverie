@@ -1,0 +1,104 @@
+import { request } from "./client.ts";
+import type { MediaDetail, SearchMediaInfo } from "./types.ts";
+
+type Obj = Record<string, unknown>;
+const obj = (value: unknown): Obj =>
+  value && typeof value === "object" ? (value as Obj) : {};
+const arr = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
+
+function normalizeMedia(raw: unknown, fallback: SearchMediaInfo): MediaDetail {
+  const value = obj(raw);
+  const creator = obj(value.creator);
+  const artists = arr(value.artists).map(obj);
+  const artistIds = artists
+    .map((item) => Number(item.userId ?? item.id ?? 0))
+    .filter((id) => id > 0);
+  const tags = arr(value.tags ?? value.videoGroup)
+    .map((item) => String(obj(item).name ?? item))
+    .filter(Boolean);
+  return {
+    ...fallback,
+    name: String(value.name ?? value.title ?? fallback.name),
+    coverUrl: String(
+      value.cover ?? value.coverUrl ?? value.imgurl ?? fallback.coverUrl,
+    ),
+    creatorName: String(
+      value.artistName ?? creator.nickname ?? fallback.creatorName,
+    ),
+    duration: Number(value.duration ?? value.durationms ?? fallback.duration),
+    playCount: Number(value.playCount ?? value.playTime ?? fallback.playCount),
+    description: String(value.desc ?? value.description ?? ""),
+    publishTime: Number(value.publishTime ?? value.publishTime ?? 0),
+    tags,
+    artistIds,
+    commentCount: Number(value.commentCount ?? value.commentNum ?? 0),
+    subCount: Number(
+      value.subCount ?? value.subCount ?? value.subscribeCount ?? 0,
+    ),
+  };
+}
+
+export function normalizeMediaDetail(
+  raw: unknown,
+  fallback: SearchMediaInfo,
+): MediaDetail {
+  return normalizeMedia(raw, fallback);
+}
+
+export async function getMediaDetail(
+  item: SearchMediaInfo,
+): Promise<MediaDetail> {
+  const response =
+    item.kind === "mv"
+      ? await request<Obj>("/mv/detail", { mvid: item.id }, true)
+      : await request<Obj>("/video/detail", { id: item.id }, true);
+  const data = obj(response.data ?? response.mv ?? response.video);
+  return normalizeMedia(data, item);
+}
+
+export async function getMediaUrl(
+  item: SearchMediaInfo,
+  resolution = 1080,
+): Promise<string> {
+  if (item.kind === "mv") {
+    const response = await request<Obj>(
+      "/mv/url",
+      { id: item.id, r: resolution },
+      false,
+    );
+    return String(obj(response.data).url ?? "");
+  }
+  const response = await request<Obj>(
+    "/video/url",
+    { id: item.id, res: resolution },
+    false,
+  );
+  const urls = arr(response.urls);
+  return String(obj(urls[0]).url ?? "");
+}
+
+export async function getRelatedMedia(
+  item: SearchMediaInfo,
+): Promise<SearchMediaInfo[]> {
+  const response =
+    item.kind === "mv"
+      ? await request<Obj>("/simi/mv", { mvid: item.id }, true)
+      : await request<Obj>("/related/allvideo", { id: item.id }, true);
+  const values = arr(response.mvs ?? response.data ?? response.videos);
+  return values
+    .map((raw) => {
+      const value = obj(raw);
+      return {
+        id: String(value.id ?? value.vid ?? ""),
+        name: String(value.name ?? value.title ?? "未命名视频"),
+        coverUrl: String(value.cover ?? value.coverUrl ?? value.imgurl ?? ""),
+        creatorName: String(
+          obj(value.creator).nickname ?? value.artistName ?? "",
+        ),
+        duration: Number(value.duration ?? value.durationms ?? 0),
+        playCount: Number(value.playCount ?? value.playTime ?? 0),
+        kind: item.kind,
+      } satisfies SearchMediaInfo;
+    })
+    .filter((media) => media.id && media.id !== item.id);
+}

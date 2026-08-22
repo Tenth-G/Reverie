@@ -11,6 +11,7 @@ import {
 import type { CollectionCategory, SearchMediaInfo } from "../api/types";
 import { useCollectionStore } from "../store/collectionStore";
 import { sizedImage } from "../utils/image";
+import { useMediaStore } from "../store/mediaStore.ts";
 import BackButton from "./BackButton";
 import { LoadingState, Page, PageHeader } from "./Page";
 
@@ -23,13 +24,13 @@ const TABS: Array<{ id: CollectionCategory; label: string }> = [
 
 function MediaCard({ item }: { item: SearchMediaInfo }) {
   const [coverFailed, setCoverFailed] = useState(false);
-  const playMedia = useCollectionStore((state) => state.playMedia);
   const unsubscribe = useCollectionStore((state) => state.unsubscribe);
+  const openMediaDetail = useMediaStore((state) => state.open);
   return (
     <article className="media-card collection-media-card">
       <button
         className="card-cover collection-media-button"
-        onClick={() => void playMedia(item)}
+        onClick={() => void openMediaDetail(item)}
       >
         {item.coverUrl && !coverFailed ? (
           <img

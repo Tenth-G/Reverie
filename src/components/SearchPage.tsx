@@ -21,6 +21,7 @@ import { sizedImage } from "../utils/image";
 import { LoadingState, Page, PageHeader } from "./Page";
 import PlaylistGrid from "./PlaylistGrid";
 import SongList from "./SongList";
+import { useMediaStore } from "../store/mediaStore.ts";
 
 const CATEGORIES: Array<{
   key: SearchCategory;
@@ -64,8 +65,8 @@ export default function SearchPage() {
   const setCategory = useSearchStore((state) => state.setCategory);
   const loadMore = useSearchStore((state) => state.loadMore);
   const loadHotTerms = useSearchStore((state) => state.loadHotTerms);
-  const playMedia = useSearchStore((state) => state.playMedia);
   const closeMedia = useSearchStore((state) => state.closeMedia);
+  const openMediaDetail = useMediaStore((state) => state.open);
   const toggleFollow = useSearchStore((state) => state.toggleFollow);
   const openPlaylist = usePlayerStore((state) => state.openPlaylist);
   const openAlbum = useExploreStore((state) => state.openAlbum);
@@ -306,7 +307,7 @@ export default function SearchPage() {
                   {result.media.map((item) => (
                     <button
                       key={`${item.kind}-${item.id}`}
-                      onClick={() => void playMedia(item)}
+                      onClick={() => void openMediaDetail(item)}
                     >
                       <div className="search-video-cover">
                         <img
