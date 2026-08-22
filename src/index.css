@@ -5553,6 +5553,10 @@ input {
 .cloud-detail-list span { color: var(--text-faint); }
 .cloud-detail-list strong { min-width: 0; overflow: hidden; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
 .chart-tabs { overflow-x: auto; }
+.chart-dimension-controls { display: flex; align-items: end; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }
+.chart-dimension-controls label { display: grid; gap: 5px; color: var(--text-faint); font-size: 11px; }
+.chart-dimension-controls select { min-height: 34px; min-width: 150px; padding: 0 9px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-3); color: var(--text); font-size: 12px; }
+.chart-dimension-controls small { max-width: 520px; color: var(--text-faint); line-height: 1.5; }
 .profile-medal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
 .profile-medal { display: grid; justify-items: center; gap: 5px; min-width: 0; padding: 10px 8px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-1); text-align: center; }
 .profile-medal img, .profile-medal-placeholder { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
