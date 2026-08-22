@@ -55,6 +55,7 @@ const StylePage = lazy(() => import("./components/StylePage"));
 const TopicPage = lazy(() => import("./components/TopicPage"));
 const LibraryPage = lazy(() => import("./components/LibraryPage"));
 const CalendarPage = lazy(() => import("./components/CalendarPage"));
+const PrivateDjPage = lazy(() => import("./components/PrivateDjPage"));
 const VideoPage = lazy(() => import("./components/VideoPage"));
 const NowPlayingView = lazy(() => import("./components/NowPlayingView"));
 const PlayerCommentsDrawer = lazy(
@@ -358,6 +359,8 @@ export default function App() {
         return <LibraryPage />;
       case "calendar":
         return <CalendarPage />;
+      case "privateDj":
+        return <PrivateDjPage />;
       case "videos":
         return <VideoPage />;
       default:

@@ -6136,3 +6136,20 @@ input {
 .difm-tracks .song-list { max-height: 360px; overflow: auto; }
 .difm-tracks > .btn { margin-top: 10px; }
 @media (max-width: 760px) { .difm-layout { grid-template-columns: 1fr; } }
+
+/* Private DJ */
+.private-dj-section { margin: 16px 0; padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); }
+.private-dj-section .list-header h3 { display: inline-flex; align-items: center; gap: 6px; }
+.private-dj-grid { display: grid; gap: 8px; }
+.private-dj-card { display: flex; align-items: flex-start; gap: 11px; min-width: 0; padding: 9px; border-radius: 6px; background: var(--bg-3); }
+.private-dj-card > img, .private-dj-cover { width: 66px; height: 66px; flex: 0 0 66px; border-radius: 7px; object-fit: cover; }
+.private-dj-cover { display: grid; place-items: center; background: var(--bg-4); color: var(--accent); }
+.private-dj-copy { display: grid; min-width: 0; flex: 1; gap: 5px; }
+.private-dj-copy strong, .private-dj-copy span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.private-dj-copy strong { font-size: 13px; }
+.private-dj-copy span { color: var(--text-dim); font-size: 11px; }
+.private-dj-copy audio { width: min(100%, 360px); height: 30px; }
+.private-dj-empty { display: grid; place-items: center; gap: 8px; min-height: 260px; color: var(--text-faint); font-size: 12px; }
+.private-dj-empty svg { color: var(--accent); }
+.private-dj-empty strong { color: var(--text-dim); font-size: 13px; }
+.private-dj-error { max-width: 1100px; margin: 0 auto 16px; color: #ff8585; font-size: 12px; }

@@ -23,6 +23,7 @@ import {
   Palette,
   MessageSquareText,
   LibraryBig,
+  Headphones,
   Search,
   Sun,
   Users,
@@ -52,6 +53,7 @@ const NAV: NavItem[] = [
     auth: true,
   },
   { view: "radio", label: "播客", icon: <Podcast size={16} />, auth: true },
+  { view: "privateDj", label: "私人 DJ", icon: <Headphones size={16} />, auth: true },
   { view: "social", label: "动态", icon: <Users size={16} />, auth: true },
   { view: "cloud", label: "云盘", icon: <Cloud size={16} />, auth: true },
   { view: "yunbei", label: "云贝", icon: <Gift size={16} />, auth: true },
@@ -119,6 +121,8 @@ const preloadView = (view: View) => {
       return import("./LibraryPage");
     case "calendar":
       return import("./CalendarPage");
+    case "privateDj":
+      return import("./PrivateDjPage");
     case "likes":
       return import("./LikesPage");
     case "recent":
