@@ -1,5 +1,5 @@
 import { normalizeSong, request } from "./client.ts";
-import type { ChartCity, ChartSummary, DimensionChartDetail, Song } from "./types.ts";
+import type { ArtistInfo, ChartCity, ChartSummary, DimensionChartDetail, Song } from "./types.ts";
 
 type Obj = Record<string, unknown>;
 const obj = (value: unknown): Obj =>
@@ -47,6 +47,27 @@ export async function getChartSongs(id: number): Promise<Song[]> {
   return rows
     .map((raw) => normalizeSong(obj(raw).song ?? raw))
     .filter((song): song is Song => song !== null);
+}
+
+export async function getArtistToplist(type = 1): Promise<ArtistInfo[]> {
+  const response = await request<Obj>("/toplist/artist", { type }, false);
+  const value = obj(response.data ?? response.result ?? response);
+  return firstArray(value, "artists", "list", "data", "records")
+    .map((raw) => {
+      const item = obj(raw);
+      const artist = obj(item.artist);
+      return {
+        id: Number(item.id ?? item.artistId ?? artist.id ?? 0),
+        name: String(item.name ?? item.artistName ?? artist.name ?? "未知歌手"),
+        picUrl: String(item.picUrl ?? item.img1v1Url ?? item.cover ?? artist.picUrl ?? ""),
+        alias: arr(item.alias ?? artist.alias).map(String).filter(Boolean),
+        briefDesc: String(item.briefDesc ?? artist.briefDesc ?? ""),
+        followed: Boolean(item.followed ?? item.follow ?? false),
+        musicSize: Number(item.musicSize ?? artist.musicSize ?? 0),
+        albumSize: Number(item.albumSize ?? artist.albumSize ?? 0),
+      } satisfies ArtistInfo;
+    })
+    .filter((item) => item.id > 0);
 }
 
 function normalizeCity(raw: unknown, parentId?: string): ChartCity | null {

@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  getArtistToplist,
   getChartCities,
   getChartSongs,
   getChartSummaries,
@@ -77,6 +78,23 @@ test("dimension chart APIs forward city and style parameters", async () => {
     assert.equal(detail.name, "北京华语流行榜");
     const songs = await getDimensionChartSongs(query);
     assert.equal(songs[0]?.name, "城市歌曲");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("artist toplist forwards region type and normalizes artists", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    assert.equal(url.pathname, "/toplist/artist");
+    assert.equal(url.searchParams.get("type"), "3");
+    return Response.json({ artists: [{ id: 8, name: "韩国歌手", picUrl: "avatar", musicSize: 12 }] });
+  };
+  try {
+    const artists = await getArtistToplist(3);
+    assert.equal(artists[0]?.name, "韩国歌手");
+    assert.equal(artists[0]?.musicSize, 12);
   } finally {
     globalThis.fetch = originalFetch;
   }
