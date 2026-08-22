@@ -28,6 +28,15 @@ const SORT_TYPES: Record<CommentSort, 99 | 2 | 3> = {
   new: 3,
 };
 
+const LEGACY_COMMENT_ROUTES: Partial<Record<CommentResourceType, string>> = {
+  song: "/comment/music",
+  mv: "/comment/mv",
+  playlist: "/comment/playlist",
+  album: "/comment/album",
+  program: "/comment/dj",
+  video: "/comment/video",
+};
+
 function ensureSuccess(response: Obj, path: string): Obj {
   const code = Number(response.code ?? 200);
   if (code !== 200) throw new Error(`${path} 返回业务码 ${code}`);
@@ -102,23 +111,90 @@ export async function getResourceComments(
     };
   }
 
-  const response = ensureSuccess(
-    await request<Obj>("/comment/new", {
-      ...resourceParams(resource),
-      pageNo,
-      pageSize,
-      sortType: SORT_TYPES[sort],
-      cursor: sort === "new" ? cursor || "0" : undefined,
-    }),
-    "/comment/new",
-  );
+  let response: Obj;
+  try {
+    response = ensureSuccess(
+      await request<Obj>("/comment/new", {
+        ...resourceParams(resource),
+        pageNo,
+        pageSize,
+        sortType: SORT_TYPES[sort],
+        cursor: sort === "new" ? cursor || "0" : undefined,
+      }),
+      "/comment/new",
+    );
+  } catch (error) {
+    const legacy = LEGACY_COMMENT_ROUTES[resource.type];
+    if (!legacy) throw error;
+    response = ensureSuccess(
+      await request<Obj>(legacy, {
+        id: resource.id,
+        limit: pageSize,
+        offset: (pageNo - 1) * pageSize,
+        before: cursor || undefined,
+      }),
+      legacy,
+    );
+  }
   const data = obj(response.data);
+  const legacyComments = arr(response.comments ?? data.comments ?? response.hotComments);
   return {
-    comments: arr(data.comments).map(normalizeResourceComment),
-    total: Number(data.totalCount ?? data.total ?? 0),
-    hasMore: Boolean(data.hasMore),
-    cursor: String(data.cursor ?? ""),
+    comments: legacyComments.map(normalizeResourceComment),
+    total: Number(data.totalCount ?? data.total ?? response.total ?? legacyComments.length),
+    hasMore: Boolean(data.hasMore ?? response.more),
+    cursor: String(data.cursor ?? response.cursor ?? ""),
   };
+}
+
+export async function getHotResourceComments(
+  resource: CommentResource,
+  limit = 20,
+  offset = 0,
+): Promise<CommentInfo[]> {
+  const response = ensureSuccess(
+    await request<Obj>("/comment/hot", {
+      id: resource.id,
+      type: resource.type,
+      limit,
+      offset,
+    }),
+    "/comment/hot",
+  );
+  return arr(response.hotComments ?? response.comments ?? obj(response.data).comments)
+    .map(normalizeResourceComment);
+}
+
+export async function hugComment(
+  resource: CommentResource,
+  comment: CommentInfo,
+): Promise<void> {
+  ensureSuccess(
+    await request("/hug/comment", {
+      uid: comment.userId,
+      cid: comment.id,
+      sid: resource.id,
+      type: resource.type,
+    }, false),
+    "/hug/comment",
+  );
+}
+
+export async function getCommentHugList(
+  resource: CommentResource,
+  comment: CommentInfo,
+  page = 1,
+): Promise<CommentInfo[]> {
+  const response = ensureSuccess(
+    await request<Obj>("/comment/hug/list", {
+      uid: comment.userId,
+      cid: comment.id,
+      sid: resource.id,
+      type: resource.type,
+      page,
+    }),
+    "/comment/hug/list",
+  );
+  return arr(response.data ?? response.list ?? response.users).map(normalizeResourceComment);
 }
 
 export async function getCommentReplies(
