@@ -28,6 +28,7 @@ function extractVideos(response: Obj): SearchMediaInfo[] {
 }
 
 export interface VideoGroup { id: number; name: string; }
+export interface VideoCategory { id: number; name: string; }
 
 export type MvArea = "全部" | "内地" | "港台" | "欧美" | "日本" | "韩国";
 export type MvType = "全部" | "官方版" | "原生" | "现场版" | "网易出品";
@@ -89,6 +90,27 @@ export async function getVideoGroups(): Promise<VideoGroup[]> {
     .map((raw) => {
       const value = obj(raw);
       return { id: Number(value.id ?? value.groupId ?? 0), name: String(value.name ?? value.title ?? "") };
+    })
+    .filter((item) => item.id > 0 && item.name);
+}
+
+export async function getVideoCategories(
+  offset = 0,
+  limit = 99,
+): Promise<VideoCategory[]> {
+  const response = await request<Obj>(
+    "/video/category/list",
+    { offset, limit },
+    false,
+  );
+  const data = obj(response.data ?? response.result ?? response);
+  return arr(data.data ?? data.categories ?? data.list ?? response.data ?? response)
+    .map((raw) => {
+      const value = obj(raw);
+      return {
+        id: Number(value.id ?? value.categoryId ?? value.groupId ?? 0),
+        name: String(value.name ?? value.title ?? value.categoryName ?? ""),
+      } satisfies VideoCategory;
     })
     .filter((item) => item.id > 0 && item.name);
 }
