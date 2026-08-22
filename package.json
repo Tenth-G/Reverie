@@ -47,6 +47,7 @@
     "test:voice-api": "node scripts/test-voice-api.cjs",
     "test:playlist-import-api": "node scripts/test-playlist-import-api.cjs",
     "test:lyrics-mark-api": "node scripts/test-lyrics-mark-api.cjs",
+    "test:digital-album-api": "node scripts/test-digital-album-api.cjs",
     "test:sidecar": "node scripts/test-sidecar.mjs"
   },
   "dependencies": {

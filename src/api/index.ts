@@ -29,3 +29,4 @@ export * from "./listenTogether";
 export * from "./voice";
 export * from "./playlistImport";
 export * from "./lyricsMark";
+export * from "./digitalAlbum";

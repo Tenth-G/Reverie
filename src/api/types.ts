@@ -171,7 +171,8 @@ export type View =
   | "downloadHistory"
   | "listenTogether"
   | "voiceWorkbench"
-  | "lyricsMark";
+  | "lyricsMark"
+  | "digitalAlbum";
 
 export type SearchCategory =
   | "songs"
@@ -373,6 +374,18 @@ export interface LyricMark {
   translateType: number;
   startTimeStamp: number;
   createdAt: number;
+}
+
+export interface DigitalAlbum {
+  id: number;
+  name: string;
+  artistName: string;
+  coverUrl: string;
+  description: string;
+  price: number;
+  sales: number;
+  purchased: boolean;
+  songs: Song[];
 }
 
 export interface SearchResultPage {

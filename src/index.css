@@ -5393,3 +5393,32 @@ input {
 .lyrics-mark-empty { display: grid; place-items: center; min-height: 130px; color: var(--text-faint); font-size: 12px; }
 .lyrics-mark-error { max-width: 1100px; margin: 0 auto 18px; color: #ff8585; font-size: 12px; }
 @media (max-width: 760px) { .lyrics-mark-layout { grid-template-columns: 1fr; } }
+
+/* Digital albums */
+.digital-album-search { display: flex; gap: 8px; max-width: 760px; margin: 10px auto 16px; }
+.digital-album-input { display: flex; align-items: center; gap: 7px; min-width: 0; flex: 1; padding: 0 10px; border: 1px solid var(--border); border-radius: 6px; color: var(--text-faint); }
+.digital-album-input input { width: 100%; min-height: 36px; border: 0; outline: 0; background: transparent; color: var(--text); font-size: 12px; }
+.digital-album-detail, .digital-album-purchased { max-width: 960px; margin: 0 auto 18px; padding: 18px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); }
+.digital-album-hero { display: flex; align-items: center; gap: 15px; }
+.digital-album-hero img, .digital-album-hero > span { width: 116px; height: 116px; flex: 0 0 116px; border-radius: 7px; object-fit: cover; }
+.digital-album-hero > span { display: grid; place-items: center; background: var(--bg-3); color: var(--text-faint); }
+.digital-album-hero h2 { margin: 0; font-size: 20px; }
+.digital-album-hero p { margin: 7px 0; color: var(--text-dim); font-size: 12px; }
+.digital-album-stats { display: flex; gap: 12px; color: var(--accent-2); font-size: 12px; }
+.digital-album-stats span { display: inline-flex; align-items: center; gap: 5px; }
+.digital-album-description { margin: 16px 0; color: var(--text-dim); font-size: 12px; line-height: 1.6; }
+.digital-album-order { display: flex; justify-content: flex-end; gap: 8px; }
+.digital-album-order select { min-height: 34px; padding: 0 9px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-3); color: var(--text); font-size: 12px; }
+.digital-album-owned { display: inline-flex; align-items: center; gap: 6px; color: var(--success, #36b37e); font-size: 12px; }
+.digital-album-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.digital-album-section-head h2 { margin: 0; font-size: 16px; }
+.digital-album-section-head span { color: var(--text-faint); font-size: 11px; }
+.digital-album-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(135px, 1fr)); gap: 12px; }
+.digital-album-card { display: grid; gap: 6px; min-width: 0; padding: 7px; border: 1px solid transparent; border-radius: 6px; background: var(--bg-3); color: var(--text); text-align: left; }
+.digital-album-card:hover { border-color: var(--border); }
+.digital-album-card img, .digital-album-card > span { width: 100%; aspect-ratio: 1; display: grid; place-items: center; border-radius: 5px; object-fit: cover; background: var(--bg-4); color: var(--text-faint); }
+.digital-album-card strong, .digital-album-card small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.digital-album-card strong { font-size: 12px; }
+.digital-album-card small { color: var(--text-dim); font-size: 10px; }
+.digital-album-empty, .digital-album-error { color: var(--text-faint); font-size: 12px; }
+.digital-album-error { max-width: 960px; margin: 0 auto 18px; color: #ff8585; }
