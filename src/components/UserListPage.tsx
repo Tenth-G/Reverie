@@ -1,8 +1,9 @@
-import { useState } from "react";
-import { Download, Heart, Pencil, Plus, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Compass, Download, Heart, Pencil, Plus, RefreshCw, Trash2 } from "lucide-react";
 import type { PlaylistInfo } from "../api/types";
 import { useExploreStore } from "../store/exploreStore";
 import { usePlayerStore } from "../store/playerStore";
+import { usePlaylistDiscoveryStore } from "../store/playlistDiscoveryStore";
 import { Page, PageHeader } from "./Page";
 import PlaylistGrid from "./PlaylistGrid";
 import PlaylistEditorModal from "./PlaylistEditorModal";
@@ -22,69 +23,163 @@ export default function UserListPage() {
   const [editing, setEditing] = useState<PlaylistInfo | null>(null);
   const [pendingDelete, setPendingDelete] = useState<PlaylistInfo | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [mode, setMode] = useState<"mine" | "discover">("mine");
+  const discovery = usePlaylistDiscoveryStore();
+
+  useEffect(() => {
+    if (mode === "discover" && !discovery.loaded && !discovery.loading) {
+      void discovery.load();
+    }
+  }, [discovery, mode]);
 
   return (
     <Page>
       <PageHeader
         title="我的歌单"
-        subtitle="管理我创建和收藏的歌单"
+        subtitle={mode === "mine" ? "管理我创建和收藏的歌单" : "按分类发现高质量歌单"}
         actions={
           <div className="page-action-row">
-            <button className="btn" onClick={() => setImportOpen(true)}>
-              <Download size={15} /> 导入歌单
-            </button>
-            <button
-              className="btn primary"
-              onClick={() => {
-                setEditing(null);
-                setEditorOpen(true);
-              }}
-            >
-              <Plus size={15} /> 创建歌单
-            </button>
+            {mode === "mine" ? (
+              <>
+                <button className="btn" onClick={() => setImportOpen(true)}>
+                  <Download size={15} /> 导入歌单
+                </button>
+                <button
+                  className="btn primary"
+                  onClick={() => {
+                    setEditing(null);
+                    setEditorOpen(true);
+                  }}
+                >
+                  <Plus size={15} /> 创建歌单
+                </button>
+              </>
+            ) : (
+              <button
+                className="btn"
+                title="刷新歌单发现"
+                onClick={() => void discovery.load(discovery.selectedTag)}
+              >
+                <RefreshCw size={15} /> 刷新
+              </button>
+            )}
           </div>
         }
       />
-      <PlaylistGrid
-        playlists={userPlaylists}
-        onOpen={openPlaylist}
-        loading={userPlaylistsLoading}
-        emptyText="登录后查看「我创建 / 收藏的歌单」"
-        renderActions={(playlist) =>
-          playlist.creatorId === uid ? (
-            <>
+      <div className="playlist-view-tabs" role="tablist" aria-label="歌单视图">
+        <button
+          className={mode === "mine" ? "active" : ""}
+          role="tab"
+          aria-selected={mode === "mine"}
+          onClick={() => setMode("mine")}
+        >
+          <Heart size={15} /> 我的歌单
+        </button>
+        <button
+          className={mode === "discover" ? "active" : ""}
+          role="tab"
+          aria-selected={mode === "discover"}
+          onClick={() => setMode("discover")}
+        >
+          <Compass size={15} /> 发现歌单
+        </button>
+      </div>
+      {mode === "mine" ? (
+        <PlaylistGrid
+          playlists={userPlaylists}
+          onOpen={openPlaylist}
+          loading={userPlaylistsLoading}
+          emptyText="登录后查看「我创建 / 收藏的歌单」"
+          renderActions={(playlist) =>
+            playlist.creatorId === uid ? (
+              <>
+                <button
+                  className="icon-action"
+                  title="编辑歌单"
+                  onClick={() => {
+                    setEditing(playlist);
+                    setEditorOpen(true);
+                  }}
+                >
+                  <Pencil size={15} />
+                </button>
+                <button
+                  className="icon-action danger"
+                  title="删除歌单"
+                  onClick={() => setPendingDelete(playlist)}
+                >
+                  <Trash2 size={15} />
+                </button>
+              </>
+            ) : (
               <button
-                className="icon-action"
-                title="编辑歌单"
-                onClick={() => {
-                  setEditing(playlist);
-                  setEditorOpen(true);
-                }}
+                className={`icon-action ${playlist.subscribed ? "active" : ""}`}
+                title={playlist.subscribed ? "取消收藏" : "收藏歌单"}
+                onClick={() => void toggleSubscription(playlist)}
               >
-                <Pencil size={15} />
+                <Heart
+                  size={15}
+                  fill={playlist.subscribed ? "currentColor" : "none"}
+                />
               </button>
+            )
+          }
+        />
+      ) : (
+        <>
+          <div className="playlist-discovery-toolbar">
+            <div className="playlist-discovery-tags" role="tablist" aria-label="热门歌单标签">
+              {[{ id: 0, name: "全部" }, ...discovery.hotTags].map((tag) => (
+                <button
+                  key={`${tag.id}-${tag.name}`}
+                  className={discovery.selectedTag === tag.name ? "active" : ""}
+                  onClick={() => void discovery.load(tag.name)}
+                >
+                  {tag.name}
+                </button>
+              ))}
+            </div>
+            <label className="playlist-discovery-select">
+              <span>分类</span>
+              <select
+                value={discovery.selectedTag}
+                onChange={(event) => void discovery.load(event.target.value)}
+              >
+                <option value="全部">全部分类</option>
+                {discovery.categories
+                  .filter((category) => category.name !== "全部")
+                  .map((category) => (
+                    <option key={`${category.id}-${category.name}`} value={category.name}>
+                      {category.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+          </div>
+          <PlaylistGrid
+            playlists={discovery.playlists}
+            onOpen={openPlaylist}
+            loading={discovery.loading}
+            emptyText="暂无精品歌单"
+            renderActions={(playlist) => (
               <button
-                className="icon-action danger"
-                title="删除歌单"
-                onClick={() => setPendingDelete(playlist)}
+                className={`icon-action ${playlist.subscribed ? "active" : ""}`}
+                title={playlist.subscribed ? "取消收藏" : "收藏歌单"}
+                onClick={() => void toggleSubscription(playlist)}
               >
-                <Trash2 size={15} />
+                <Heart size={15} fill={playlist.subscribed ? "currentColor" : "none"} />
               </button>
-            </>
-          ) : (
-            <button
-              className={`icon-action ${playlist.subscribed ? "active" : ""}`}
-              title={playlist.subscribed ? "取消收藏" : "收藏歌单"}
-              onClick={() => void toggleSubscription(playlist)}
-            >
-              <Heart
-                size={15}
-                fill={playlist.subscribed ? "currentColor" : "none"}
-              />
-            </button>
-          )
-        }
-      />
+            )}
+          />
+          {discovery.more && (
+            <div className="playlist-discovery-more">
+              <button className="btn" onClick={() => void discovery.loadMore()} disabled={discovery.loadingMore}>
+                {discovery.loadingMore ? "加载中…" : "加载更多精品歌单"}
+              </button>
+            </div>
+          )}
+        </>
+      )}
       <PlaylistEditorModal
         playlist={editing}
         open={editorOpen}
