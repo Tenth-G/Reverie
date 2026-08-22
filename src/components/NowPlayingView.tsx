@@ -21,6 +21,9 @@ import { readCoverOrigin } from "../utils/sharedCoverTransition";
 import PlaybackVisualPanel from "./PlaybackVisualPanel";
 
 const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+// The cover is displayed at roughly 380 CSS px. A 2x source is enough for
+// sharpness while avoiding the much larger decoded 1120px bitmap.
+const COVER_IMAGE_SIZE = 760;
 
 export default function NowPlayingView() {
   const currentSong = usePlayerStore((s) => s.currentSong);
@@ -167,7 +170,7 @@ export default function NowPlayingView() {
   const staticCover = currentSong?.picUrl ? (
     <img
       className="np-cover-img"
-      src={sizedImage(currentSong.picUrl, 1120)}
+      src={sizedImage(currentSong.picUrl, COVER_IMAGE_SIZE)}
       alt=""
     />
   ) : (
@@ -207,7 +210,7 @@ export default function NowPlayingView() {
         <img
           ref={transitionCoverRef}
           className="np-shared-cover"
-          src={sizedImage(currentSong.picUrl, 760)}
+          src={sizedImage(currentSong.picUrl, COVER_IMAGE_SIZE)}
           alt=""
         />
       )}
@@ -234,7 +237,7 @@ export default function NowPlayingView() {
             >
               <Suspense fallback={staticCover}>
                 <ParticleAlbumCover
-                  imageUrl={sizedImage(currentSong.picUrl, 1120)}
+                  imageUrl={sizedImage(currentSong.picUrl, COVER_IMAGE_SIZE)}
                   effect={particleEffect}
                   grid={QUALITY_GRID[coverQuality]}
                   onOverload={() =>

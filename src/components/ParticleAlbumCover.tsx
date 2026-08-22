@@ -178,7 +178,9 @@ export default function ParticleAlbumCover({
     // --- colours from the cover
     const img = new Image();
     img.crossOrigin = "anonymous";
+    let disposed = false;
     img.onload = () => {
+      if (disposed) return;
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d", { willReadFrequently: true });
       if (!ctx) return;
@@ -196,6 +198,14 @@ export default function ParticleAlbumCover({
         colors[i * 3 + 2] = conv(data[px + 2] / 255);
       }
       geometry.attributes.aColor.needsUpdate = true;
+      // Release the temporary CPU-side raster as soon as the attribute upload
+      // has been queued. The WebGL buffer owns the data from this point on.
+      canvas.width = 0;
+      canvas.height = 0;
+    };
+    img.onerror = () => {
+      // Avoid retaining a failed image request until the scene is destroyed.
+      img.onload = null;
     };
     img.src = imageUrl;
 
@@ -355,6 +365,10 @@ export default function ParticleAlbumCover({
     window.addEventListener("resize", handleResize);
 
     return () => {
+      disposed = true;
+      img.onload = null;
+      img.onerror = null;
+      img.src = "";
       cancelAnimationFrame(frameId);
       window.removeEventListener("resize", handleResize);
       document.removeEventListener("visibilitychange", onVisibilityChange);

@@ -176,14 +176,18 @@ export default function App() {
   useEffect(() => {
     const a = audioRef.current;
     if (!a) return;
+    // Explicitly detach the previous media resource before assigning a new
+    // URL. WebView2 can otherwise keep the old decoder/buffer alive while
+    // the next track is loading.
+    a.pause();
+    a.removeAttribute("src");
+    a.load();
     if (currentUrl) {
       a.src = currentUrl;
       a.load();
       a.play().catch(() => {});
     } else {
-      a.pause();
-      a.removeAttribute("src");
-      a.load();
+      a.currentTime = 0;
     }
   }, [currentUrl]);
 
@@ -274,21 +278,19 @@ export default function App() {
 
   return (
     <div className="app">
-      {/* browse layer stays mounted (hidden in now-playing) so returning is instant */}
-      <div
-        className="browse-layer"
-        style={{ display: currentPage === "nowplaying" ? "none" : "contents" }}
-      >
-        <TitleBar />
-        <TopNav />
-        <main className="page-content">
-          <LoginGate>
-            <Suspense fallback={<div className="page-loading" />}>
-              {renderPage()}
-            </Suspense>
-          </LoginGate>
-        </main>
-      </div>
+      {currentPage !== "nowplaying" && (
+        <div className="browse-layer">
+          <TitleBar />
+          <TopNav />
+          <main className="page-content">
+            <LoginGate>
+              <Suspense fallback={<div className="page-loading" />}>
+                {renderPage()}
+              </Suspense>
+            </LoginGate>
+          </main>
+        </div>
+      )}
       {currentPage === "nowplaying" && (
         <Suspense fallback={<div className="now-playing-loading" />}>
           <NowPlayingView />
