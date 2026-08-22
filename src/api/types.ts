@@ -129,6 +129,16 @@ export interface AlbumInfo {
   subscribed: boolean;
 }
 
+export interface AlbumPrivilege {
+  songId: number;
+  maxBitrate: number;
+  standard: boolean;
+  lossless: boolean;
+  highRes: boolean;
+  dolby: boolean;
+  spatialAudio: boolean;
+}
+
 export interface CommentInfo {
   id: number;
   content: string;

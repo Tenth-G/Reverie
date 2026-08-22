@@ -5560,6 +5560,7 @@ input {
 .video-mv-filters { display: flex; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }
 .video-mv-filters label { display: grid; gap: 5px; color: var(--text-faint); font-size: 11px; }
 .video-mv-filters select { min-height: 32px; min-width: 112px; padding: 0 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-3); color: var(--text); font-size: 12px; }
+.album-quality-summary { display: inline-flex; align-items: center; gap: 4px; color: var(--accent-2); }
 .profile-medal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
 .profile-medal { display: grid; justify-items: center; gap: 5px; min-width: 0; padding: 10px 8px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-1); text-align: center; }
 .profile-medal img, .profile-medal-placeholder { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }

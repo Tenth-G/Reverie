@@ -1,5 +1,5 @@
 import { request } from "./client.ts";
-import type { AlbumInfo, ArtistInfo } from "./types.ts";
+import type { AlbumInfo, AlbumPrivilege, ArtistInfo } from "./types.ts";
 
 type Obj = Record<string, unknown>;
 const obj = (value: unknown): Obj =>
@@ -90,6 +90,29 @@ export async function getTopAlbums(area: AlbumArea = "ALL", offset = 0, limit = 
       .map(normalizeAlbum)
       .filter((item): item is AlbumInfo => item !== null),
   );
+}
+
+export async function getAlbumPrivileges(id: number): Promise<AlbumPrivilege[]> {
+  if (!id) return [];
+  const response = await request<Obj>("/album/privilege", { id }, false);
+  const value = obj(response.data ?? response.result ?? response);
+  const rows = arr(value.data ?? value.list ?? response.data ?? response);
+  return rows
+    .map((raw) => {
+      const item = obj(raw);
+      const songId = Number(item.id ?? item.songId ?? 0);
+      const maxBitrate = Number(item.maxbr ?? item.maxBitrate ?? item.br ?? 0);
+      return {
+        songId,
+        maxBitrate,
+        standard: Boolean(item.pl ?? item.standard ?? maxBitrate > 0),
+        lossless: Boolean(item.fl ?? item.lossless ?? item.hq),
+        highRes: Boolean(item.hr ?? item.highRes ?? item.hires),
+        dolby: Boolean(item.db ?? item.dolby),
+        spatialAudio: Boolean(item.jm ?? item.spatialAudio ?? item.jyeffect),
+      } satisfies AlbumPrivilege;
+    })
+    .filter((item) => item.songId > 0);
 }
 
 export async function getArtistDirectory(
