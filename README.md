@@ -1,6 +1,6 @@
 # Reverie
 
-Reverie 是一款面向 Windows 桌面的本地音乐播放器，使用 Tauri 2、React、TypeScript 和 Rust 构建。应用通过随包分发的本地 API sidecar 访问音乐服务，播放器本身不依赖 Reverie 自建后端。
+![README](D:\Edge浏览器\README.png)Reverie 是一款音乐播放器，使用 Tauri 2、React、TypeScript 和 Rust 构建。应用通过随包分发的本地 API sidecar 访问音乐服务，播放器本身不依赖 Reverie 自建后端。
 
 > 当前 GitHub Release 主要提供 Windows 安装包和便携包。源码中的 sidecar 构建脚本同时保留了 Linux、macOS 和 Windows 的目标配置，但跨平台发布仍需补充对应的 CI 与平台验证。
 
@@ -173,4 +173,4 @@ npm test
 
 ## 许可证
 
-本项目以 [GNU General Public License v3.0](./LICENSE) 发布。音乐数据和相关内容的版权归各权利方所有；版权所有 © 2026 Tenth-G。
+本项目以 [GNU General Public License v3.0](./LICENSE) 发布。音乐数据和相关内容的版权归各权利方所有；版权所有 © 2026 oaggggg。
