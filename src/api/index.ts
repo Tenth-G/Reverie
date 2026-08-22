@@ -37,6 +37,7 @@ export * from "./playback";
 export * from "./library";
 export * from "./sheet";
 export * from "./songStatus";
+export * from "./share";
 export * from "./lyricsMark";
 export * from "./digitalAlbum";
 export * from "./musician";

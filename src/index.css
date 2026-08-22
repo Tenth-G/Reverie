@@ -4205,6 +4205,35 @@ input {
   color: var(--text-faint);
   text-align: center;
 }
+.share-dialog {
+  width: min(92vw, 520px);
+}
+.share-dialog .modal-head p {
+  margin-top: 4px;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+.share-dialog textarea {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg-2);
+  color: var(--text);
+  font: inherit;
+  line-height: 1.6;
+}
+.share-dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  color: var(--text-faint);
+  font-size: 11px;
+}
 .settings-section .about-panel {
   margin: 8px 0 4px;
   border-radius: 6px;
