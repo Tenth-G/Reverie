@@ -4,6 +4,12 @@ import {
   getEvents,
   getMixedFollows,
   getMutualFollow,
+  getSocialStatusRecommendations,
+  getSupportedSocialStatuses,
+  getUserCollectedPlaylists,
+  getUserCreatedPlaylists,
+  getUserSocialStatus,
+  deleteEvent,
   getUserEvents,
 } from "../src/api/extended.ts";
 
@@ -86,6 +92,34 @@ test("getMutualFollow reads the relationship flag", async () => {
       return Response.json({ data: { mutual: true } });
     };
     assert.equal(await getMutualFollow(8), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("user playlist and social status routes normalize account data", async () => {
+  const originalFetch = globalThis.fetch;
+  const paths: string[] = [];
+  try {
+    globalThis.fetch = async (input, init) => {
+      const url = new URL(String(input));
+      paths.push(url.pathname);
+      if (url.pathname === "/user/playlist/create" || url.pathname === "/user/playlist/collect") return Response.json({ data: [{ id: 1, name: "歌单", creator: { userId: 42, nickname: "我" } }] });
+      if (url.pathname === "/user/social/status") return Response.json({ data: { statusName: "听歌中" } });
+      if (url.pathname === "/user/social/status/rcmd") return Response.json({ data: [{ name: "专注" }] });
+      if (url.pathname === "/user/social/status/support") return Response.json({ data: [{ name: "听歌中" }] });
+      assert.equal(url.pathname, "/event/del");
+      assert.equal(url.searchParams.get("evId"), "8");
+      assert.equal(init?.method, "POST");
+      return Response.json({ code: 200 });
+    };
+    assert.equal((await getUserCreatedPlaylists(42))[0]?.name, "歌单");
+    assert.equal((await getUserCollectedPlaylists(42))[0]?.id, 1);
+    assert.equal(await getUserSocialStatus(42), "听歌中");
+    assert.deepEqual(await getSocialStatusRecommendations(), ["专注"]);
+    assert.deepEqual(await getSupportedSocialStatuses(), ["听歌中"]);
+    await deleteEvent(8);
+    assert.deepEqual(paths, ["/user/playlist/create", "/user/playlist/collect", "/user/social/status", "/user/social/status/rcmd", "/user/social/status/support", "/event/del"]);
   } finally {
     globalThis.fetch = originalFetch;
   }
