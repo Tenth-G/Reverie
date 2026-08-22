@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../store/playerStore";
 import { sizedImage } from "../utils/image";
-import { Album, BookOpenText, CircleUserRound, Headphones, Link2, Mic2, Music2, Radio } from "lucide-react";
+import { Album, BookOpenText, CircleUserRound, FileText, Headphones, Link2, Mic2, Music2, Radio } from "lucide-react";
 import { useProfileStore } from "../store/profileStore";
 import { useCollectionStore } from "../store/collectionStore";
 
@@ -242,6 +242,9 @@ export default function UserMenu() {
           >
             <Radio size={15} />
             广播电台
+          </button>
+          <button className="user-dropdown-item" onClick={() => { setOpen(false); usePlayerStore.setState({ activeView: "ugc", prevView: "home" }); }}>
+            <FileText size={15} />百科贡献
           </button>
           <button className="user-dropdown-item" onClick={switchAccount}>
             切换账号

@@ -51,6 +51,7 @@
     "test:musician-api": "node scripts/test-musician-api.cjs",
     "test:sati-api": "node scripts/test-sati-api.cjs",
     "test:broadcast-api": "node scripts/test-broadcast-api.cjs",
+    "test:ugc-api": "node scripts/test-ugc-api.cjs",
     "test:sidecar": "node scripts/test-sidecar.mjs"
   },
   "dependencies": {
