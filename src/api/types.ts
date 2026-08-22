@@ -566,6 +566,14 @@ export interface SigninProgress {
   completed: boolean;
   reward: string;
 }
+export interface DifmChannel {
+  id: number;
+  name: string;
+  description: string;
+  coverUrl: string;
+  source: number;
+  subscribed: boolean;
+}
 
 export interface SearchResultPage {
   songs: Song[];

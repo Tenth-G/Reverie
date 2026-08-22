@@ -2,6 +2,7 @@ import { request } from "./client.ts";
 import type {
   BroadcastChannel,
   BroadcastCategory,
+  DifmChannel,
   PodcastProgramDetail,
   RadioInfo,
   Song,
@@ -169,6 +170,76 @@ export async function getPodcastProgramDetail(
     commentCount: Number(value.commentCount ?? value.commentCountAll ?? 0),
     song: normalizeSong(value.mainSong ?? value.song),
   };
+}
+
+function normalizeDifmChannel(raw: unknown, source: number): DifmChannel | null {
+  const value = obj(raw);
+  const id = Number(value.id ?? value.channelId ?? 0);
+  if (!id) return null;
+  return {
+    id,
+    name: String(value.name ?? value.channelName ?? "DIFM 电台"),
+    description: String(value.description ?? value.desc ?? ""),
+    coverUrl: String(value.picUrl ?? value.coverUrl ?? value.cover ?? ""),
+    source: Number(value.source ?? value.sourceId ?? source),
+    subscribed: Boolean(value.subscribed ?? value.isSubscribe ?? value.sub),
+  };
+}
+
+function difmList(response: Obj): unknown[] {
+  const value = obj(response.data ?? response.result ?? response);
+  return arr(value.list ?? value.channels ?? value.data ?? response.data ?? response);
+}
+
+export async function getDifmChannels(source = 0): Promise<DifmChannel[]> {
+  const response = await request<Obj>(
+    "/dj/difm/all/style/channel",
+    { sources: JSON.stringify([source]) },
+    false,
+  );
+  return difmList(response)
+    .map((item) => normalizeDifmChannel(item, source))
+    .filter((item): item is DifmChannel => item !== null);
+}
+
+export async function getDifmSubscribedChannels(source = 0): Promise<DifmChannel[]> {
+  const response = await request<Obj>(
+    "/dj/difm/subscribe/channels/get",
+    { sources: JSON.stringify([source]) },
+    false,
+  );
+  return difmList(response)
+    .map((item) => normalizeDifmChannel(item, source))
+    .filter((item): item is DifmChannel => item !== null)
+    .map((item) => ({ ...item, subscribed: true }));
+}
+
+export async function toggleDifmChannel(
+  id: number,
+  subscribed: boolean,
+): Promise<void> {
+  await request(
+    subscribed ? "/dj/difm/channel/subscribe" : "/dj/difm/channel/unsubscribe",
+    { id },
+    false,
+    { method: "POST" },
+  );
+}
+
+export async function getDifmTracks(
+  source: number,
+  channelId?: number,
+  limit = 10,
+): Promise<Song[]> {
+  const response = await request<Obj>(
+    "/dj/difm/playing/tracks/list",
+    { source, channelId, limit },
+    false,
+  );
+  const value = obj(response.data ?? response.result ?? response);
+  return arr(value.list ?? value.tracks ?? value.data ?? response.data ?? response)
+    .map((item) => normalizeSong(obj(item).song ?? item))
+    .filter((item): item is Song => item !== null);
 }
 export async function getBroadcastCurrentInfo(
   id: number,

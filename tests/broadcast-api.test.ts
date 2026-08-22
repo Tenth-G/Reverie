@@ -4,9 +4,13 @@ import {
   getBroadcastCategories,
   getBroadcastChannels,
   getBroadcastCollected,
+  getDifmChannels,
+  getDifmSubscribedChannels,
+  getDifmTracks,
   getPodcastProgramDetail,
   getSportRadio,
   toggleBroadcastSubscription,
+  toggleDifmChannel,
 } from "../src/api/broadcast.ts";
 import { getPodcastToplist } from "../src/api/broadcast.ts";
 
@@ -99,6 +103,36 @@ test("podcast program detail normalizes metadata and main song", async () => {
     assert.equal(detail.djName, "主播");
     assert.equal(detail.song?.id, 22);
     assert.equal(detail.commentCount, 4);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("DIFM APIs normalize channels, tracks and subscription routes", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: Array<{ url: string; method?: string }> = [];
+  globalThis.fetch = async (input, init) => {
+    const url = String(input);
+    calls.push({ url, method: init?.method });
+    if (url.includes("playing/tracks/list"))
+      return Response.json({ data: { tracks: [{ id: 31, name: "DIFM 歌曲", ar: [{ name: "歌手" }] }] } });
+    if (url.includes("subscribe/channels/get"))
+      return Response.json({ data: { channels: [{ id: 2, name: "收藏频道" }] } });
+    return Response.json({ data: { channels: [{ id: 1, name: "频道", picUrl: "cover" }] } });
+  };
+  try {
+    const channels = await getDifmChannels(1);
+    const subscribed = await getDifmSubscribedChannels(1);
+    const tracks = await getDifmTracks(1, 1, 5);
+    await toggleDifmChannel(1, true);
+    await toggleDifmChannel(1, false);
+    assert.equal(channels[0]?.name, "频道");
+    assert.equal(subscribed[0]?.subscribed, true);
+    assert.equal(tracks[0]?.name, "DIFM 歌曲");
+    assert.match(calls[0]!.url, /all\/style\/channel/);
+    assert.equal(calls.at(-2)?.method, "POST");
+    assert.equal(calls.at(-1)?.method, "POST");
+    assert.match(calls.at(-1)!.url, /channel\/unsubscribe/);
   } finally {
     globalThis.fetch = originalFetch;
   }
