@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../store/playerStore";
 import { sizedImage } from "../utils/image";
-import { Album, BookOpenText, CircleUserRound, Link2, Mic2 } from "lucide-react";
+import { Album, BookOpenText, CircleUserRound, Link2, Mic2, Music2 } from "lucide-react";
 import { useProfileStore } from "../store/profileStore";
 import { useCollectionStore } from "../store/collectionStore";
 
@@ -209,6 +209,19 @@ export default function UserMenu() {
           >
             <Album size={15} />
             数字专辑
+          </button>
+          <button
+            className="user-dropdown-item"
+            onClick={() => {
+              setOpen(false);
+              usePlayerStore.setState({
+                activeView: "musician",
+                prevView: "home",
+              });
+            }}
+          >
+            <Music2 size={15} />
+            音乐人中心
           </button>
           <button className="user-dropdown-item" onClick={switchAccount}>
             切换账号

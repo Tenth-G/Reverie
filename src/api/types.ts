@@ -172,7 +172,8 @@ export type View =
   | "listenTogether"
   | "voiceWorkbench"
   | "lyricsMark"
-  | "digitalAlbum";
+  | "digitalAlbum"
+  | "musician";
 
 export type SearchCategory =
   | "songs"
@@ -386,6 +387,29 @@ export interface DigitalAlbum {
   sales: number;
   purchased: boolean;
   songs: Song[];
+}
+
+export interface MusicianOverview {
+  songCount: number;
+  playCount: number;
+  fanCount: number;
+  commentCount: number;
+  cloudbean: number;
+}
+
+export interface MusicianTrendPoint {
+  date: string;
+  count: number;
+}
+
+export interface MusicianTask {
+  id: number;
+  name: string;
+  description: string;
+  reward: number;
+  status: string;
+  userMissionId?: number;
+  period?: string;
 }
 
 export interface SearchResultPage {

@@ -87,6 +87,8 @@ const preloadView = (view: View) => {
       return import("./LyricsMarkPage");
     case "digitalAlbum":
       return import("./DigitalAlbumPage");
+    case "musician":
+      return import("./MusicianPage");
     case "likes":
       return import("./LikesPage");
     case "recent":
