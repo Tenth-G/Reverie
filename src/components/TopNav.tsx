@@ -20,6 +20,7 @@ import {
   Moon,
   Podcast,
   Palette,
+  MessageSquareText,
   Search,
   Sun,
   Users,
@@ -38,6 +39,7 @@ const NAV: NavItem[] = [
   { view: "home", label: "首页", icon: <House size={17} /> },
   { view: "chart", label: "排行榜", icon: <BarChart3 size={17} /> },
   { view: "style", label: "风格", icon: <Palette size={17} /> },
+  { view: "topics", label: "话题", icon: <MessageSquareText size={17} /> },
   { view: "videos", label: "视频", icon: <Clapperboard size={17} /> },
   {
     view: "userlist",
@@ -107,6 +109,8 @@ const preloadView = (view: View) => {
       return import("./FansPage");
     case "style":
       return import("./StylePage");
+    case "topics":
+      return import("./TopicPage");
     case "likes":
       return import("./LikesPage");
     case "recent":
