@@ -54,6 +54,7 @@
     "test:ugc-api": "node scripts/test-ugc-api.cjs",
     "test:listen-reports-api": "node scripts/test-listen-reports-api.cjs",
     "test:vip-yunbei-actions": "node scripts/test-vip-yunbei-actions.cjs",
+    "test:fans-api": "node scripts/test-fans-api.cjs",
     "test:sidecar": "node scripts/test-sidecar.mjs"
   },
   "dependencies": {

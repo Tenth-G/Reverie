@@ -177,7 +177,8 @@ export type View =
   | "sati"
   | "broadcast"
   | "ugc"
-  | "listenReports";
+  | "listenReports"
+  | "fans";
 
 export type SearchCategory =
   | "songs"
@@ -426,6 +427,9 @@ export interface UgcResource { kind: "song" | "album" | "artist" | "mv"; id: num
 export interface UgcContribution { id: string; type: number; title: string; status: string; createTime: number; description: string; }
 export interface UgcDevote { count: number; points: number; yunbei: number; }
 export interface ListenTotal { duration: number; songCount: number; playCount: number; }
+export interface CreatorAuthInfo { authenticated: boolean; name: string; description: string; level: number; }
+export interface FansOverview { total: number; todayAdded: number; todayLost: number; growth: number; }
+export interface FansTrendPoint { date: string; count: number; }
 export interface ListenReport extends ListenTotal { startDate: string; endDate: string; }
 export interface ListenTodaySong { id: number; name: string; artists: string; count: number; coverUrl: string; }
 export interface VipTimeMachineEntry { date: string; songName: string; artistName: string; count: number; }
