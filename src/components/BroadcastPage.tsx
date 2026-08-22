@@ -3,6 +3,7 @@ import { Activity, Heart, Radio, RefreshCw } from "lucide-react";
 import { useBroadcastStore } from "../store/broadcastStore.ts";
 import { sizedImage } from "../utils/image";
 import { LoadingState, Page, PageHeader } from "./Page";
+import BroadcastChannelDialog from "./BroadcastChannelDialog.tsx";
 export default function BroadcastPage() {
   const channels = useBroadcastStore((s) => s.channels);
   const collected = useBroadcastStore((s) => s.collected);
@@ -14,6 +15,10 @@ export default function BroadcastPage() {
   const setBpm = useBroadcastStore((s) => s.setBpm);
   const toggle = useBroadcastStore((s) => s.toggle);
   const playSport = useBroadcastStore((s) => s.playSport);
+  const activeChannel = useBroadcastStore((s) => s.activeChannel);
+  const currentInfoLoading = useBroadcastStore((s) => s.currentInfoLoading);
+  const openCurrentInfo = useBroadcastStore((s) => s.openCurrentInfo);
+  const closeCurrentInfo = useBroadcastStore((s) => s.closeCurrentInfo);
   useEffect(() => {
     void load();
   }, [load]);
@@ -64,7 +69,11 @@ export default function BroadcastPage() {
             <h2>我的收藏</h2>
             <span>{collected.length}</span>
           </div>
-          <ChannelGrid channels={collected} onToggle={toggle} />
+          <ChannelGrid
+            channels={collected}
+            onToggle={toggle}
+            onOpen={openCurrentInfo}
+          />
         </section>
       )}
       <section className="broadcast-section">
@@ -75,7 +84,11 @@ export default function BroadcastPage() {
         {loading && !channels.length ? (
           <LoadingState label="正在加载广播频道…" />
         ) : channels.length ? (
-          <ChannelGrid channels={channels} onToggle={toggle} />
+          <ChannelGrid
+            channels={channels}
+            onToggle={toggle}
+            onOpen={openCurrentInfo}
+          />
         ) : (
           <div className="broadcast-empty">暂无广播频道</div>
         )}
@@ -85,34 +98,49 @@ export default function BroadcastPage() {
           {error}
         </div>
       )}
+      {activeChannel && (
+        <BroadcastChannelDialog
+          channel={activeChannel}
+          loading={currentInfoLoading}
+          onClose={closeCurrentInfo}
+        />
+      )}
     </Page>
   );
 }
 function ChannelGrid({
   channels,
   onToggle,
+  onOpen,
 }: {
   channels: import("../api/types.ts").BroadcastChannel[];
   onToggle: (channel: import("../api/types.ts").BroadcastChannel) => void;
+  onOpen: (channel: import("../api/types.ts").BroadcastChannel) => void;
 }) {
   return (
     <div className="broadcast-grid">
       {channels.map((channel) => (
         <article className="broadcast-card" key={channel.id}>
-          {channel.coverUrl ? (
-            <img src={sizedImage(channel.coverUrl, 220)} alt="" />
-          ) : (
-            <span>
-              <Radio size={25} />
-            </span>
-          )}
-          <strong>{channel.name}</strong>
-          <small>
-            {channel.categoryName ||
-              channel.regionName ||
-              channel.description ||
-              "广播频道"}
-          </small>
+          <button
+            className="broadcast-card-open"
+            title="查看当前节目"
+            onClick={() => onOpen(channel)}
+          >
+            {channel.coverUrl ? (
+              <img src={sizedImage(channel.coverUrl, 220)} alt="" />
+            ) : (
+              <span>
+                <Radio size={25} />
+              </span>
+            )}
+            <strong>{channel.name}</strong>
+            <small>
+              {channel.categoryName ||
+                channel.regionName ||
+                channel.description ||
+                "广播频道"}
+            </small>
+          </button>
           <button
             className={`icon-button ${channel.subscribed ? "active" : ""}`}
             title={channel.subscribed ? "取消收藏" : "收藏"}
