@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Heart, ListPlus, MessageCircle, Pencil, RefreshCw, Trash2 } from "lucide-react";
+import { Check, Heart, ListPlus, MessageCircle, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import type { PlaylistInfo } from "../api/types";
 import type { Song } from "../api/types";
 import { getPlaylistDetail } from "../api/client";
@@ -8,6 +8,7 @@ import {
   getPlaylistDynamicStats,
   getPlaylistSubscribers,
   getPlaylistAllTracks,
+  markPlaylistPlayed,
   manipulatePlaylistTracks,
   updatePlaylistOrder,
 } from "../api/playlist";
@@ -44,6 +45,7 @@ export default function PlaylistPage() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [mutating, setMutating] = useState(false);
   const [fullLoading, setFullLoading] = useState(false);
+  const [checkingIn, setCheckingIn] = useState(false);
   const [dynamicStats, setDynamicStats] = useState<PlaylistDynamicStats | null>(null);
   const [relatedPlaylists, setRelatedPlaylists] = useState<PlaylistInfo[]>([]);
   const [relatedLoading, setRelatedLoading] = useState(false);
@@ -135,6 +137,21 @@ export default function PlaylistPage() {
     }
   };
 
+  const checkIn = async () => {
+    if (!playlistId || checkingIn) return;
+    setCheckingIn(true);
+    try {
+      await markPlaylistPlayed(playlistId);
+      const stats = await getPlaylistDynamicStats(playlistId);
+      setDynamicStats(stats);
+      usePlayerStore.getState().toast("歌单打卡成功", "success");
+    } catch {
+      usePlayerStore.getState().toast("歌单打卡失败", "error");
+    } finally {
+      setCheckingIn(false);
+    }
+  };
+
   const addSongs = async (songs: Song[]) => {
     setMutating(true);
     try {
@@ -212,6 +229,9 @@ export default function PlaylistPage() {
         subtitle={playlistDescription || `${playlistSongs.length} 首`}
         actions={
           <div className="page-action-row">
+            <button className="btn" onClick={() => void checkIn()} disabled={checkingIn} title="记录歌单播放">
+              <Check size={14} /> {checkingIn ? "打卡中…" : "打卡"}
+            </button>
             <button className="btn" onClick={() => void loadFullSongs()} disabled={fullLoading} title="从网易云加载歌单全部歌曲">
               <RefreshCw size={14} className={fullLoading ? "spin" : ""} /> 完整列表
             </button>
