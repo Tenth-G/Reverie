@@ -1,5 +1,7 @@
-import { Gauge, Sparkles, Type, X } from "lucide-react";
+import { useEffect } from "react";
+import { BookOpen, Gauge, Sparkles, Type, X } from "lucide-react";
 import { usePlayerStore } from "../store/playerStore";
+import { useSongMetadataStore } from "../store/songMetadataStore.ts";
 import type { ParticleEffect } from "../store/playerStore";
 import type { CoverQuality } from "../utils/gpuBenchmark";
 import { particleCount, QUALITY_LABEL } from "../utils/gpuBenchmark";
@@ -35,6 +37,10 @@ export default function PlaybackVisualPanel({
   closing: boolean;
   onClose: () => void;
 }) {
+  const currentSong = usePlayerStore((s) => s.currentSong);
+  const songMetadata = useSongMetadataStore((s) => s.metadata);
+  const metadataLoading = useSongMetadataStore((s) => s.loading);
+  const loadSongMetadata = useSongMetadataStore((s) => s.load);
   const lyricTheme = usePlayerStore((s) => s.lyricTheme);
   const setLyricTheme = usePlayerStore((s) => s.setLyricTheme);
   const lyricFontSize = usePlayerStore((s) => s.lyricFontSize);
@@ -47,6 +53,10 @@ export default function PlaybackVisualPanel({
   const setParticleEffect = usePlayerStore((s) => s.setParticleEffect);
   const coverBenchmarking = usePlayerStore((s) => s.coverBenchmarking);
   const detectCoverQuality = usePlayerStore((s) => s.detectCoverQuality);
+
+  useEffect(() => {
+    if (currentSong?.id) void loadSongMetadata(currentSong.id);
+  }, [currentSong?.id, loadSongMetadata]);
 
   return (
     <aside className={`np-visual-panel ${closing ? "is-closing" : ""}`}>
@@ -61,6 +71,46 @@ export default function PlaybackVisualPanel({
       </header>
 
       <div className="np-visual-scroll">
+        <section>
+          <h3>
+            <BookOpen size={14} /> 歌曲信息
+          </h3>
+          {metadataLoading ? (
+            <div className="metadata-loading">正在加载百科信息…</div>
+          ) : songMetadata ? (
+            <div className="song-metadata-copy">
+              {songMetadata.summary && <p>{songMetadata.summary}</p>}
+              {songMetadata.creators.length > 0 && (
+                <div>
+                  <strong>创作者</strong>
+                  <span>
+                    {songMetadata.creators
+                      .map(
+                        (item) =>
+                          `${item.name}${item.role ? `（${item.role}）` : ""}`,
+                      )
+                      .join("、")}
+                  </span>
+                </div>
+              )}
+              {songMetadata.chorus.length > 0 && (
+                <div>
+                  <strong>副歌</strong>
+                  <span>
+                    {songMetadata.chorus
+                      .map(
+                        (item) =>
+                          `${Math.round(item.start / 1000)}s-${Math.round(item.end / 1000)}s`,
+                      )
+                      .join("、")}
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="metadata-loading">暂无百科信息</div>
+          )}
+        </section>
         <section>
           <h3>
             <Type size={14} /> 歌词

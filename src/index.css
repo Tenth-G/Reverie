@@ -5259,6 +5259,11 @@ input {
 .comment-history-list p { margin: 0; color: var(--text); font-size: 13px; line-height: 1.5; white-space: pre-wrap; }
 .comment-history-list strong { overflow: hidden; color: var(--text-2); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
 .comment-history-list time { color: var(--text-faint); font-size: 10px; }
+.metadata-loading { color: var(--text-faint); font-size: 11px; }
+.song-metadata-copy { display: grid; gap: 8px; color: var(--text-2); font-size: 11px; line-height: 1.6; }
+.song-metadata-copy p { margin: 0; color: var(--text-2); }
+.song-metadata-copy > div { display: grid; grid-template-columns: 48px 1fr; gap: 7px; }
+.song-metadata-copy strong { color: var(--text-faint); font-size: 10px; }
 @media (max-width: 700px) { .recent-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 700px) {
   .comment-page-heading {
