@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Heart, RefreshCw } from "lucide-react";
 import type { BroadcastCategory, PodcastProgramRank, RadioInfo } from "../api/types";
 import { useExploreStore } from "../store/exploreStore";
@@ -102,8 +102,11 @@ function DifmPanel() {
   const [loading, setLoading] = useState(false);
   const [tracksLoading, setTracksLoading] = useState(false);
   const [error, setError] = useState("");
+  const tracksRequestRef = useRef(0);
+  const channelsRequestRef = useRef(0);
 
   const load = async (nextSource = source) => {
+    const request = ++channelsRequestRef.current;
     setLoading(true);
     setError("");
     try {
@@ -111,6 +114,7 @@ function DifmPanel() {
         getDifmChannels(nextSource),
         getDifmSubscribedChannels(nextSource),
       ]);
+      if (request !== channelsRequestRef.current) return;
       const subscribedIds = new Set(subscribed.map((item) => item.id));
       const merged = available.map((item) => ({
         ...item,
@@ -119,27 +123,33 @@ function DifmPanel() {
       setChannels(merged);
       setSelected((current) => merged.find((item) => item.id === current?.id) ?? merged[0] ?? null);
     } catch (cause) {
+      if (request !== channelsRequestRef.current) return;
       setChannels([]);
       setSelected(null);
       setError(cause instanceof Error ? cause.message : "DIFM 电台加载失败");
     } finally {
-      setLoading(false);
+      if (request === channelsRequestRef.current) setLoading(false);
     }
   };
 
   const loadTracks = async (channel: DifmChannel | null) => {
     setSelected(channel);
     if (!channel) {
+      tracksRequestRef.current += 1;
       setTracks([]);
       return;
     }
+    const request = ++tracksRequestRef.current;
     setTracksLoading(true);
     try {
-      setTracks(await getDifmTracks(source, channel.id));
+      const next = await getDifmTracks(source, channel.id);
+      if (request !== tracksRequestRef.current) return;
+      setTracks(next);
     } catch {
+      if (request !== tracksRequestRef.current) return;
       setTracks([]);
     } finally {
-      setTracksLoading(false);
+      if (request === tracksRequestRef.current) setTracksLoading(false);
     }
   };
 
@@ -151,6 +161,7 @@ function DifmPanel() {
 
   const chooseSource = (nextSource: number) => {
     setSource(nextSource);
+    tracksRequestRef.current += 1;
     setTracks([]);
     void load(nextSource);
   };
@@ -218,6 +229,9 @@ export default function RadioPage() {
   const [programRankingLoading, setProgramRankingLoading] = useState(false);
   const [paidRadios, setPaidRadios] = useState<RadioInfo[]>([]);
   const [paidLoading, setPaidLoading] = useState(false);
+  const rankingRequestRef = useRef(0);
+  const categoryRequestRef = useRef(0);
+  const programRankingRequestRef = useRef(0);
 
   useEffect(() => {
     void loadRadios();
@@ -260,27 +274,40 @@ export default function RadioPage() {
   }, []);
 
   const loadCategory = async (id: number) => {
+    const request = ++categoryRequestRef.current;
     setCategoryId(id);
     if (!id) { setCategoryRadios([]); return; }
     setDiscoveryLoading(true);
-    try { setCategoryRadios(await getPodcastCategoryRecommendations(id)); }
-    catch { setCategoryRadios([]); }
-    finally { setDiscoveryLoading(false); }
+    try {
+      const next = await getPodcastCategoryRecommendations(id);
+      if (request !== categoryRequestRef.current) return;
+      setCategoryRadios(next);
+    } catch {
+      if (request !== categoryRequestRef.current) return;
+      setCategoryRadios([]);
+    } finally {
+      if (request === categoryRequestRef.current) setDiscoveryLoading(false);
+    }
   };
 
   const loadRanking = async (type: "new" | "hot" | "hours" | "popular" | "newcomer" | "pay") => {
+    const request = ++rankingRequestRef.current;
     setRanking(type);
     setRankingLoading(true);
     try {
-      setRanked(type === "new" || type === "hot" ? await getPodcastToplist(type) : await getPodcastAdvancedToplist(type));
+      const next = type === "new" || type === "hot" ? await getPodcastToplist(type) : await getPodcastAdvancedToplist(type);
+      if (request !== rankingRequestRef.current) return;
+      setRanked(next);
     } catch {
+      if (request !== rankingRequestRef.current) return;
       setRanked([]);
     } finally {
-      setRankingLoading(false);
+      if (request === rankingRequestRef.current) setRankingLoading(false);
     }
   };
 
   const loadProgramRanking = async (type: "top" | "hours" | "today") => {
+    const request = ++programRankingRequestRef.current;
     setProgramRanking(type);
     setProgramRankingLoading(true);
     try {
@@ -289,11 +316,13 @@ export default function RadioPage() {
         : type === "hours"
           ? await getPodcastProgramHoursToplist(30)
           : await getPodcastTodayPreferred(0);
+      if (request !== programRankingRequestRef.current) return;
       setProgramRanks(next);
     } catch {
+      if (request !== programRankingRequestRef.current) return;
       setProgramRanks([]);
     } finally {
-      setProgramRankingLoading(false);
+      if (request === programRankingRequestRef.current) setProgramRankingLoading(false);
     }
   };
 

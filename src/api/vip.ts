@@ -85,13 +85,13 @@ export async function getVipTimeMachine(
 }
 
 export async function getVipGrowthpointInfo(): Promise<Obj> {
-  return request<Obj>("/vip/growthpoint/get", {}, false);
+  return request<Obj>("/vip/growthpoint", {}, false);
 }
 
 export async function claimVipTaskRewards(taskIds: string[]): Promise<void> {
   if (!taskIds.length) return;
   await request(
-    "/vip/growthpoint/reward/get",
+    "/vip/growthpoint/get",
     { ids: taskIds.join(",") },
     false,
     { method: "POST" },

@@ -121,7 +121,7 @@ export default function NowPlayingView() {
         ],
         { duration: 520, easing: EASE, fill: "forwards" },
       );
-      void animation.finished.then(() => setTransitionPhase("idle"));
+      void animation.finished.then(() => setTransitionPhase("idle")).catch(() => {});
       return () => animation.cancel();
     }
 
@@ -134,7 +134,7 @@ export default function NowPlayingView() {
         ],
         { duration: 420, easing: EASE, fill: "forwards" },
       );
-      void animation.finished.then(() => setPage("browse"));
+      void animation.finished.then(() => setPage("browse")).catch(() => {});
       return () => animation.cancel();
     }
   }, [currentSong?.picUrl, setPage, transitionPhase]);

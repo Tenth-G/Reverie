@@ -280,6 +280,8 @@ export default function ParticleAlbumCover({
     const clock = new THREE.Clock();
 
     const animate = () => {
+      // 卸载后可能有已调度的帧或 visibilitychange 触发的补帧，此处硬停。
+      if (disposed) return;
       frameId = requestAnimationFrame(animate);
       const dt = Math.min(clock.getDelta(), 0.1);
       const eff = effectRef.current;
@@ -321,8 +323,15 @@ export default function ParticleAlbumCover({
       particles.rotation.x = rotation.x;
       particles.rotation.y = rotation.y + spin;
 
-      if (composer) composer.render();
-      else renderer.render(scene, camera);
+      // 渲染管线损坏（如 WebGL 上下文丢失后属性被置空）时每帧都会抛错，
+      // 先调度后渲染的循环结构会让异常无限续帧；渲染失败即终止循环。
+      try {
+        if (composer) composer.render();
+        else renderer.render(scene, camera);
+      } catch {
+        cancelAnimationFrame(frameId);
+        return;
+      }
 
       if (!watchdogFired) {
         const now = performance.now();

@@ -282,7 +282,7 @@ export async function getSearchMediaUrl(
   }
   const response = await request<Obj>(
     "/video/url",
-    { id: item.id, resolutions: 1080 },
+    { id: item.id, res: 1080 },
     false,
   );
   return String(obj(arr(response.urls)[0]).url ?? "");

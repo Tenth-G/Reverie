@@ -52,6 +52,7 @@ interface SearchState {
 }
 
 let requestToken = 0;
+let suggestionToken = 0;
 const PAGE_SIZE = 30;
 
 function mergeResult(
@@ -174,14 +175,18 @@ export const useSearchStore = create<SearchState>()((set, get) => ({
 
   loadSuggestions: async (keyword) => {
     const value = keyword.trim();
+    const token = ++suggestionToken;
     if (!value) {
       set({ suggestions: [], suggestionsLoading: false });
       return;
     }
     set({ suggestionsLoading: true });
     try {
-      set({ suggestions: await getSearchSuggestions(value), suggestionsLoading: false });
+      const suggestions = await getSearchSuggestions(value);
+      if (token !== suggestionToken) return;
+      set({ suggestions, suggestionsLoading: false });
     } catch {
+      if (token !== suggestionToken) return;
       set({ suggestions: [], suggestionsLoading: false });
     }
   },

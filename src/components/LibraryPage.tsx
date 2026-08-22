@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Disc3, RefreshCw, UserRound } from "lucide-react";
 import { getAlbumDirectory, getArtistDirectory, getNewestAlbums, getTopAlbums, getTopArtists, type AlbumArea } from "../api/library";
 import type { AlbumInfo, ArtistInfo } from "../api/types";
@@ -30,11 +30,13 @@ export default function LibraryPage() {
   const [more, setMore] = useState(false);
   const [offset, setOffset] = useState(0);
   const [audioMatchOpen, setAudioMatchOpen] = useState(false);
+  const requestRef = useRef(0);
   const openAlbum = useExploreStore((state) => state.openAlbum);
   const openArtist = useExploreStore((state) => state.openArtist);
 
   useEffect(() => {
     let alive = true;
+    requestRef.current += 1;
     setLoading(true);
     setOffset(0);
     setMore(false);
@@ -77,23 +79,26 @@ export default function LibraryPage() {
   }, [area, artistType, initial, refreshKey, tab]);
 
   const loadMore = async () => {
+    const token = requestRef.current;
     const nextOffset = offset + 30;
     setLoading(true);
     try {
       if (tab === "albums") {
         const result = await getAlbumDirectory(area, nextOffset);
+        if (token !== requestRef.current) return;
         setAlbums((current) => [...current, ...result.albums.filter((item) => !current.some((entry) => entry.id === item.id))]);
         setMore(result.more);
       } else {
         const result = await getArtistDirectory(area === "ALL" ? -1 : area === "ZH" ? 7 : area === "EA" ? 96 : area === "JP" ? 8 : 16, artistType, initial || undefined, nextOffset);
+        if (token !== requestRef.current) return;
         setArtists((current) => [...current, ...result.artists.filter((item) => !current.some((entry) => entry.id === item.id))]);
         setMore(result.more);
       }
       setOffset(nextOffset);
     } catch {
-      usePlayerStore.getState().toast("加载更多失败", "error");
+      if (token === requestRef.current) usePlayerStore.getState().toast("加载更多失败", "error");
     } finally {
-      setLoading(false);
+      if (token === requestRef.current) setLoading(false);
     }
   };
 

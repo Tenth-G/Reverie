@@ -41,6 +41,10 @@ export default function PlaylistImportModal({
   );
   useEffect(() => {
     if (!open) {
+      if (timer.current !== undefined) {
+        window.clearInterval(timer.current);
+        timer.current = undefined;
+      }
       setTask(null);
       setError("");
       setValue("");
@@ -65,6 +69,7 @@ export default function PlaylistImportModal({
       }
     };
     void check();
+    if (timer.current !== undefined) window.clearInterval(timer.current);
     timer.current = window.setInterval(() => void check(), 3000);
   };
 

@@ -218,6 +218,7 @@ export const useExploreStore = create<ExploreState>()((set, get) => ({
       comments: [],
       commentPage: 1,
       commentSort: "hot",
+      commentHasMore: false,
     });
     try {
       const result = await getSongComments(song.id, 1, 2);
@@ -235,7 +236,7 @@ export const useExploreStore = create<ExploreState>()((set, get) => ({
   setCommentSort: async (sort) => {
     const song = get().commentSong;
     if (!song || sort === get().commentSort) return;
-    set({ loading: true, commentSort: sort, commentPage: 1, comments: [] });
+    set({ loading: true, commentSort: sort, commentPage: 1, comments: [], commentHasMore: false });
     try {
       const result = await getSongComments(song.id, 1, sort === "hot" ? 2 : 3);
       set({
@@ -487,7 +488,7 @@ export const useExploreStore = create<ExploreState>()((set, get) => ({
     if (!uid || !event.id) return false;
     try {
       await forwardEvent(event.id, uid, forwards);
-      toastError("动态已转发");
+      usePlayerStore.getState().toast("动态已转发", "success");
       return true;
     } catch {
       toastError("动态转发失败");

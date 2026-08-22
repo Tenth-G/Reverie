@@ -29,21 +29,28 @@ fn sanitize_api_log(line: &[u8]) -> String {
 // 窗口控制命令
 #[tauri::command]
 fn minimize_window(window: Window) {
-    window.minimize().unwrap();
+    if let Err(error) = window.minimize() {
+        log::error!("Failed to minimize the main window: {error}");
+    }
 }
 
 #[tauri::command]
 fn maximize_window(window: Window) {
-    if window.is_maximized().unwrap() {
-        window.unmaximize().unwrap();
+    let result = if window.is_maximized().unwrap_or(false) {
+        window.unmaximize()
     } else {
-        window.maximize().unwrap();
+        window.maximize()
+    };
+    if let Err(error) = result {
+        log::error!("Failed to toggle maximize the main window: {error}");
     }
 }
 
 #[tauri::command]
 fn close_window(window: Window) {
-    window.close().unwrap();
+    if let Err(error) = window.close() {
+        log::error!("Failed to close the main window: {error}");
+    }
 }
 
 #[tauri::command]
@@ -60,11 +67,16 @@ fn is_port_available(port: u16) -> bool {
 fn start_ncm_api_server(app: &AppHandle) -> Result<Option<CommandChild>, String> {
     // 检查端口
     if !is_port_available(API_PORT) {
-        log::warn!(
-            "Port {} already in use, assuming API server is running",
-            API_PORT
-        );
-        return Ok(None);
+        // relaunch 更新后，旧实例的 sidecar 依赖 PARENT_PID 看门狗（最长 1s）退出，
+        // 此刻端口可能仍被占用；短暂等待后复查，避免误判后新实例永久没有 API server。
+        std::thread::sleep(std::time::Duration::from_millis(1200));
+        if !is_port_available(API_PORT) {
+            log::warn!(
+                "Port {} already in use, assuming API server is running",
+                API_PORT
+            );
+            return Ok(None);
+        }
     }
 
     #[cfg(debug_assertions)]
@@ -136,9 +148,13 @@ pub fn run() {
 
             // 启动 NCM API 服务器
             match start_ncm_api_server(app.handle()) {
-                Ok(child) => {
-                    app.manage(ApiServer(Mutex::new(child)));
+                Ok(Some(child)) => {
+                    app.manage(ApiServer(Mutex::new(Some(child))));
                     log::info!("API server started successfully");
+                }
+                Ok(None) => {
+                    app.manage(ApiServer(Mutex::new(None)));
+                    log::warn!("Reusing existing API server on port {}", API_PORT);
                 }
                 Err(e) => {
                     log::error!("Failed to start API server: {}", e);

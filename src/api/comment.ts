@@ -154,7 +154,7 @@ export async function getHotResourceComments(
   const response = ensureSuccess(
     await request<Obj>("/comment/hot", {
       id: resource.id,
-      type: resource.type,
+      type: RESOURCE_TYPES[resource.type],
       limit,
       offset,
     }),
@@ -173,7 +173,7 @@ export async function hugComment(
       uid: comment.userId,
       cid: comment.id,
       sid: resource.id,
-      type: resource.type,
+      type: RESOURCE_TYPES[resource.type],
     }, false),
     "/hug/comment",
   );
@@ -189,7 +189,7 @@ export async function getCommentHugList(
       uid: comment.userId,
       cid: comment.id,
       sid: resource.id,
-      type: resource.type,
+      type: RESOURCE_TYPES[resource.type],
       page,
     }),
     "/comment/hug/list",

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BookOpenText, Clock3, RefreshCw, Search, Trash2 } from "lucide-react";
 import { useLyricsMarkStore } from "../store/lyricsMarkStore.ts";
 import { usePlayerStore } from "../store/playerStore.ts";
@@ -25,9 +25,12 @@ export default function LyricsMarkPage() {
   useEffect(() => {
     void loadUserMarks();
   }, [loadUserMarks]);
+  const autoFilledRef = useRef(songId !== 0);
   useEffect(() => {
-    if (currentSong && !songId) setSong(currentSong.id, currentSong.name);
-  }, [currentSong, setSong, songId]);
+    if (autoFilledRef.current || !currentSong) return;
+    autoFilledRef.current = true;
+    setSong(currentSong.id, currentSong.name);
+  }, [currentSong, setSong]);
 
   const submit = async () => {
     await add({

@@ -20,6 +20,7 @@ export default function LoginModal() {
   const refreshRef = useRef<number | null>(null);
   const aliveRef = useRef(true);
   const pollRef = useRef<() => void>(() => {});
+  const startQrGenRef = useRef(0);
 
   const stopPolling = () => {
     if (timerRef.current) {
@@ -35,13 +36,15 @@ export default function LoginModal() {
   const startQr = useCallback(async () => {
     // Polling must not continue against the previous key: an expired one keeps
     // answering 800, which would queue a new refresh on every tick.
+    const generation = ++startQrGenRef.current;
     stopPolling();
     setStatus("loading");
     try {
       const key = await qrKey();
+      if (generation !== startQrGenRef.current) return;
       keyRef.current = key;
       const { qrimg: img, qrurl: url } = await qrCreate(key);
-      if (!aliveRef.current) return;
+      if (!aliveRef.current || generation !== startQrGenRef.current) return;
       setQrimg(img);
       setQrurl(url);
       setStatus("waiting");
@@ -49,6 +52,7 @@ export default function LoginModal() {
         if (aliveRef.current) pollRef.current();
       }, 2200);
     } catch {
+      if (generation !== startQrGenRef.current) return;
       setStatus("error");
       toast("获取二维码失败，请检查网络", "error");
     }
