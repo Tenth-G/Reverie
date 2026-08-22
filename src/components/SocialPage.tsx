@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import {
+  BadgeCheck,
   Heart,
   MessageCircle,
   Repeat2,
@@ -14,6 +15,8 @@ import { LoadingState, Page, PageHeader } from "./Page";
 
 function UserList({ users }: { users: SocialUser[] }) {
   const toggleFollow = useExploreStore((s) => s.toggleFollow);
+  const mutualFollow = useExploreStore((s) => s.mutualFollow);
+  const checkMutualFollow = useExploreStore((s) => s.checkMutualFollow);
   return (
     <div className="social-user-list">
       {users.map((user) => (
@@ -30,6 +33,14 @@ function UserList({ users }: { users: SocialUser[] }) {
             {user.followed ? <UserMinus size={14} /> : <UserPlus size={14} />}
             {user.followed ? "取消关注" : "关注"}
           </button>
+          <button
+            className={`icon-action ${mutualFollow[user.userId] ? "active" : ""}`}
+            title="查询是否互相关注"
+            onClick={() => void checkMutualFollow(user.userId)}
+          >
+            <BadgeCheck size={15} />
+          </button>
+          {mutualFollow[user.userId] && <small className="social-mutual-badge">互关</small>}
         </article>
       ))}
       {!users.length && <div className="empty">暂无用户</div>}
@@ -41,10 +52,12 @@ export default function SocialPage() {
   const tab = useExploreStore((s) => s.socialTab);
   const events = useExploreStore((s) => s.events);
   const myEvents = useExploreStore((s) => s.myEvents);
+  const followScene = useExploreStore((s) => s.followScene);
   const follows = useExploreStore((s) => s.follows);
   const followers = useExploreStore((s) => s.followers);
   const loading = useExploreStore((s) => s.loading);
   const setTab = useExploreStore((s) => s.setSocialTab);
+  const setFollowScene = useExploreStore((s) => s.setFollowScene);
   const loadSocial = useExploreStore((s) => s.loadSocial);
   const openAlbum = useExploreStore((s) => s.openAlbum);
   const openComments = useCommentStore((s) => s.openResourceComments);
@@ -89,7 +102,20 @@ export default function SocialPage() {
         </button>
       </div>
       {tab === "follows" ? (
-        <UserList users={follows} />
+        <>
+          <label className="social-follow-filter">
+            关注范围
+            <select
+              value={followScene}
+              onChange={(event) => void setFollowScene(Number(event.target.value) as 0 | 1 | 2)}
+            >
+              <option value={0}>全部</option>
+              <option value={1}>歌手</option>
+              <option value={2}>用户</option>
+            </select>
+          </label>
+          <UserList users={follows} />
+        </>
       ) : tab === "followers" ? (
         <UserList users={followers} />
       ) : (
