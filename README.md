@@ -1,49 +1,176 @@
 # Reverie
 
-一款基于 Tauri 2、React 和 Rust 的桌面音乐播放器。
+Reverie 是一款面向 Windows 桌面的本地音乐播放器，使用 Tauri 2、React、TypeScript 和 Rust 构建。应用通过随包分发的本地 API sidecar 访问音乐服务，播放器本身不依赖 Reverie 自建后端。
 
-## 功能
+> 当前 GitHub Release 主要提供 Windows 安装包和便携包。源码中的 sidecar 构建脚本同时保留了 Linux、macOS 和 Windows 的目标配置，但跨平台发布仍需补充对应的 CI 与平台验证。
 
-- 扫码登录，登录态保存在本地
-- 歌曲搜索、排行榜、每日推荐、漫游、我的歌单
-- 播放控制：播放/暂停、上一首/下一首、进度、音量、播放模式
-- 播放页：封面 + 歌词（卡拉 OK 高亮、歌词主题、译文、字号）
-- 主题：跟随系统 / 浅色 / 深色
-- 最近播放与播放队列保存在本地，重启后恢复
-- 启动时自动检查更新，有新版本弹窗提示
-- 设置中包含关于、隐私说明与免责声明
+## 目录
 
-## 安装
+- [功能概览](#功能概览)
+- [隐私与使用边界](#隐私与使用边界)
+- [下载安装](#下载安装)
+- [从源码运行](#从源码运行)
+- [常用命令](#常用命令)
+- [项目结构](#项目结构)
+- [运行机制](#运行机制)
+- [故障排查](#故障排查)
+- [发布流程](#发布流程)
+- [许可证](#许可证)
 
-### 安装地址
+## 功能概览
 
-- 安装包下载地址：https://github.com/oaggggg/Reverie/releases
-- 安装版（`Reverie-Setup-<版本>-x64.exe`）：下载后双击运行，按向导完成安装
-- 便携版（`Reverie-Portable-<版本>-x64.exe`）：免安装，下载后直接运行
+- **发现音乐**：搜索、排行榜、每日推荐、私人 FM、歌单和歌手/专辑浏览。
+- **播放体验**：播放队列、上一首/下一首、进度、音量、播放模式和最近播放记录。
+- **沉浸式播放页**：专辑封面、歌词同步、高亮、译文、歌词字号和可切换的歌词视觉效果。
+- **账号能力**：网易云音乐扫码登录；登录后可使用个性化推荐、收藏内容、评论和需要账号权限的播放能力。
+- **桌面能力**：自定义标题栏、主题切换、窗口控制、启动更新检查和应用内更新安装。
+- **本地优先**：界面设置、播放队列、最近播放和登录 Cookie 默认保存在当前设备。
 
-### 从源码运行
+未登录时仍可浏览部分公开内容；需要账号权限的功能会在界面中提示登录。歌曲是否可播放取决于第三方接口返回的权限和版权状态。
 
-需要 Node.js 22.12 及以上、Rust stable 和 Windows WebView2。首次构建会下载
-一次用于本地音乐 API sidecar 的 Node.js 运行时，生成产物会缓存在本机。
+## 隐私与使用边界
+
+- 应用在本机启动 API sidecar，默认只监听 `127.0.0.1:3939`，不向 Reverie 服务器上传个人数据。
+- 登录 Cookie 保存在 WebView 的本地存储中，并仅作为请求参数发送给本地 API sidecar，再由其访问第三方音乐接口。
+- 本项目使用第三方开源接口服务获取音乐数据，不存储或再分发音乐文件。
+- Reverie 与网易云音乐及其关联公司不存在隶属或合作关系。请遵守所在地法律、第三方平台规则和版权要求。
+- 设置页内置隐私说明与免责声明；使用前请确认自己理解登录凭据和第三方接口的风险边界。
+
+## 下载安装
+
+前往 [GitHub Releases](https://github.com/oaggggg/Reverie/releases) 下载对应版本：
+
+| 文件                              | 适用场景                             |
+| --------------------------------- | ------------------------------------ |
+| `Reverie-Setup-<版本>-x64.exe`    | 推荐安装方式，支持开始菜单和卸载流程 |
+| `Reverie-Portable-<版本>-x64.exe` | 免安装运行，适合临时使用或便携环境   |
+
+Windows 版本需要可用的 WebView2 运行时。安装包通常会由系统或安装器处理 WebView2；若启动失败，请先更新 Windows WebView2 Runtime。
+
+## 从源码运行
+
+### 环境要求
+
+- Node.js 22 LTS 或更高版本，npm 10 或更高版本。
+- Rust stable，且版本不低于 `src-tauri/Cargo.toml` 中声明的 `rust-version`。
+- Windows 开发需要 WebView2；首次构建需要能够下载 npm、Cargo 和 sidecar 打包依赖。
+- 推荐使用 Windows 进行完整桌面验证；其他平台可尝试源码构建，但当前发布工作流只覆盖 Windows。
+
+### 快速开始
 
 ```bash
-npm install      # 安装前端和 Tauri 依赖
-npm run dev      # Tauri 开发模式（热更新）
-npm run check    # TypeScript、前端和 Rust 检查
-npm test         # 单元测试与 API sidecar 烟雾测试
-npm run build    # 构建安装包与签名更新产物
+npm install
+npm run dev
 ```
 
-本地音乐 API 会作为 sidecar 随应用分发，最终用户不需要安装 Node.js。发布和
-自动更新签名流程见 [RELEASING.md](./RELEASING.md)。
+`npm run dev` 会启动 Tauri 开发模式。开发构建中的 Rust 进程直接调用仓库内的 `sidecar/api-server.cjs`，前端通过 `http://127.0.0.1:3939` 访问本地 API。
 
-## 免责声明
+### 仅启动 Web 前端
 
-- 本项目以 GPL-3.0 协议开源：允许学习、研究与使用；任何修改与再分发均须遵守 GPL-3.0 协议（包括以相同协议公开衍生作品的源代码）。
-- 音乐数据来源于第三方开源接口服务，全部音乐版权归各权利方所有。
-- 本项目与任何音乐平台及其关联公司不存在隶属或合作关系，不提供任何付费内容的绕过手段。
-- 若本项目内容侵犯了您的合法权益，请联系移除相关数据；因使用本项目产生的任何后果由使用者自行承担。
+需要快速检查页面布局或调试 React 时，可以只启动 Vite：
+
+```bash
+npm run dev:web
+```
+
+此模式不会启动 Tauri，也不会自动启动 API sidecar；涉及搜索、登录或播放的功能可能不可用。
+
+### 构建与检查
+
+```bash
+npm run check    # 生成 sidecar、TypeScript 检查、Vite 构建、cargo check
+npm test         # 单元测试 + sidecar 启动冒烟测试
+npm run build    # 生成 Tauri Windows 安装包与更新产物
+```
+
+首次运行 `npm run check` 或 `npm run build` 时，`scripts/build-api-sidecar.mjs` 会使用 `pkg` 将 `sidecar/api-server.cjs` 和 `NeteaseCloudMusicApi` 打包到 `src-tauri/binaries/`。这些二进制文件是本地构建产物，已被 `.gitignore` 忽略，不应提交到仓库。
+
+## 常用命令
+
+| 命令                        | 用途                                       |
+| --------------------------- | ------------------------------------------ |
+| `npm run dev`               | 启动 Tauri 桌面开发模式                    |
+| `npm run dev:web`           | 仅启动 Vite Web 开发服务器                 |
+| `npm run prepare:sidecar`   | 为当前平台生成或刷新 API sidecar           |
+| `npm run typecheck`         | 运行 TypeScript 类型检查                   |
+| `npm run build:web`         | 构建前端静态资源到 `dist/`                 |
+| `npm run check`             | 执行 sidecar、TypeScript、前端和 Rust 检查 |
+| `npm test`                  | 执行单元测试和 sidecar 冒烟测试            |
+| `npm run test:api`          | 启动临时 API 服务并检查常用接口            |
+| `npm run test:extended-api` | 执行扩展 API 冒烟测试                      |
+| `npm run format`            | 使用 Prettier 格式化源码和项目文档         |
+| `npm run build`             | 构建 Tauri 安装包和更新签名产物            |
+
+单元测试使用 Node 原生测试运行器，测试文件位于 `tests/`；sidecar 测试会在 `127.0.0.1:3959` 启动临时进程，不会复用应用的 `3939` 端口。
+
+## 项目结构
+
+```text
+src/                           React 页面、组件、状态和 API 客户端
+src/api/                       音乐接口类型、请求封装和扩展接口
+src/store/                     播放器与发现页的 Zustand 状态
+src-tauri/src/                 Tauri 生命周期、窗口控制和 sidecar 管理
+src-tauri/tauri.conf.json      前端、打包、更新和 Windows 安装器配置
+sidecar/api-server.cjs         本地 API 服务入口
+scripts/                       sidecar 构建、API 测试和冒烟测试脚本
+tests/                         Node 原生单元测试
+.github/workflows/release.yml  GitHub Release 自动构建工作流
+```
+
+## 运行机制
+
+1. Tauri 启动后检查 `127.0.0.1:3939` 是否已有服务。
+2. 开发模式启动仓库内的 Node sidecar，生产模式启动 `src-tauri/binaries/reverie-api-*`。
+3. React 前端通过本地 HTTP API 请求搜索、登录、歌词、播放地址和社区数据。
+4. 窗口关闭时，Tauri 会尝试终止由当前应用启动的 sidecar 进程。
+5. 生产构建使用 Tauri updater；更新地址和公钥位于 `src-tauri/tauri.conf.json`，私钥只应保存在 GitHub Actions Secret 中。
+
+如果 `3939` 已被其他进程占用，Tauri 会假定已有 API 服务并继续启动。遇到数据异常时，优先确认该端口上的服务确实属于当前项目。
+
+## 故障排查
+
+### 启动后搜索或登录无响应
+
+确认 `127.0.0.1:3939` 未被其他程序占用，并重新运行：
+
+```bash
+npm run prepare:sidecar
+npm run dev
+```
+
+开发模式下可查看终端中的 sidecar 日志；生产模式日志由 Tauri 记录。日志中的 Cookie 参数会被脱敏。
+
+### 测试提示 sidecar 缺失
+
+先生成当前平台的 sidecar，再重新测试：
+
+```bash
+npm run prepare:sidecar
+npm run test:sidecar
+```
+
+### `npm run build` 失败
+
+按以下顺序排查：
+
+1. 删除并重新安装依赖：`Remove-Item -Recurse -Force node_modules; npm install`。
+2. 确认 Node.js、Rust 和 WebView2 满足环境要求。
+3. 单独运行 `npm run check`，先修复类型、前端构建或 `cargo check` 报错。
+4. 检查 `src-tauri/binaries/` 是否生成了当前平台对应的 sidecar 文件。
+
+### 播放地址不可用
+
+第三方接口可能因登录状态、会员权限、地区或版权策略返回不可播放结果。此类结果不等同于播放器本地故障，请先重新登录并尝试其他公开歌曲。
+
+## 发布流程
+
+版本发布、更新签名、GitHub Actions Secret 和草稿 Release 的详细步骤见 [RELEASING.md](./RELEASING.md)。日常提交前至少运行：
+
+```bash
+npm run check
+npm test
+```
 
 ## 许可证
 
-本项目以 GNU General Public License v3.0（GPL-3.0）发布，完整协议文本见 [LICENSE](./LICENSE)。版权所有 © 2026 Tenth-G。
+本项目以 [GNU General Public License v3.0](./LICENSE) 发布。音乐数据和相关内容的版权归各权利方所有；版权所有 © 2026 Tenth-G。
