@@ -12,6 +12,7 @@ import {
   getPodcastBanners,
   getPodcastCategories,
   getPodcastCategoryRecommendations,
+  getPodcastAdvancedToplist,
   getPodcastHotRadios,
   getPodcastProgramHoursToplist,
   getPodcastProgramToplist,
@@ -193,7 +194,7 @@ export default function RadioPage() {
   const subscribed = useExploreStore((s) => s.subscribedRadios);
   const loading = useExploreStore((s) => s.loading);
   const loadRadios = useExploreStore((s) => s.loadRadios);
-  const [ranking, setRanking] = useState<"new" | "hot" | "">("");
+  const [ranking, setRanking] = useState<"new" | "hot" | "hours" | "popular" | "newcomer" | "pay" | "">("");
   const [ranked, setRanked] = useState<RadioInfo[]>([]);
   const [rankingLoading, setRankingLoading] = useState(false);
   const [categories, setCategories] = useState<BroadcastCategory[]>([]);
@@ -238,11 +239,11 @@ export default function RadioPage() {
     finally { setDiscoveryLoading(false); }
   };
 
-  const loadRanking = async (type: "new" | "hot") => {
+  const loadRanking = async (type: "new" | "hot" | "hours" | "popular" | "newcomer" | "pay") => {
     setRanking(type);
     setRankingLoading(true);
     try {
-      setRanked(await getPodcastToplist(type));
+      setRanked(type === "new" || type === "hot" ? await getPodcastToplist(type) : await getPodcastAdvancedToplist(type));
     } catch {
       setRanked([]);
     } finally {
@@ -285,11 +286,15 @@ export default function RadioPage() {
       <div className="collection-tabs" role="tablist" aria-label="播客榜单">
         <button className={ranking === "new" ? "active" : ""} onClick={() => void loadRanking("new")}>新晋电台榜</button>
         <button className={ranking === "hot" ? "active" : ""} onClick={() => void loadRanking("hot")}>热门电台榜</button>
+        <button className={ranking === "hours" ? "active" : ""} onClick={() => void loadRanking("hours")}>24 小时主播榜</button>
+        <button className={ranking === "popular" ? "active" : ""} onClick={() => void loadRanking("popular")}>最热主播榜</button>
+        <button className={ranking === "newcomer" ? "active" : ""} onClick={() => void loadRanking("newcomer")}>主播新人榜</button>
+        <button className={ranking === "pay" ? "active" : ""} onClick={() => void loadRanking("pay")}>付费精品榜</button>
       </div>
       {ranking && (
         <section className="content-section">
           <div className="list-header">
-            <h3>{ranking === "new" ? "新晋电台榜" : "热门电台榜"}</h3>
+            <h3>{ranking === "new" ? "新晋电台榜" : ranking === "hot" ? "热门电台榜" : ranking === "hours" ? "24 小时主播榜" : ranking === "popular" ? "最热主播榜" : ranking === "newcomer" ? "主播新人榜" : "付费精品榜"}</h3>
             <span className="count">{ranked.length} 个</span>
           </div>
           {rankingLoading ? <LoadingState label="正在加载播客榜单…" /> : <RadioGrid radios={ranked} />}
