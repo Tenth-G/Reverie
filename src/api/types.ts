@@ -293,6 +293,23 @@ export interface UserCommentHistoryItem {
   resourceId?: number;
 }
 
+export interface SongCreatorInfo {
+  userId: number;
+  name: string;
+  role: string;
+}
+
+export interface SongChorusInfo {
+  start: number;
+  end: number;
+}
+
+export interface SongMetadata {
+  summary: string;
+  creators: SongCreatorInfo[];
+  chorus: SongChorusInfo[];
+}
+
 export interface SearchResultPage {
   songs: Song[];
   albums: AlbumInfo[];
