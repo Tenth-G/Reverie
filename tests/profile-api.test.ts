@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getListeningRecords, getProfileCenter } from "../src/api/profile.ts";
+import { getListeningRecords, getProfileCenter, getUserMedals } from "../src/api/profile.ts";
 
 function json(body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -78,6 +78,27 @@ test("getProfileCenter combines detail, level, subcount and records", async () =
     assert.equal(result.subcount.albumCount, 4);
     assert.equal(result.records[0].song.name, "歌曲");
     assert.equal(result.records[0].playCount, 12);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("getUserMedals normalizes obtained user badges", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    assert.equal(url.pathname, "/user/medal");
+    assert.equal(url.searchParams.get("uid"), "42");
+    return Response.json({ data: { medals: [
+      { id: 1, medalName: "连续听歌", picUrl: "badge", level: 3, has: true },
+      { id: 2, medalName: "未获得", has: false },
+    ] } });
+  };
+  try {
+    const medals = await getUserMedals(42);
+    assert.equal(medals.length, 1);
+    assert.equal(medals[0]?.name, "连续听歌");
+    assert.equal(medals[0]?.level, 3);
   } finally {
     globalThis.fetch = originalFetch;
   }

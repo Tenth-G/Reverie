@@ -40,6 +40,15 @@ export interface UserSubcount {
   subPlaylistCount: number;
 }
 
+export interface UserMedal {
+  id: number;
+  name: string;
+  iconUrl: string;
+  description: string;
+  level: number;
+  obtained: boolean;
+}
+
 export interface ListeningRecord {
   song: Song;
   playCount: number;
@@ -129,4 +138,23 @@ export async function getProfileCenter(
     },
     records,
   };
+}
+
+export async function getUserMedals(uid: number): Promise<UserMedal[]> {
+  if (!uid) return [];
+  const response = await request<Obj>("/user/medal", { uid }, false);
+  const value = obj(response.data ?? response.result ?? response);
+  return arr(value.medals ?? value.list ?? response.data ?? response)
+    .map((raw) => {
+      const item = obj(raw);
+      return {
+        id: Number(item.id ?? item.medalId ?? 0),
+        name: String(item.name ?? item.medalName ?? "用户徽章"),
+        iconUrl: String(item.iconUrl ?? item.picUrl ?? item.medalUrl ?? ""),
+        description: String(item.description ?? item.desc ?? ""),
+        level: Number(item.level ?? item.medalLevel ?? 0),
+        obtained: Boolean(item.obtained ?? item.has ?? item.userMedal ?? true),
+      } satisfies UserMedal;
+    })
+    .filter((item) => item.id > 0 && item.obtained);
 }
