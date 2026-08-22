@@ -30,6 +30,7 @@ const YunbeiPage = lazy(() => import("./components/YunbeiPage"));
 const RecommendHistoryPage = lazy(() => import("./components/RecommendHistoryPage"));
 const VipPage = lazy(() => import("./components/VipPage"));
 const CommentHistoryPage = lazy(() => import("./components/CommentHistoryPage"));
+const DownloadHistoryPage = lazy(() => import("./components/DownloadHistoryPage"));
 const NowPlayingView = lazy(() => import("./components/NowPlayingView"));
 const PlayerCommentsDrawer = lazy(
   () => import("./components/PlayerCommentsDrawer"),
@@ -302,6 +303,8 @@ export default function App() {
         return <VipPage />;
       case "commentHistory":
         return <CommentHistoryPage />;
+      case "downloadHistory":
+        return <DownloadHistoryPage />;
       default:
         return <HomePage />;
     }
