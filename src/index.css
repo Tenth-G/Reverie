@@ -5472,3 +5472,25 @@ input {
 .sati-empty, .sati-error { color: var(--text-faint); font-size: 12px; }
 .sati-error { max-width: 1100px; margin: 0 auto 16px; color: #ff8585; }
 @media (max-width: 760px) { .sati-layout { grid-template-columns: 1fr; } .sati-tags { display: flex; overflow-x: auto; } .sati-tags strong { flex: 0 0 auto; align-self: center; } .sati-tags button { flex: 0 0 auto; } }
+
+/* Broadcast radio */
+.broadcast-sport, .broadcast-section { max-width: 1100px; margin: 10px auto 16px; padding: 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); }
+.broadcast-sport { display: flex; align-items: center; gap: 12px; }
+.broadcast-sport > div { display: grid; gap: 4px; min-width: 180px; }
+.broadcast-sport h2 { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 15px; }
+.broadcast-sport span, .broadcast-head span { color: var(--text-dim); font-size: 11px; }
+.broadcast-sport input { min-width: 120px; flex: 1; accent-color: var(--accent); }
+.broadcast-sport strong { color: var(--accent); font-size: 12px; }
+.broadcast-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.broadcast-head h2 { margin: 0; font-size: 16px; }
+.broadcast-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 10px; }
+.broadcast-card { position: relative; display: grid; gap: 6px; min-width: 0; padding: 8px; border: 1px solid transparent; border-radius: 6px; background: var(--bg-3); }
+.broadcast-card:hover { border-color: var(--border); }
+.broadcast-card > img, .broadcast-card > span { width: 100%; aspect-ratio: 1; display: grid; place-items: center; border-radius: 5px; object-fit: cover; background: var(--bg-4); color: var(--text-faint); }
+.broadcast-card strong, .broadcast-card small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.broadcast-card strong { font-size: 12px; }
+.broadcast-card small { color: var(--text-dim); font-size: 10px; }
+.broadcast-card > .icon-button { position: absolute; top: 10px; right: 10px; background: color-mix(in srgb, var(--bg-2) 80%, transparent); }
+.broadcast-empty, .broadcast-error { color: var(--text-faint); font-size: 12px; }
+.broadcast-error { max-width: 1100px; margin: 0 auto 16px; color: #ff8585; }
+@media (max-width: 760px) { .broadcast-sport { align-items: flex-start; flex-wrap: wrap; } .broadcast-sport > div { flex-basis: 100%; } .broadcast-sport input { min-width: 150px; } }

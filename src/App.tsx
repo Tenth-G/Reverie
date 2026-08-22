@@ -47,6 +47,7 @@ const LyricsMarkPage = lazy(() => import("./components/LyricsMarkPage"));
 const DigitalAlbumPage = lazy(() => import("./components/DigitalAlbumPage"));
 const MusicianPage = lazy(() => import("./components/MusicianPage"));
 const SatiPage = lazy(() => import("./components/SatiPage"));
+const BroadcastPage = lazy(() => import("./components/BroadcastPage"));
 const NowPlayingView = lazy(() => import("./components/NowPlayingView"));
 const PlayerCommentsDrawer = lazy(
   () => import("./components/PlayerCommentsDrawer"),
@@ -333,6 +334,8 @@ export default function App() {
         return <MusicianPage />;
       case "sati":
         return <SatiPage />;
+      case "broadcast":
+        return <BroadcastPage />;
       default:
         return <HomePage />;
     }

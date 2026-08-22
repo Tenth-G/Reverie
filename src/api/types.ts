@@ -174,7 +174,8 @@ export type View =
   | "lyricsMark"
   | "digitalAlbum"
   | "musician"
-  | "sati";
+  | "sati"
+  | "broadcast";
 
 export type SearchCategory =
   | "songs"
@@ -415,6 +416,9 @@ export interface MusicianTask {
 
 export interface SatiTag { id: string; name: string; }
 export interface SatiResource { id: number; name: string; description: string; coverUrl: string; duration: number; subscribed: boolean; playCount: number; audioUrl: string; }
+
+export interface BroadcastCategory { id: number; name: string; }
+export interface BroadcastChannel { id: number; name: string; description: string; coverUrl: string; subscribed: boolean; categoryName: string; regionName: string; currentSong?: Song; }
 
 export interface SearchResultPage {
   songs: Song[];
