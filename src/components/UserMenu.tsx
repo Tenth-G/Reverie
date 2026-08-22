@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../store/playerStore";
 import { sizedImage } from "../utils/image";
-import { Album, BookOpenText, CircleUserRound, Link2, Mic2, Music2 } from "lucide-react";
+import { Album, BookOpenText, CircleUserRound, Headphones, Link2, Mic2, Music2 } from "lucide-react";
 import { useProfileStore } from "../store/profileStore";
 import { useCollectionStore } from "../store/collectionStore";
 
@@ -222,6 +222,16 @@ export default function UserMenu() {
           >
             <Music2 size={15} />
             音乐人中心
+          </button>
+          <button
+            className="user-dropdown-item"
+            onClick={() => {
+              setOpen(false);
+              usePlayerStore.setState({ activeView: "sati", prevView: "home" });
+            }}
+          >
+            <Headphones size={15} />
+            助眠与解压
           </button>
           <button className="user-dropdown-item" onClick={switchAccount}>
             切换账号

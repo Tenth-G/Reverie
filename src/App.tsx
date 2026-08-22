@@ -46,6 +46,7 @@ const VoiceWorkbenchPage = lazy(
 const LyricsMarkPage = lazy(() => import("./components/LyricsMarkPage"));
 const DigitalAlbumPage = lazy(() => import("./components/DigitalAlbumPage"));
 const MusicianPage = lazy(() => import("./components/MusicianPage"));
+const SatiPage = lazy(() => import("./components/SatiPage"));
 const NowPlayingView = lazy(() => import("./components/NowPlayingView"));
 const PlayerCommentsDrawer = lazy(
   () => import("./components/PlayerCommentsDrawer"),
@@ -330,6 +331,8 @@ export default function App() {
         return <DigitalAlbumPage />;
       case "musician":
         return <MusicianPage />;
+      case "sati":
+        return <SatiPage />;
       default:
         return <HomePage />;
     }

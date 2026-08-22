@@ -5448,3 +5448,27 @@ input {
 .musician-empty, .musician-error { color: var(--text-faint); font-size: 12px; }
 .musician-error { max-width: 1100px; margin: 0 auto 16px; color: #ff8585; }
 @media (max-width: 760px) { .musician-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); } .musician-summary > button { grid-column: 1 / -1; justify-self: start; } }
+
+/* SATI resources */
+.sati-layout { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: 15px; max-width: 1100px; margin: 10px auto 18px; }
+.sati-tags, .sati-section { padding: 15px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); }
+.sati-tags { display: grid; align-content: start; gap: 4px; }
+.sati-tags strong { margin-bottom: 5px; color: var(--text-dim); font-size: 12px; }
+.sati-tags button { padding: 8px 9px; border-radius: 5px; color: var(--text-dim); text-align: left; font-size: 12px; }
+.sati-tags button:hover, .sati-tags button.active { background: var(--bg-3); color: var(--text); }
+.sati-main { display: grid; gap: 15px; min-width: 0; }
+.sati-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.sati-section-head h2 { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 16px; }
+.sati-section-head span { color: var(--text-faint); font-size: 11px; }
+.sati-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 10px; }
+.sati-card { display: grid; gap: 6px; min-width: 0; padding: 8px; border: 1px solid transparent; border-radius: 6px; background: var(--bg-3); }
+.sati-card:hover { border-color: var(--border); }
+.sati-card > img, .sati-cover { width: 100%; aspect-ratio: 1; display: grid; place-items: center; border-radius: 5px; object-fit: cover; background: var(--bg-4); color: var(--text-faint); }
+.sati-card strong, .sati-card small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sati-card strong { font-size: 12px; }
+.sati-card small { color: var(--text-dim); font-size: 10px; }
+.sati-card > div { display: flex; align-items: center; justify-content: space-between; }
+.sati-card .secondary-button { min-height: 28px; padding: 0 8px; font-size: 10px; }
+.sati-empty, .sati-error { color: var(--text-faint); font-size: 12px; }
+.sati-error { max-width: 1100px; margin: 0 auto 16px; color: #ff8585; }
+@media (max-width: 760px) { .sati-layout { grid-template-columns: 1fr; } .sati-tags { display: flex; overflow-x: auto; } .sati-tags strong { flex: 0 0 auto; align-self: center; } .sati-tags button { flex: 0 0 auto; } }

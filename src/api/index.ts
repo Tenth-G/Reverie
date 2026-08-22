@@ -31,3 +31,4 @@ export * from "./playlistImport";
 export * from "./lyricsMark";
 export * from "./digitalAlbum";
 export * from "./musician";
+export * from "./sati";
