@@ -29,6 +29,7 @@ import type {
 } from "../api/types";
 import type { VipInfo } from "../api/client";
 import { getPersonalFm } from "../api/extended";
+import { logoutFromNetease } from "../api/auth";
 import { parseLyrics, pickRandomLyricLine } from "../utils/lyrics";
 import {
   benchmarkCoverQuality,
@@ -1486,6 +1487,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
     }
   },
   logout: () => {
+    void logoutFromNetease().catch(() => undefined);
     clearCookie();
     searchCache.clear();
     // stop playback and clear the current session
