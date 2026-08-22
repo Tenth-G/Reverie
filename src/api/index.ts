@@ -33,6 +33,7 @@ export * from "./digitalAlbum";
 export * from "./musician";
 export * from "./sati";
 export * from "./broadcast";
+export * from "./auth";
 export * from "./ugc";
 export * from "./listenReports";
 export * from "./fans";
