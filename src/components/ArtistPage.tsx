@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
-import { Heart, Users } from "lucide-react";
+import { BookOpen, Heart, Users } from "lucide-react";
+import {
+  getArtistDynamic,
+  getArtistIntroduction,
+  getArtistNewMvs,
+  getArtistTopSongs,
+  type ArtistDynamic,
+  type ArtistIntroduction,
+} from "../api/artist.ts";
 import { getArtistFans } from "../api/artistFans.ts";
 import { getSimilarArtists } from "../api/related";
 import type { ArtistFan, ArtistInfo } from "../api/types";
@@ -24,6 +32,10 @@ export default function ArtistPage() {
   const [fans, setFans] = useState<ArtistFan[]>([]);
   const [fansTotal, setFansTotal] = useState(0);
   const [fansLoading, setFansLoading] = useState(false);
+  const [introduction, setIntroduction] = useState<ArtistIntroduction | null>(null);
+  const [dynamic, setDynamic] = useState<ArtistDynamic | null>(null);
+  const [topSongs, setTopSongs] = useState<typeof songs>([]);
+  const [newMvs, setNewMvs] = useState<typeof videos>([]);
 
   useEffect(() => {
     let alive = true;
@@ -38,6 +50,32 @@ export default function ArtistPage() {
       .catch(() => {
         if (alive) setSimilarArtists([]);
       });
+    return () => {
+      alive = false;
+    };
+  }, [artist?.id]);
+
+  useEffect(() => {
+    let alive = true;
+    if (!artist?.id) {
+      setIntroduction(null);
+      setDynamic(null);
+      setTopSongs([]);
+      setNewMvs([]);
+      return;
+    }
+    void Promise.allSettled([
+      getArtistIntroduction(artist.id),
+      getArtistDynamic(artist.id),
+      getArtistTopSongs(artist.id),
+      getArtistNewMvs(),
+    ]).then(([description, stats, songsResult, mvsResult]) => {
+      if (!alive) return;
+      setIntroduction(description.status === "fulfilled" ? description.value : null);
+      setDynamic(stats.status === "fulfilled" ? stats.value : null);
+      setTopSongs(songsResult.status === "fulfilled" ? songsResult.value : []);
+      setNewMvs(mvsResult.status === "fulfilled" ? mvsResult.value : []);
+    });
     return () => {
       alive = false;
     };
@@ -93,10 +131,11 @@ export default function ArtistPage() {
               {artist.alias.length > 0 && (
                 <div className="detail-alias">{artist.alias.join(" / ")}</div>
               )}
-              <p>{artist.briefDesc || "暂无歌手介绍"}</p>
+              <p>{introduction?.briefDesc || artist.briefDesc || "暂无歌手介绍"}</p>
               <div className="detail-meta">
-                <span>{artist.musicSize || songs.length} 首歌曲</span>
-                <span>{artist.albumSize || albums.length} 张专辑</span>
+                <span>{dynamic?.musicSize || artist.musicSize || songs.length} 首歌曲</span>
+                <span>{dynamic?.albumSize || artist.albumSize || albums.length} 张专辑</span>
+                {(dynamic?.mvSize ?? 0) > 0 && <span>{dynamic?.mvSize} 个 MV</span>}
               </div>
               <div className="detail-actions">
                 <button
@@ -140,11 +179,39 @@ export default function ArtistPage() {
               )}
             </section>
           )}
-          <SongList songs={songs} title="热门歌曲" />
+          {introduction?.introduction.length ? (
+            <section className="artist-introduction">
+              <div className="list-header"><h3><BookOpen size={16} /> 歌手介绍</h3></div>
+              {introduction.introduction.map((item, index) => (
+                <article key={`${item.title}-${index}`}>
+                  {item.title && <strong>{item.title}</strong>}
+                  {item.content && <p>{item.content}</p>}
+                </article>
+              ))}
+            </section>
+          ) : null}
+          <SongList songs={topSongs.length ? topSongs : songs} title="热门歌曲" />
           <div className="list-header">
             <h3>专辑</h3>
             <span className="count">{albums.length} 张</span>
           </div>
+          {newMvs.length > 0 && (
+            <>
+              <div className="list-header">
+                <h3>最新 MV</h3>
+                <span className="count">{newMvs.length} 个</span>
+              </div>
+              <div className="media-grid compact">
+                {newMvs.map((video) => (
+                  <button className="media-card" key={video.id} onClick={() => void openMedia(video)}>
+                    <div className="card-cover"><img src={sizedImage(video.coverUrl, 320)} alt="" loading="lazy" /></div>
+                    <strong>{video.name}</strong>
+                    <span>{video.creatorName || "MV"}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
           <div className="media-grid compact">
             {albums.map((album) => (
               <button

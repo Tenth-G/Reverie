@@ -5567,6 +5567,11 @@ input {
 .playlist-subscriber img, .playlist-subscriber > span { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
 .playlist-subscriber > span { display: grid; place-items: center; background: var(--bg-4); color: var(--text-faint); font-size: 14px; }
 .playlist-subscriber strong { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); font-size: 10px; text-align: center; }
+.artist-introduction { margin: 0 0 18px; padding: 14px 16px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-2); }
+.artist-introduction .list-header h3 { display: inline-flex; align-items: center; gap: 6px; }
+.artist-introduction article + article { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-light); }
+.artist-introduction strong { color: var(--text); font-size: 13px; }
+.artist-introduction p { margin: 5px 0 0; color: var(--text-dim); font-size: 12px; line-height: 1.65; white-space: pre-line; }
 .profile-medal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
 .profile-medal { display: grid; justify-items: center; gap: 5px; min-width: 0; padding: 10px 8px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-1); text-align: center; }
 .profile-medal img, .profile-medal-placeholder { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
