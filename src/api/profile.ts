@@ -1,5 +1,5 @@
 import { normalizeSong, request } from "./client.ts";
-import type { Song } from "./types";
+import type { RadioInfo, Song } from "./types";
 
 type Obj = Record<string, unknown>;
 
@@ -157,4 +157,27 @@ export async function getUserMedals(uid: number): Promise<UserMedal[]> {
       } satisfies UserMedal;
     })
     .filter((item) => item.id > 0 && item.obtained);
+}
+
+export async function getUserCreatedRadios(uid: number): Promise<RadioInfo[]> {
+  if (!uid) return [];
+  const response = await request<Obj>("/user/audio", { uid }, false);
+  const value = obj(response.data ?? response.result ?? response);
+  return arr(value.djRadios ?? value.radios ?? value.list ?? response.data ?? response)
+    .map((raw) => {
+      const item = obj(raw);
+      const dj = obj(item.dj);
+      return {
+        id: Number(item.id ?? item.rid ?? 0),
+        name: String(item.name ?? "我的电台"),
+        picUrl: String(item.picUrl ?? item.intervenePicUrl ?? item.coverUrl ?? ""),
+        description: String(item.desc ?? item.description ?? ""),
+        programCount: Number(item.programCount ?? 0),
+        subscriberCount: Number(item.subCount ?? item.subscriberCount ?? 0),
+        subscribed: Boolean(item.subscribed ?? false),
+        category: String(item.category ?? item.categoryName ?? ""),
+        djName: String(dj.nickname ?? item.djName ?? ""),
+      } satisfies RadioInfo;
+    })
+    .filter((item) => item.id > 0);
 }

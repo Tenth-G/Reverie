@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getListeningRecords, getProfileCenter, getUserMedals } from "../src/api/profile.ts";
+import { getListeningRecords, getProfileCenter, getUserMedals, getUserCreatedRadios } from "../src/api/profile.ts";
 
 function json(body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -99,6 +99,24 @@ test("getUserMedals normalizes obtained user badges", async () => {
     assert.equal(medals.length, 1);
     assert.equal(medals[0]?.name, "连续听歌");
     assert.equal(medals[0]?.level, 3);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("getUserCreatedRadios normalizes user-owned radio records", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    assert.equal(url.pathname, "/user/audio");
+    assert.equal(url.searchParams.get("uid"), "42");
+    return Response.json({ data: { djRadios: [{ id: 7, name: "我的节目", picUrl: "cover", programCount: 3, dj: { nickname: "我" } }] } });
+  };
+  try {
+    const radios = await getUserCreatedRadios(42);
+    assert.equal(radios[0]?.name, "我的节目");
+    assert.equal(radios[0]?.programCount, 3);
+    assert.equal(radios[0]?.djName, "我");
   } finally {
     globalThis.fetch = originalFetch;
   }

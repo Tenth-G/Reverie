@@ -33,6 +33,7 @@ export default function ProfilePage() {
   const level = useProfileStore((state) => state.level);
   const subcount = useProfileStore((state) => state.subcount);
   const medals = useProfileStore((state) => state.medals);
+  const createdRadios = useProfileStore((state) => state.createdRadios);
   const records = useProfileStore((state) => state.records);
   const period = useProfileStore((state) => state.period);
   const loading = useProfileStore((state) => state.loading);
@@ -42,6 +43,7 @@ export default function ProfilePage() {
   const playSong = usePlayerStore((state) => state.playSong);
   const setSocialTab = useExploreStore((state) => state.setSocialTab);
   const loadSocial = useExploreStore((state) => state.loadSocial);
+  const openRadio = useExploreStore((state) => state.openRadio);
 
   const openSocial = (tab: "follows" | "followers") => {
     setSocialTab(tab);
@@ -194,6 +196,30 @@ export default function ProfilePage() {
                 <strong>{medal.name}</strong>
                 {medal.level > 0 && <small>Lv.{medal.level}</small>}
               </article>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {createdRadios.length > 0 && (
+        <section className="content-section">
+          <div className="list-header">
+            <h3>我创建的电台</h3>
+            <span className="count">{createdRadios.length} 个</span>
+          </div>
+          <div className="profile-radio-list">
+            {createdRadios.map((radio) => (
+              <button key={radio.id} onClick={() => void openRadio(radio.id)}>
+                {radio.picUrl ? (
+                  <img src={sizedImage(radio.picUrl, 120)} alt="" loading="lazy" />
+                ) : (
+                  <span className="profile-radio-placeholder"><Podcast size={18} /></span>
+                )}
+                <span>
+                  <strong>{radio.name}</strong>
+                  <small>{radio.programCount} 期 · {radio.subscriberCount} 订阅</small>
+                </span>
+              </button>
             ))}
           </div>
         </section>

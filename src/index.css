@@ -5125,6 +5125,15 @@ input {
 .profile-medal strong, .profile-medal small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .profile-medal strong { font-size: 12px; }
 .profile-medal small { color: var(--text-faint); font-size: 10px; }
+.profile-radio-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.profile-radio-list > button { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 9px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-1); color: var(--text); text-align: left; }
+.profile-radio-list > button:hover { border-color: var(--border); background: var(--bg-2); }
+.profile-radio-list img, .profile-radio-placeholder { width: 44px; height: 44px; flex: none; border-radius: 7px; object-fit: cover; }
+.profile-radio-placeholder { display: grid; place-items: center; background: var(--bg-3); color: var(--text-faint); }
+.profile-radio-list > button > span:last-child { display: grid; gap: 3px; min-width: 0; }
+.profile-radio-list strong, .profile-radio-list small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.profile-radio-list strong { font-size: 12px; }
+.profile-radio-list small { color: var(--text-faint); font-size: 10px; }
 .cloud-load-more { display: block; margin: 14px auto 0; }
 .cloud-empty { display: grid; justify-items: center; gap: 8px; padding: 72px 20px; color: var(--text-faint); }
 .cloud-empty strong { color: var(--text-2); }
