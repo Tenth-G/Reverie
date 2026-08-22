@@ -1,4 +1,12 @@
-import { Disc3, MessageCircle, Play, UserRound } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  Disc3,
+  MessageCircle,
+  Play,
+  Trash2,
+  UserRound,
+} from "lucide-react";
 import type { Song } from "../api/types";
 import { useCommentStore } from "../store/commentStore";
 import { useExploreStore } from "../store/exploreStore";
@@ -14,6 +22,8 @@ interface Props {
   emptyText?: string;
   showCover?: boolean;
   loading?: boolean;
+  onRemove?: (song: Song, index: number) => void;
+  onMove?: (song: Song, index: number, direction: -1 | 1) => void;
 }
 
 export default function SongList({
@@ -23,6 +33,8 @@ export default function SongList({
   emptyText = "暂无歌曲",
   showCover = true,
   loading = false,
+  onRemove,
+  onMove,
 }: Props) {
   const currentSong = usePlayerStore((s) => s.currentSong);
   const playSong = usePlayerStore((s) => s.playSong);
@@ -129,6 +141,35 @@ export default function SongList({
                       <Disc3 size={15} />
                     </button>
                   ) : null}
+                  {onMove && (
+                    <>
+                      <button
+                        className="icon-action"
+                        title="上移"
+                        disabled={i === 0}
+                        onClick={() => onMove(song, i, -1)}
+                      >
+                        <ArrowUp size={15} />
+                      </button>
+                      <button
+                        className="icon-action"
+                        title="下移"
+                        disabled={i === songs.length - 1}
+                        onClick={() => onMove(song, i, 1)}
+                      >
+                        <ArrowDown size={15} />
+                      </button>
+                    </>
+                  )}
+                  {onRemove && (
+                    <button
+                      className="icon-action danger"
+                      title="从歌单移除"
+                      onClick={() => onRemove(song, i)}
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  )}
                 </div>
                 <span className="dur">{formatTime(song.duration)}</span>
               </div>
