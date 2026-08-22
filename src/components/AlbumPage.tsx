@@ -1,4 +1,5 @@
-import { Heart, UserRound } from "lucide-react";
+import { Heart, MessageCircle, UserRound } from "lucide-react";
+import { useCommentStore } from "../store/commentStore";
 import { useExploreStore } from "../store/exploreStore";
 import { sizedImage } from "../utils/image";
 import { LoadingState, Page } from "./Page";
@@ -11,6 +12,7 @@ export default function AlbumPage() {
   const loading = useExploreStore((s) => s.loading);
   const toggleSubscription = useExploreStore((s) => s.toggleAlbumSubscription);
   const openArtist = useExploreStore((s) => s.openArtist);
+  const openComments = useCommentStore((s) => s.openResourceComments);
 
   return (
     <Page>
@@ -60,6 +62,23 @@ export default function AlbumPage() {
                     fill={album.subscribed ? "currentColor" : "none"}
                   />
                   {album.subscribed ? "已收藏" : "收藏专辑"}
+                </button>
+                <button
+                  className="btn"
+                  onClick={() =>
+                    void openComments(
+                      {
+                        type: "album",
+                        id: String(album.id),
+                        title: album.name,
+                        subtitle: album.artistNames,
+                        coverUrl: album.picUrl,
+                      },
+                      true,
+                    )
+                  }
+                >
+                  <MessageCircle size={15} /> 评论
                 </button>
               </div>
             </div>

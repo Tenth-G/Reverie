@@ -1,5 +1,6 @@
-import { Heart, Radio } from "lucide-react";
+import { Heart, MessageCircle, Radio } from "lucide-react";
 import { useExploreStore } from "../store/exploreStore";
+import { useCommentStore } from "../store/commentStore";
 import { sizedImage } from "../utils/image";
 import { LoadingState, Page } from "./Page";
 import SongList from "./SongList";
@@ -10,6 +11,7 @@ export default function RadioDetailPage() {
   const programs = useExploreStore((s) => s.radioPrograms);
   const loading = useExploreStore((s) => s.loading);
   const toggleSubscription = useExploreStore((s) => s.toggleRadioSubscription);
+  const openComments = useCommentStore((s) => s.openResourceComments);
 
   return (
     <Page>
@@ -52,6 +54,24 @@ export default function RadioDetailPage() {
                     fill={radio.subscribed ? "currentColor" : "none"}
                   />
                   {radio.subscribed ? "已订阅" : "订阅电台"}
+                </button>
+                <button
+                  className="btn"
+                  onClick={() =>
+                    void openComments(
+                      {
+                        type: "program",
+                        id: String(programs[0]?.programId ?? radio.id),
+                        title: programs[0]?.name ?? radio.name,
+                        subtitle: radio.name,
+                        coverUrl: programs[0]?.picUrl ?? radio.picUrl,
+                      },
+                      true,
+                    )
+                  }
+                  disabled={!programs[0]?.programId}
+                >
+                  <MessageCircle size={15} /> 节目评论
                 </button>
               </div>
             </div>

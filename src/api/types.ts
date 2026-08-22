@@ -13,6 +13,8 @@ export interface Song {
   /** 0 = free, 1 = VIP, 4/8 = digital album etc. */
   fee: number;
   mvId?: number;
+  /** Present when the playable song represents a podcast program. */
+  programId?: number;
 }
 
 export interface LyricLine {
@@ -62,9 +64,30 @@ export interface CommentInfo {
   time: number;
   liked: boolean;
   likedCount: number;
+  replyCount: number;
+  owner: boolean;
   userId: number;
   nickname: string;
   avatarUrl: string;
+  repliedTo?: {
+    userId: number;
+    nickname: string;
+    content: string;
+  };
+}
+
+export type CommentResourceType =
+  "song" | "mv" | "playlist" | "album" | "program" | "video" | "event";
+
+export type CommentSort = "recommended" | "hot" | "new";
+
+export interface CommentResource {
+  type: CommentResourceType;
+  id: string;
+  title: string;
+  subtitle?: string;
+  coverUrl?: string;
+  threadId?: string;
 }
 
 export interface RadioInfo {
@@ -101,6 +124,7 @@ export interface SocialEvent {
   resourceTitle?: string;
   resourceType?: "song" | "album" | "playlist" | "other";
   resourceId?: number;
+  threadId?: string;
 }
 
 export interface UserProfile {

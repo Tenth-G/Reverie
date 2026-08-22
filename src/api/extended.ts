@@ -70,15 +70,26 @@ function normalizePlaylist(raw: unknown): PlaylistInfo {
 function normalizeComment(raw: unknown): CommentInfo {
   const c = obj(raw);
   const user = obj(c.user);
+  const replied = obj(arr(c.beReplied)[0]);
+  const repliedUser = obj(replied.user);
   return {
     id: Number(c.commentId ?? c.id ?? 0),
     content: String(c.content ?? ""),
     time: Number(c.time ?? 0),
     liked: Boolean(c.liked),
     likedCount: Number(c.likedCount ?? 0),
+    replyCount: Number(c.replyCount ?? obj(c.showFloorComment).replyCount ?? 0),
+    owner: Boolean(c.owner),
     userId: Number(user.userId ?? 0),
     nickname: String(user.nickname ?? "网易云用户"),
     avatarUrl: String(user.avatarUrl ?? ""),
+    repliedTo: replied.content
+      ? {
+          userId: Number(repliedUser.userId ?? 0),
+          nickname: String(repliedUser.nickname ?? "网易云用户"),
+          content: String(replied.content ?? ""),
+        }
+      : undefined,
   };
 }
 
@@ -324,6 +335,9 @@ export async function getRadioDetail(id: number): Promise<{
       if (!song) return null;
       return {
         ...song,
+        ...(Number(program.id ?? 0) > 0
+          ? { programId: Number(program.id) }
+          : {}),
         name: String(program.name ?? song.name),
         picUrl: String(program.coverUrl ?? radio.picUrl ?? song.picUrl),
         album: radio.name,
@@ -379,6 +393,8 @@ export async function getEvents(): Promise<SocialEvent[]> {
           ? (obj(event.info).likedCount ?? 0)
           : (event.likedCount ?? 0),
       ),
+      threadId:
+        String(event.threadId ?? obj(event.info).threadId ?? "") || undefined,
       ...resource,
     };
   });

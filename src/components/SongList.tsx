@@ -1,5 +1,6 @@
-import { Disc3, Play, UserRound } from "lucide-react";
+import { Disc3, MessageCircle, Play, UserRound } from "lucide-react";
 import type { Song } from "../api/types";
+import { useCommentStore } from "../store/commentStore";
 import { useExploreStore } from "../store/exploreStore";
 import { usePlayerStore } from "../store/playerStore";
 import { formatTime } from "../utils/lyrics";
@@ -27,6 +28,7 @@ export default function SongList({
   const playSong = usePlayerStore((s) => s.playSong);
   const openAlbum = useExploreStore((s) => s.openAlbum);
   const openArtist = useExploreStore((s) => s.openArtist);
+  const openComments = useCommentStore((s) => s.openResourceComments);
 
   return (
     <>
@@ -91,6 +93,24 @@ export default function SongList({
                   className="song-row-actions"
                   onClick={(e) => e.stopPropagation()}
                 >
+                  <button
+                    className="icon-action"
+                    title={song.programId ? "节目评论" : "歌曲评论"}
+                    onClick={() =>
+                      void openComments(
+                        {
+                          type: song.programId ? "program" : "song",
+                          id: String(song.programId ?? song.id),
+                          title: song.name,
+                          subtitle: song.programId ? song.album : song.artists,
+                          coverUrl: song.picUrl,
+                        },
+                        true,
+                      )
+                    }
+                  >
+                    <MessageCircle size={15} />
+                  </button>
                   {song.artistIds?.[0] ? (
                     <button
                       className="icon-action"

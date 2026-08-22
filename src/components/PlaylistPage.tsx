@@ -1,4 +1,9 @@
+import { useState } from "react";
+import { Heart, MessageCircle, Pencil, Trash2 } from "lucide-react";
+import type { PlaylistInfo } from "../api/types";
+import { useExploreStore } from "../store/exploreStore";
 import { usePlayerStore } from "../store/playerStore";
+import { useCommentStore } from "../store/commentStore";
 import { Page, PageHeader } from "./Page";
 import SongList from "./SongList";
 import PlaylistEditorModal from "./PlaylistEditorModal";
@@ -19,6 +24,7 @@ export default function PlaylistPage() {
   const toggleSubscription = useExploreStore(
     (s) => s.togglePlaylistSubscription,
   );
+  const openComments = useCommentStore((s) => s.openResourceComments);
   const [editing, setEditing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const playlist: PlaylistInfo = {
@@ -40,6 +46,22 @@ export default function PlaylistPage() {
         subtitle={playlistDescription || `${playlistSongs.length} 首`}
         actions={
           <div className="page-action-row">
+            <button
+              className="btn"
+              onClick={() =>
+                void openComments(
+                  {
+                    type: "playlist",
+                    id: String(playlistId),
+                    title: playlistName || "歌单",
+                    subtitle: `${playlistSongs.length} 首歌曲`,
+                  },
+                  true,
+                )
+              }
+            >
+              <MessageCircle size={14} /> 评论
+            </button>
             {owned ? (
               <>
                 <button className="btn" onClick={() => setEditing(true)}>
@@ -87,7 +109,3 @@ export default function PlaylistPage() {
     </Page>
   );
 }
-import { useState } from "react";
-import { Heart, Pencil, Trash2 } from "lucide-react";
-import type { PlaylistInfo } from "../api/types";
-import { useExploreStore } from "../store/exploreStore";
