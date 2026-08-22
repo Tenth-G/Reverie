@@ -293,12 +293,38 @@ export async function getLyric(id: number): Promise<{
   tlyric: string;
   nolyric: boolean;
 }> {
-  const res = await request<LyricResponse>("/lyric", { id });
-  return {
-    lrc: res.lrc?.lyric ?? "",
-    tlyric: res.tlyric?.lyric ?? "",
-    nolyric: !!res.nolyric,
+  if (!id) return { lrc: "", tlyric: "", nolyric: true };
+  type ModernLyricResponse = LyricResponse & {
+    yrc?: { lyric?: string };
+    romalrc?: { lyric?: string };
   };
+  const read = (res: ModernLyricResponse) => ({
+    // The v1 route includes逐字歌词 in yrc. The player parser consumes the
+    // regular lrc field, so prefer it while retaining the v1 translation.
+    lrc: res.lrc?.lyric ?? res.yrc?.lyric ?? "",
+    tlyric: res.tlyric?.lyric ?? res.romalrc?.lyric ?? "",
+    nolyric: !!res.nolyric,
+  });
+  try {
+    const modern = await request<ModernLyricResponse>("/lyric/new", {
+      id,
+      cp: false,
+      tv: 0,
+      lv: 0,
+      rv: 0,
+      kv: 0,
+      yv: 0,
+      ytv: 0,
+      yrv: 0,
+    });
+    const normalized = read(modern);
+    if (normalized.lrc || normalized.tlyric || normalized.nolyric) {
+      return normalized;
+    }
+  } catch {
+    // Older sidecars may not expose /lyric/new; use the stable legacy route.
+  }
+  return read(await request<LyricResponse>("/lyric", { id }));
 }
 
 /* ------------------------------------------------------------------ */
