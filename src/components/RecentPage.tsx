@@ -3,6 +3,7 @@ import { Disc3, ListMusic, Play, Podcast } from "lucide-react";
 import { usePlayerStore } from "../store/playerStore";
 import { useRecentStore } from "../store/recentStore.ts";
 import { useMediaStore } from "../store/mediaStore.ts";
+import { useExploreStore } from "../store/exploreStore.ts";
 import { sizedImage } from "../utils/image";
 import { LoadingState, Page, PageHeader } from "./Page";
 import SongList from "./SongList";
@@ -36,6 +37,9 @@ export default function RecentPage() {
   const setCategory = useRecentStore((s) => s.setCategory);
   const load = useRecentStore((s) => s.load);
   const openMedia = useMediaStore((s) => s.open);
+  const openAlbum = useExploreStore((s) => s.openAlbum);
+  const openRadio = useExploreStore((s) => s.openRadio);
+  const openPlaylist = usePlayerStore((s) => s.openPlaylist);
 
   useEffect(() => {
     void load();
@@ -62,37 +66,49 @@ export default function RecentPage() {
       ) : category === "albums" ? (
         <div className="recent-card-grid">
           {albums.map((item) => (
-            <article key={item.id} className="recent-card">
+            <button
+              key={item.id}
+              className="recent-card"
+              onClick={() => void openAlbum(item.id)}
+            >
               <div className="recent-card-cover">
                 <Cover src={item.coverUrl} fallback={<Disc3 size={24} />} />
               </div>
               <strong>{item.name}</strong>
               <span>{item.artistName || "未知歌手"}</span>
-            </article>
+            </button>
           ))}
         </div>
       ) : category === "playlists" ? (
         <div className="recent-card-grid">
           {playlists.map((item) => (
-            <article key={item.id} className="recent-card">
+            <button
+              key={item.id}
+              className="recent-card"
+              onClick={() => void openPlaylist(item.id, item.name)}
+            >
               <div className="recent-card-cover">
                 <Cover src={item.coverUrl} fallback={<ListMusic size={24} />} />
               </div>
               <strong>{item.name}</strong>
               <span>{item.creatorName || "歌单"}</span>
-            </article>
+            </button>
           ))}
         </div>
       ) : category === "radios" ? (
         <div className="recent-card-grid">
           {radios.map((item) => (
-            <article key={item.id} className="recent-card">
+            <button
+              key={item.id}
+              className="recent-card"
+              onClick={() => void openRadio(item.id)}
+            >
               <div className="recent-card-cover">
                 <Cover src={item.coverUrl} fallback={<Podcast size={24} />} />
               </div>
               <strong>{item.name}</strong>
               <span>{item.creatorName || "播客"}</span>
-            </article>
+            </button>
           ))}
         </div>
       ) : (
