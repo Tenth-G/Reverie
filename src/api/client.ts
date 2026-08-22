@@ -243,6 +243,40 @@ export async function getSongUrl(
   return { url: d?.url ?? null, br: d?.br ?? 0 };
 }
 
+export async function getSongDownloadUrl(
+  id: number,
+  level: "standard" | "higher" | "exhigh" | "lossless" = "exhigh",
+): Promise<{ url: string | null; br: number }> {
+  const response = await request<{
+    data?: { url?: string; br?: number };
+  }>("/song/download/url/v1", { id, level });
+  return {
+    url: response.data?.url ?? null,
+    br: Number(response.data?.br ?? 0),
+  };
+}
+
+export async function downloadSongFile(song: Song): Promise<void> {
+  let result = await getSongDownloadUrl(song.id).catch(() => ({
+    url: null,
+    br: 0,
+  }));
+  if (!result.url) result = await getLegacySongUrl(song.id);
+  if (!result.url) throw new Error("该歌曲暂时没有可下载地址");
+  if (typeof document === "undefined") return;
+  const anchor = document.createElement("a");
+  anchor.href = result.url;
+  anchor.download = `${song.name} - ${song.artists}.mp3`.replace(
+    /[\\/:*?"<>|]/g,
+    "_",
+  );
+  anchor.target = "_blank";
+  anchor.rel = "noreferrer";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+}
+
 export async function getLegacySongUrl(
   id: number,
 ): Promise<{ url: string | null; br: number }> {
