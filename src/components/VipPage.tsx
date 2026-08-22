@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Crown, History, RefreshCw, Sparkles } from "lucide-react";
+import { Check, Crown, Gift, History, RefreshCw, Sparkles } from "lucide-react";
 import { useVipStore } from "../store/vipStore.ts";
 import { LoadingState, Page, PageHeader } from "./Page";
 
@@ -17,7 +17,9 @@ export default function VipPage() {
   const details = useVipStore((state) => state.details);
   const timeMachine = useVipStore((state) => state.timeMachine);
   const loading = useVipStore((state) => state.loading);
+  const claiming = useVipStore((state) => state.claiming);
   const load = useVipStore((state) => state.load);
+  const claimRewards = useVipStore((state) => state.claimRewards);
   useEffect(() => {
     void load();
   }, [load]);
@@ -73,11 +75,28 @@ export default function VipPage() {
                       <span>{task.description || "完成会员任务"}</span>
                     </div>
                     <b>+{task.reward}</b>
-                    <span
-                      className={`vip-task-status ${task.completed ? "done" : ""}`}
-                    >
-                      {task.completed ? "已完成" : "进行中"}
-                    </span>
+                    {task.completed && !task.claimed ? (
+                      <button
+                        className="btn primary vip-task-claim"
+                        onClick={() => void claimRewards([task.id])}
+                        disabled={claiming}
+                      >
+                        <Gift size={13} />
+                        {claiming ? "领取中…" : "领取"}
+                      </button>
+                    ) : (
+                      <span
+                        className={`vip-task-status ${task.completed ? "done" : ""}`}
+                      >
+                        {task.claimed ? (
+                          <>
+                            <Check size={12} /> 已领取
+                          </>
+                        ) : (
+                          "进行中"
+                        )}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
