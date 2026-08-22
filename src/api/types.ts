@@ -33,6 +33,7 @@ export interface PlaylistInfo {
   creatorName?: string;
   subscribed?: boolean;
   privacy?: number;
+  tags?: string[];
 }
 
 export interface ArtistInfo {
