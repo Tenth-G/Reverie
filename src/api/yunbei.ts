@@ -108,3 +108,35 @@ export async function getYunbeiLedger(
     },
   );
 }
+
+export async function submitYunbeiRecommendation(input: {
+  songId: number;
+  reason?: string;
+  yunbeiNum?: number;
+}): Promise<void> {
+  await request(
+    "/yunbei/rcmd/song",
+    {
+      id: input.songId,
+      reason: input.reason,
+      yunbeiNum: input.yunbeiNum ?? 10,
+    },
+    false,
+    { method: "POST" },
+  );
+}
+
+export async function getYunbeiRecommendationHistory(
+  size = 20,
+  cursor = "",
+): Promise<Obj[]> {
+  const response = await request<Obj>(
+    "/yunbei/rcmd/song/history",
+    { size, cursor },
+    false,
+  );
+  const value = obj(response.data ?? response.result ?? response);
+  return arr(value.list ?? value.records ?? response.data ?? response).map(
+    (item) => obj(item),
+  );
+}
