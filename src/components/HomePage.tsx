@@ -1,13 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePlayerStore } from "../store/playerStore";
 import { Page } from "./Page";
 import PlaylistGrid from "./PlaylistGrid";
-import SongList from "./SongList";
 import SongCards from "./SongCards";
 import { useDiscoveryStore } from "../store/discoveryStore.ts";
-import { useMediaStore } from "../store/mediaStore.ts";
-import { Clapperboard, Play } from "lucide-react";
-import { sizedImage } from "../utils/image";
 import { dislikeRecommendSong } from "../api/client";
 import {
   getHomepageBlockPage,
@@ -17,7 +13,6 @@ import {
 
 const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
 
-const MUNICIPALITIES = ["北京", "上海", "天津", "重庆"];
 const LOCATION_CACHE_KEY = "reverie_home_location";
 const LOCATION_CACHE_AT_KEY = "reverie_home_location_at";
 const LOCATION_CACHE_TTL = 24 * 60 * 60 * 1000;
@@ -49,53 +44,60 @@ function cacheLocation(value: string) {
   }
 }
 
+function normalizeRegion(province: string, city: string): string {
+  const unit = /(省|市|自治区|特别行政区)$/.test(province);
+  const p = unit ? province : `${province}省`;
+  if (!city) return p;
+  if (city === province || city.replace(/市$/, "") === p.replace(/省|市$/, ""))
+    return p;
+  const c = city.endsWith("市") ? city : `${city}市`;
+  return `${p}${c}`;
+}
+
+// WebView 直连公网 IP 服务会被 CORS 拦截，由本地 sidecar 代理；主源带城市粒度。
 async function fetchLocation(): Promise<string> {
-  // ipip.net returns Chinese location text: "来自于：中国 江苏 连云港  移动"
   try {
-    const res = await fetch("https://myip.ipip.net", {
+    const res = await fetch("http://127.0.0.1:3939/reverie/location", {
+      signal: AbortSignal.timeout(4500),
+    });
+    if (res.ok) {
+      const j: { province?: string; city?: string; region?: string } =
+        await res.json();
+      const province = String(j.province ?? j.region ?? "");
+      const city = String(j.city ?? "");
+      if (province || city) return normalizeRegion(province, city);
+    }
+  } catch {
+    /* fall through */
+  }
+  // fallback：文本型 ipip（无城市时仅省级）
+  try {
+    const res = await fetch("http://127.0.0.1:3939/reverie/location?src=ipip", {
       signal: AbortSignal.timeout(3500),
     });
     const text = await res.text();
-    const m = text.match(/来自于：(\S+)\s+(\S+)\s+(\S+)/);
+    const m = text.match(/来自于：(.+)/);
     if (m) {
-      const country = m[1];
-      const province = m[2];
-      const city = m[3];
-      if (country === "中国") {
-        if (MUNICIPALITIES.includes(province)) return `${province}市`;
-        return city.endsWith("市")
-          ? `${province}省${city}`
-          : `${province}省${city}市`;
-      }
+      const tokens = m[1].trim().split(/\s+/);
+      const carriers = ["移动", "联通", "电信", "铁通"];
+      const [country, province = "", maybeCity = ""] = tokens;
+      const city = maybeCity && !carriers.includes(maybeCity) ? maybeCity : "";
+      if (country === "中国") return normalizeRegion(province, city);
       return [country, province, city].filter(Boolean).join(" ");
     }
   } catch {
     /* fall through */
   }
-  // fallback
-  try {
-    const res = await fetch("https://ipinfo.io/json", {
-      signal: AbortSignal.timeout(3500),
-    });
-    const j = await res.json();
-    const city = String(j.city ?? "");
-    const region = String(j.region ?? "");
-    return [region, city].filter(Boolean).join(" ");
-  } catch {
-    return "";
-  }
+  return "";
 }
 
 export default function HomePage() {
   const hotPlaylists = usePlayerStore((s) => s.hotPlaylists);
-  const topSongs = usePlayerStore((s) => s.topSongs);
   const recommendSongs = usePlayerStore((s) => s.recommendSongs);
   const recommendSongsLoading = usePlayerStore((s) => s.recommendSongsLoading);
   const hotPlaylistsLoading = usePlayerStore((s) => s.hotPlaylistsLoading);
-  const topSongsLoading = usePlayerStore((s) => s.topSongsLoading);
   const homeQuote = usePlayerStore((s) => s.homeQuote);
   const openPlaylist = usePlayerStore((s) => s.openPlaylist);
-  const loadTopSongs = usePlayerStore((s) => s.loadTopSongs);
   const dismissRecommend = (song: import("../api/types").Song) => {
     usePlayerStore.setState((state) => ({
       recommendSongs: state.recommendSongs.filter(
@@ -111,14 +113,9 @@ export default function HomePage() {
       activeView: "recommendHistory",
       prevView: "home",
     });
-  const discoverySongs = useDiscoveryStore((s) => s.newSongs);
-  const discoveryMvs = useDiscoveryStore((s) => s.mvs);
-  const privateContent = useDiscoveryStore((s) => s.privateContent);
   const recommendResources = useDiscoveryStore((s) => s.recommendResources);
   const starpickComments = useDiscoveryStore((s) => s.starpickComments);
-  const discoveryLoading = useDiscoveryStore((s) => s.loading);
   const loadDiscovery = useDiscoveryStore((s) => s.load);
-  const openMedia = useMediaStore((s) => s.open);
   const [homepageEntries, setHomepageEntries] = useState<HomepageEntry[]>([]);
   useEffect(() => {
     void loadDiscovery();
@@ -182,6 +179,14 @@ export default function HomePage() {
       if (timer) window.clearTimeout(timer);
     };
   }, []);
+
+  // 每日推荐歌单优先，不足时用热门歌单补齐，去重后展示一栏
+  const dailyPlaylists = useMemo(() => {
+    const seen = new Set<number>();
+    return [...recommendResources, ...hotPlaylists]
+      .filter((item) => (seen.has(item.id) ? false : (seen.add(item.id), true)))
+      .slice(0, 12);
+  }, [recommendResources, hotPlaylists]);
 
   const hh = String(now.getHours()).padStart(2, "0");
   const mm = String(now.getMinutes()).padStart(2, "0");
@@ -262,26 +267,14 @@ export default function HomePage() {
 
       <section className="home-section">
         <div className="section-title">
-          <h2>推荐歌单</h2>
+          <h2>每日推荐歌单</h2>
         </div>
         <PlaylistGrid
-          playlists={hotPlaylists.slice(0, 12)}
+          playlists={dailyPlaylists}
           onOpen={openPlaylist}
           loading={hotPlaylistsLoading}
         />
       </section>
-
-      {recommendResources.length > 0 && (
-        <section className="home-section">
-          <div className="section-title">
-            <h2>每日推荐歌单</h2>
-          </div>
-          <PlaylistGrid
-            playlists={recommendResources.slice(0, 12)}
-            onOpen={openPlaylist}
-          />
-        </section>
-      )}
 
       {starpickComments.length > 0 && (
         <section className="home-section">
@@ -299,55 +292,6 @@ export default function HomePage() {
           </div>
         </section>
       )}
-
-      <section className="home-section">
-        <div className="section-title">
-          <h2>更多发现</h2>
-        </div>
-        {discoveryLoading && !discoverySongs.length && !discoveryMvs.length ? (
-          <div className="loading-hint">正在加载发现内容…</div>
-        ) : (
-          <>
-            <SongCards
-              songs={discoverySongs.slice(0, 6)}
-              loading={discoveryLoading}
-            />
-            <div className="discovery-media-grid">
-              {[...discoveryMvs, ...privateContent].slice(0, 8).map((item) => (
-                <button
-                  key={`${item.kind}-${item.id}`}
-                  onClick={() => void openMedia(item)}
-                >
-                  <span className="discovery-media-cover">
-                    {item.coverUrl ? (
-                      <img src={sizedImage(item.coverUrl, 260)} alt="" />
-                    ) : (
-                      <Clapperboard size={22} />
-                    )}
-                    <Play size={14} fill="currentColor" />
-                  </span>
-                  <strong>{item.name}</strong>
-                  <small>{item.creatorName || "网易云推荐"}</small>
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-      </section>
-
-      <section className="home-section">
-        <div className="section-title">
-          <h2>排行榜 · 飙升榜</h2>
-          <button className="link-btn" onClick={loadTopSongs}>
-            更多 →
-          </button>
-        </div>
-        <SongList
-          songs={topSongs.slice(0, 10)}
-          loading={topSongsLoading}
-          emptyText="暂无排行数据"
-        />
-      </section>
     </Page>
   );
 }

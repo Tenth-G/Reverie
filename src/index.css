@@ -104,6 +104,11 @@ input {
   font-family: inherit;
   color: inherit;
 }
+textarea {
+  font-family: inherit;
+  color: inherit;
+  resize: none;
+}
 
 /* ============================ App shell ============================ */
 .app {
@@ -138,17 +143,48 @@ input {
   flex: 1;
   height: 100%;
 }
+/* Window title: Reverie wordmark with a sweeping sheen (reverie-sheen). */
 .titlebar-name {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  color: var(--text-dim);
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  padding-inline: 0.16em;
+  color: transparent;
+  background: linear-gradient(
+    100deg,
+    var(--text-dim) 30%,
+    var(--text) 42%,
+    color-mix(in srgb, var(--text) 70%, white) 50%,
+    var(--accent-2) 56%,
+    color-mix(in srgb, var(--text) 80%, white) 62%,
+    var(--text) 72%,
+    var(--text-dim) 88%
+  );
+  background-size: 220% 100%;
+  background-position: 120% 50%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  filter: drop-shadow(
+    0 0 6px color-mix(in srgb, var(--accent) 26%, transparent)
+  );
+  animation: reverie-sheen 6.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
   pointer-events: none;
   line-height: 1;
+}
+/* 一道高光斜带周期性扫过文字，其余时间保持静态渐变 */
+@keyframes reverie-sheen {
+  0%,
+  46% {
+    background-position: 120% 50%;
+  }
+  54%,
+  100% {
+    background-position: -20% 50%;
+  }
 }
 .titlebar-controls {
   display: flex;
@@ -560,7 +596,7 @@ input {
 .page-scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 32px 130px;
+  padding: 20px 32px 144px;
 }
 .page-header {
   display: flex;
@@ -1830,7 +1866,7 @@ input {
 .message-composer-input textarea {
   min-height: 54px;
   max-height: 100px;
-  resize: vertical;
+  resize: none;
   padding: 9px 10px;
   border: 1px solid var(--border);
   border-radius: 7px;
@@ -3141,7 +3177,7 @@ input {
   color: var(--text);
   padding: 10px 12px;
   outline: none;
-  resize: vertical;
+  resize: none;
   font: inherit;
 }
 .field-label input:focus,
@@ -3430,7 +3466,8 @@ input {
   margin-top: 10px;
 }
 
-@media (max-width: 1220px) {
+/* 非最大化窗口（含 1080px 最小宽度）下收起导航文字，防止右侧操作区溢出 */
+@media (max-width: 1599px) {
   .topnav-item {
     padding-inline: 10px;
   }
@@ -3748,7 +3785,7 @@ input {
 
 /* ============================ Compact player ============================ */
 .player-bar {
-  bottom: 12px;
+  bottom: 26px;
   width: min(980px, calc(100% - 48px));
   border-radius: 24px;
   gap: 4px;
@@ -3778,11 +3815,14 @@ input {
 .vol-wrap {
   position: relative;
   display: flex;
+  /* 桥接按钮与弹层之间的空隙，保证鼠标移向弹层途中 hover 不中断 */
+  padding-top: 12px;
+  margin-top: -12px;
 }
 .volume-popover {
   position: absolute;
   left: 50%;
-  bottom: calc(100% + 9px);
+  bottom: 100%;
   transform: translate(-50%, 8px);
   width: 48px;
   height: 158px;
@@ -3988,6 +4028,9 @@ input {
   border-right: 1px solid var(--border);
   background: color-mix(in srgb, var(--bg-3) 70%, var(--bg-2));
 }
+.shortcut-list { display: grid; gap: 6px; padding: 4px 0 2px; }
+.shortcut-list > div { display: flex; align-items: center; justify-content: space-between; gap: 16px; font-size: 12.5px; color: var(--text-dim); }
+.shortcut-list kbd { min-width: 22px; padding: 2px 7px; border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 6px; background: var(--bg-3); color: var(--text); font-family: inherit; font-size: 11px; text-align: center; }
 .settings-brand {
   display: flex;
   align-items: center;
@@ -4248,7 +4291,7 @@ input {
 .share-dialog textarea {
   width: 100%;
   min-height: 120px;
-  resize: vertical;
+  resize: none;
   padding: 12px;
   border: 1px solid var(--border);
   border-radius: 9px;
@@ -4411,36 +4454,6 @@ input {
 }
 
 /* ============================ Refined motion and surfaces ============================ */
-.titlebar-name {
-  letter-spacing: 0;
-  color: transparent;
-  background: linear-gradient(
-    105deg,
-    var(--text-dim) 18%,
-    var(--text) 38%,
-    #ffffff 48%,
-    var(--accent-2) 58%,
-    var(--text-dim) 78%
-  );
-  background-size: 260% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  filter: drop-shadow(
-    0 0 7px color-mix(in srgb, var(--accent) 34%, transparent)
-  );
-  animation: reverie-brand-light 4.8s ease-in-out infinite;
-}
-
-@keyframes reverie-brand-light {
-  0%,
-  18% {
-    background-position: 110% 0;
-  }
-  62%,
-  100% {
-    background-position: -70% 0;
-  }
-}
 
 .topnav {
   width: calc(100% - 36px);
@@ -4469,6 +4482,56 @@ input {
 .btn:active,
 .opt-btn:active {
   transform: scale(0.94);
+}
+
+.search-dropdown-caption {
+  padding: 7px 12px 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-faint);
+}
+.search-hot-item,
+.search-suggest-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  padding: 7px 12px;
+  text-align: left;
+  color: var(--text);
+}
+.search-hot-item:hover,
+.search-suggest-item:hover {
+  background: var(--hover);
+}
+.search-hot-item .hot-rank {
+  width: 16px;
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.search-hot-item .hot-rank.top {
+  color: var(--accent-2);
+  font-weight: 700;
+}
+.search-hot-item strong,
+.search-suggest-item strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.search-suggest-item {
+  justify-content: space-between;
+}
+.search-suggest-item small {
+  color: var(--text-faint);
+  font-size: 10.5px;
+  flex: none;
 }
 
 .search-dropdown,
@@ -4546,7 +4609,7 @@ input {
 .pb-cover,
 .pb-cover img,
 .pb-cover-ph {
-  border-radius: 18px;
+  border-radius: 50%;
 }
 
 .pb-cover {
@@ -4846,56 +4909,6 @@ input {
 }
 
 /* ============================ Interaction polish ============================ */
-.titlebar-name {
-  color: transparent;
-  font-size: 13px;
-  background: linear-gradient(
-    102deg,
-    var(--text-dim) 5%,
-    var(--text) 34%,
-    color-mix(in srgb, var(--text) 86%, white) 44%,
-    var(--accent-2) 52%,
-    color-mix(in srgb, var(--text) 90%, white) 60%,
-    var(--text) 72%,
-    var(--text-dim) 95%
-  );
-  background-size: 260% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  filter: drop-shadow(
-    0 0 5px color-mix(in srgb, var(--accent) 22%, transparent)
-  );
-  animation:
-    reverie-brand-flow 8.5s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite,
-    reverie-brand-breathe 4.2s ease-in-out infinite alternate;
-}
-
-@keyframes reverie-brand-flow {
-  0% {
-    background-position: 112% 50%;
-  }
-  50% {
-    background-position: -12% 50%;
-  }
-  100% {
-    background-position: 112% 50%;
-  }
-}
-
-@keyframes reverie-brand-breathe {
-  from {
-    opacity: 0.78;
-    filter: drop-shadow(
-      0 0 3px color-mix(in srgb, var(--accent) 15%, transparent)
-    );
-  }
-  to {
-    opacity: 1;
-    filter: drop-shadow(
-      0 0 8px color-mix(in srgb, var(--accent-2) 30%, transparent)
-    );
-  }
-}
 
 .topnav {
   width: 100%;
@@ -4918,9 +4931,10 @@ input {
   border: 1px solid transparent;
   border-bottom-color: var(--border);
   border-radius: 0;
-  background: transparent;
+  /* 常驻轻磨砂：修复玻璃效果只在视频页/滚动后才可见的问题 */
+  background: var(--glass-nav);
   box-shadow: none;
-  backdrop-filter: blur(0) saturate(1);
+  backdrop-filter: blur(20px) saturate(1.4);
   transition:
     inset 0.46s cubic-bezier(0.16, 1, 0.3, 1),
     border-color 0.32s ease,
@@ -5522,7 +5536,7 @@ input {
 .comment-composer textarea {
   min-height: 42px;
   flex: 1;
-  resize: vertical;
+  resize: none;
   padding: 10px 11px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -5604,6 +5618,24 @@ input {
 .artist-introduction article + article { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-light); }
 .artist-introduction strong { color: var(--text); font-size: 13px; }
 .artist-introduction p { margin: 5px 0 0; color: var(--text-dim); font-size: 12px; line-height: 1.65; white-space: pre-line; }
+/* ============================ Official chart cards ============================ */
+.chart-card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; padding: 4px 32px 20px; }
+.chart-card { display: flex; flex-direction: column; min-width: 0; border: 1px solid var(--border); border-radius: 14px; background: var(--bg-2); overflow: hidden; }
+.chart-card:hover { border-color: color-mix(in srgb, var(--accent) 32%, var(--border)); }
+.chart-card-head { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.chart-card-head img { width: 44px; height: 44px; flex: none; border-radius: 9px; object-fit: cover; box-shadow: 0 4px 14px var(--shadow); }
+.chart-card-title { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.chart-card-title h3 { font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chart-card-title small { color: var(--text-faint); font-size: 11px; }
+.chart-card-list { list-style: none; display: grid; }
+.chart-card-list li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; }
+.chart-card-list li:hover { background: var(--hover); }
+.chart-card-list b { width: 18px; text-align: center; color: var(--text-faint); font-size: 12px; font-variant-numeric: tabular-nums; }
+.chart-card-list b.top { color: var(--accent-2); font-weight: 700; }
+.chart-card-list .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12.5px; }
+.chart-card-list .a { max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-faint); font-size: 11px; }
+.chart-card-loading { padding: 18px 12px; color: var(--text-faint); font-size: 11.5px; text-align: center; }
+
 .artist-ranking-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
 .artist-ranking-card { display: grid; grid-template-columns: 24px 42px minmax(0, 1fr); grid-template-rows: auto auto; align-items: center; gap: 3px 8px; min-width: 0; padding: 8px; border: 1px solid var(--border-light); border-radius: 7px; background: var(--bg-2); color: var(--text); text-align: left; }
 .artist-ranking-card:hover { border-color: var(--border); background: var(--bg-3); }
@@ -5901,7 +5933,7 @@ input {
 .playlist-import-tabs button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 11px; border-radius: 5px; color: var(--text-dim); font-size: 12px; }
 .playlist-import-tabs button.active { background: var(--bg-2); color: var(--text); }
 .playlist-import-name, .playlist-import-modal textarea { width: 100%; margin-bottom: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: var(--bg-3); color: var(--text); font: inherit; font-size: 12px; }
-.playlist-import-modal textarea { resize: vertical; line-height: 1.5; }
+.playlist-import-modal textarea { resize: none; line-height: 1.5; }
 .playlist-import-status { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; padding: 10px; border-radius: 6px; background: var(--bg-3); color: var(--accent); }
 .playlist-import-status > div { display: grid; gap: 3px; }
 .playlist-import-status span { color: var(--text-dim); font-size: 11px; }

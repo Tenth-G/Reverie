@@ -9,8 +9,12 @@ interface ChartState {
   songs: Song[];
   loading: boolean;
   songsLoading: boolean;
+  /** 每个榜单卡片懒加载缓存的歌曲（完整列表） */
+  cardSongs: Record<number, Song[]>;
+  cardLoading: Record<number, boolean>;
   load: () => Promise<void>;
   select: (id: number) => Promise<void>;
+  loadCard: (id: number) => Promise<void>;
 }
 
 let requestToken = 0;
@@ -21,6 +25,8 @@ export const useChartStore = create<ChartState>()((set, get) => ({
   songs: [],
   loading: false,
   songsLoading: false,
+  cardSongs: {},
+  cardLoading: {},
 
   load: async () => {
     const token = ++requestToken;
@@ -44,7 +50,6 @@ export const useChartStore = create<ChartState>()((set, get) => ({
       if (token !== requestToken) return;
       const selectedId = get().selectedId || charts[0]?.id || 0;
       set({ charts, selectedId, loading: false });
-      if (selectedId) await get().select(selectedId);
     } catch {
       if (token !== requestToken) return;
       set({ charts: [], songs: [], selectedId: 0, loading: false });
@@ -64,6 +69,23 @@ export const useChartStore = create<ChartState>()((set, get) => ({
       if (token !== requestToken) return;
       set({ songs: [], songsLoading: false });
       usePlayerStore.getState().toast("加载榜单歌曲失败", "error");
+    }
+  },
+
+  loadCard: async (id) => {
+    if (!id || get().cardSongs[id] || get().cardLoading[id]) return;
+    set((state) => ({ cardLoading: { ...state.cardLoading, [id]: true } }));
+    try {
+      const songs = await getChartSongs(id);
+      set((state) => ({
+        cardSongs: { ...state.cardSongs, [id]: songs },
+        cardLoading: { ...state.cardLoading, [id]: false },
+      }));
+    } catch {
+      set((state) => ({
+        cardSongs: { ...state.cardSongs, [id]: [] },
+        cardLoading: { ...state.cardLoading, [id]: false },
+      }));
     }
   },
 }));

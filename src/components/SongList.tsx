@@ -8,11 +8,13 @@ import {
   Play,
   Trash2,
   UserRound,
+  Clapperboard,
 } from "lucide-react";
 import { useState } from "react";
 import type { Song } from "../api/types";
 import { useCommentStore } from "../store/commentStore";
 import { useExploreStore } from "../store/exploreStore";
+import { useMediaStore } from "../store/mediaStore";
 import { usePlayerStore } from "../store/playerStore";
 import { downloadSongFile } from "../api/client";
 import { formatTime } from "../utils/lyrics";
@@ -47,6 +49,7 @@ export default function SongList({
   const openAlbum = useExploreStore((s) => s.openAlbum);
   const openArtist = useExploreStore((s) => s.openArtist);
   const openComments = useCommentStore((s) => s.openResourceComments);
+  const openMedia = useMediaStore((s) => s.open);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
 
   return (
@@ -112,6 +115,25 @@ export default function SongList({
                   className="song-row-actions"
                   onClick={(e) => e.stopPropagation()}
                 >
+                  {song.mvId ? (
+                    <button
+                      className="icon-action"
+                      title="观看 MV"
+                      onClick={() =>
+                        void openMedia({
+                          id: String(song.mvId),
+                          name: song.name,
+                          coverUrl: song.picUrl,
+                          creatorName: song.artists,
+                          duration: 0,
+                          playCount: 0,
+                          kind: "mv",
+                        })
+                      }
+                    >
+                      <Clapperboard size={15} />
+                    </button>
+                  ) : null}
                   <button
                     className="icon-action"
                     title={song.programId ? "节目评论" : "歌曲评论"}

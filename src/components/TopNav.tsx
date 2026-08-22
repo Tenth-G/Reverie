@@ -8,11 +8,7 @@ import type { ReactElement } from "react";
 import {
   BarChart3,
   Bell,
-  CalendarDays,
-  Clapperboard,
-  Cloud,
   Disc3,
-  Gift,
   Heart,
   History,
   House,
@@ -20,10 +16,7 @@ import {
   Monitor,
   Moon,
   Podcast,
-  Palette,
-  MessageSquareText,
   LibraryBig,
-  Headphones,
   Search,
   Sun,
   Users,
@@ -41,11 +34,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { view: "home", label: "首页", icon: <House size={17} /> },
   { view: "chart", label: "排行榜", icon: <BarChart3 size={17} /> },
-  { view: "style", label: "风格", icon: <Palette size={17} /> },
-  { view: "topics", label: "话题", icon: <MessageSquareText size={17} /> },
   { view: "library", label: "音乐馆", icon: <LibraryBig size={17} /> },
-  { view: "calendar", label: "音乐日历", icon: <CalendarDays size={17} />, auth: true },
-  { view: "videos", label: "视频", icon: <Clapperboard size={17} /> },
   {
     view: "userlist",
     label: "我的歌单",
@@ -53,10 +42,7 @@ const NAV: NavItem[] = [
     auth: true,
   },
   { view: "radio", label: "播客", icon: <Podcast size={16} />, auth: true },
-  { view: "privateDj", label: "私人 DJ", icon: <Headphones size={16} />, auth: true },
   { view: "social", label: "动态", icon: <Users size={16} />, auth: true },
-  { view: "cloud", label: "云盘", icon: <Cloud size={16} />, auth: true },
-  { view: "yunbei", label: "云贝", icon: <Gift size={16} />, auth: true },
 ];
 
 const THEME_ORDER: ThemePreference[] = ["system", "light", "dark"];
@@ -154,6 +140,11 @@ export default function TopNav() {
   const loadHome = usePlayerStore((s) => s.loadHome);
   const playSong = usePlayerStore((s) => s.playSong);
   const openSearch = useSearchStore((s) => s.openSearch);
+  const hotTerms = useSearchStore((s) => s.hotTerms);
+  const loadHotTerms = useSearchStore((s) => s.loadHotTerms);
+  const suggestions = useSearchStore((s) => s.suggestions);
+  const suggestionsLoading = useSearchStore((s) => s.suggestionsLoading);
+  const loadSuggestions = useSearchStore((s) => s.loadSuggestions);
   const openNotifications = useNotificationStore((s) => s.openNotifications);
 
   const searchRef = useRef<HTMLInputElement>(null);
@@ -185,13 +176,16 @@ export default function TopNav() {
     const keyword = searchKeyword.trim();
     if (!keyword) {
       usePlayerStore.setState({ searchResults: [], searching: false });
+      // 空输入时展示热搜
+      if (loggedIn) void loadHotTerms();
       return;
     }
     searchTimerRef.current = window.setTimeout(() => {
       void doSearch(keyword);
+      void loadSuggestions(keyword);
     }, 180);
     return () => window.clearTimeout(searchTimerRef.current);
-  }, [searchKeyword, searchOpen, doSearch]);
+  }, [searchKeyword, searchOpen, doSearch, loadSuggestions, loadHotTerms, loggedIn]);
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
@@ -282,6 +276,9 @@ export default function TopNav() {
             </div>
             {searching ||
             searchResults.length > 0 ||
+            suggestions.length > 0 ||
+            suggestionsLoading ||
+            (!searchKeyword.trim() && (hotTerms.length > 0 || loggedIn)) ||
             (searchKeyword && !loggedIn) ? (
               <div className="search-dropdown">
                 {searching ? (
@@ -290,36 +287,88 @@ export default function TopNav() {
                   <div className="search-login-hint">
                     <span>登录后即可搜索音乐，请点击右上角「登录」</span>
                   </div>
+                ) : !searchKeyword.trim() ? (
+                  // 空输入：展示热搜榜
+                  <>
+                    <div className="search-dropdown-caption">热搜</div>
+                    {hotTerms.length ? (
+                      hotTerms.slice(0, 10).map((term, index) => (
+                        <button
+                          key={term}
+                          className="search-hot-item"
+                          onClick={() => void openSearch(term, "songs")}
+                        >
+                          <span
+                            className={`hot-rank ${index < 3 ? "top" : ""}`}
+                          >
+                            {index + 1}
+                          </span>
+                          <strong>{term}</strong>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="loading-hint">正在加载热搜…</div>
+                    )}
+                  </>
                 ) : (
                   <>
-                    {searchResults.slice(0, 12).map((song) => (
-                      <div
-                        key={song.id}
-                        className="search-dropdown-item"
-                        onClick={() => {
-                          playSong(song, searchResults);
-                          setSearchOpen(false);
-                        }}
-                      >
-                        {song.picUrl ? (
-                          <img src={sizedImage(song.picUrl, 80)} alt="" />
+                    {suggestionsLoading || suggestions.length > 0 ? (
+                      <>
+                        <div className="search-dropdown-caption">搜索建议</div>
+                        {suggestionsLoading ? (
+                          <div className="loading-hint">正在获取建议…</div>
                         ) : (
-                          <span className="song-ph">
-                            <Disc3 size={16} />
-                          </span>
+                          suggestions.slice(0, 6).map((suggestion) => (
+                            <button
+                              key={`${suggestion.keyword}-${suggestion.type}`}
+                              className="search-suggest-item"
+                              onClick={() =>
+                                void openSearch(suggestion.keyword, "songs")
+                              }
+                            >
+                              <strong>{suggestion.keyword}</strong>
+                              <small>
+                                {suggestion.type}
+                                {suggestion.source ? ` · ${suggestion.source}` : ""}
+                              </small>
+                            </button>
+                          ))
                         )}
-                        <div className="meta">
-                          <div className="t">{song.name}</div>
-                          <div className="a">{song.artists}</div>
-                        </div>
-                      </div>
-                    ))}
-                    <button
-                      className="search-view-all"
-                      onClick={() => void openSearch(searchKeyword, "songs")}
-                    >
-                      查看全部搜索结果
-                    </button>
+                      </>
+                    ) : null}
+                    {searchResults.length > 0 ? (
+                      <>
+                        <div className="search-dropdown-caption">歌曲匹配</div>
+                        {searchResults.slice(0, 8).map((song) => (
+                          <div
+                            key={song.id}
+                            className="search-dropdown-item"
+                            onClick={() => {
+                              playSong(song, searchResults);
+                              setSearchOpen(false);
+                            }}
+                          >
+                            {song.picUrl ? (
+                              <img src={sizedImage(song.picUrl, 80)} alt="" />
+                            ) : (
+                              <span className="song-ph">
+                                <Disc3 size={16} />
+                              </span>
+                            )}
+                            <div className="meta">
+                              <div className="t">{song.name}</div>
+                              <div className="a">{song.artists}</div>
+                            </div>
+                          </div>
+                        ))}
+                        <button
+                          className="search-view-all"
+                          onClick={() => void openSearch(searchKeyword, "songs")}
+                        >
+                          查看全部搜索结果
+                        </button>
+                      </>
+                    ) : null}
                   </>
                 )}
               </div>

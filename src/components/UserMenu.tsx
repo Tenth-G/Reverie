@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../store/playerStore";
 import { sizedImage } from "../utils/image";
-import { Album, BookOpenText, CalendarDays, CircleUserRound, FileText, Headphones, Link2, Mic2, Music2, Radio, Users } from "lucide-react";
+import { Album, CircleUserRound, Link2, Radio, Users } from "lucide-react";
 import { useProfileStore } from "../store/profileStore";
 import { useCollectionStore } from "../store/collectionStore";
 
@@ -176,32 +176,6 @@ export default function UserMenu() {
             onClick={() => {
               setOpen(false);
               usePlayerStore.setState({
-                activeView: "voiceWorkbench",
-                prevView: "home",
-              });
-            }}
-          >
-            <Mic2 size={15} />
-            声音工作台
-          </button>
-          <button
-            className="user-dropdown-item"
-            onClick={() => {
-              setOpen(false);
-              usePlayerStore.setState({
-                activeView: "lyricsMark",
-                prevView: "home",
-              });
-            }}
-          >
-            <BookOpenText size={15} />
-            我的歌词本
-          </button>
-          <button
-            className="user-dropdown-item"
-            onClick={() => {
-              setOpen(false);
-              usePlayerStore.setState({
                 activeView: "digitalAlbum",
                 prevView: "home",
               });
@@ -214,40 +188,11 @@ export default function UserMenu() {
             className="user-dropdown-item"
             onClick={() => {
               setOpen(false);
-              usePlayerStore.setState({
-                activeView: "musician",
-                prevView: "home",
-              });
-            }}
-          >
-            <Music2 size={15} />
-            音乐人中心
-          </button>
-          <button
-            className="user-dropdown-item"
-            onClick={() => {
-              setOpen(false);
-              usePlayerStore.setState({ activeView: "sati", prevView: "home" });
-            }}
-          >
-            <Headphones size={15} />
-            助眠与解压
-          </button>
-          <button
-            className="user-dropdown-item"
-            onClick={() => {
-              setOpen(false);
               usePlayerStore.setState({ activeView: "broadcast", prevView: "home" });
             }}
           >
             <Radio size={15} />
             广播电台
-          </button>
-          <button className="user-dropdown-item" onClick={() => { setOpen(false); usePlayerStore.setState({ activeView: "ugc", prevView: "home" }); }}>
-            <FileText size={15} />百科贡献
-          </button>
-          <button className="user-dropdown-item" onClick={() => { setOpen(false); usePlayerStore.setState({ activeView: "listenReports", prevView: "home" }); }}>
-            <CalendarDays size={15} />听歌报告
           </button>
           <button className="user-dropdown-item" onClick={() => { setOpen(false); usePlayerStore.setState({ activeView: "fans", prevView: "home" }); }}>
             <Users size={15} />粉丝中心

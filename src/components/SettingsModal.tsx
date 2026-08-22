@@ -70,6 +70,10 @@ export default function SettingsModal() {
   const setTheme = usePlayerStore((s) => s.setTheme);
   const loggedIn = usePlayerStore((s) => s.loggedIn);
   const profile = usePlayerStore((s) => s.profile);
+  const showTranslation = usePlayerStore((s) => s.showTranslation);
+  const setShowTranslation = usePlayerStore((s) => s.setShowTranslation);
+  const lyricFontSize = usePlayerStore((s) => s.lyricFontSize);
+  const setLyricFontSize = usePlayerStore((s) => s.setLyricFontSize);
   const logout = usePlayerStore((s) => s.logout);
   const checkUpdate = usePlayerStore((s) => s.checkUpdate);
   const updatePhase = usePlayerStore((s) => s.updatePhase);
@@ -163,22 +167,64 @@ export default function SettingsModal() {
 
           <div className="settings-scroll">
             {category === "general" && (
-              <div className="settings-section">
-                <h3>界面</h3>
-                <SettingRow title="界面主题" hint="切换应用的整体明暗外观">
-                  <div className="opt-group">
-                    {APP_THEMES.map((item) => (
+              <>
+                <div className="settings-section">
+                  <h3>界面</h3>
+                  <SettingRow title="界面主题" hint="切换应用的整体明暗外观">
+                    <div className="opt-group">
+                      {APP_THEMES.map((item) => (
+                        <button
+                          key={item.id}
+                          className={`opt-btn ${theme === item.id ? "active" : ""}`}
+                          onClick={() => setTheme(item.id)}
+                        >
+                          {item.name}
+                        </button>
+                      ))}
+                    </div>
+                  </SettingRow>
+                </div>
+                <div className="settings-section">
+                  <h3>播放</h3>
+                  <SettingRow title="歌词翻译" hint="在歌词页同时显示译文">
+                    <div className="opt-group">
                       <button
-                        key={item.id}
-                        className={`opt-btn ${theme === item.id ? "active" : ""}`}
-                        onClick={() => setTheme(item.id)}
+                        className={`opt-btn ${showTranslation ? "active" : ""}`}
+                        onClick={() => setShowTranslation(true)}
                       >
-                        {item.name}
+                        开启
                       </button>
-                    ))}
+                      <button
+                        className={`opt-btn ${!showTranslation ? "active" : ""}`}
+                        onClick={() => setShowTranslation(false)}
+                      >
+                        关闭
+                      </button>
+                    </div>
+                  </SettingRow>
+                  <SettingRow title="歌词字号" hint={`当前 ${lyricFontSize}px`}>
+                    <div className="opt-group">
+                      {[18, 22, 26, 30].map((size) => (
+                        <button
+                          key={size}
+                          className={`opt-btn ${lyricFontSize === size ? "active" : ""}`}
+                          onClick={() => setLyricFontSize(size)}
+                        >
+                          {size}
+                        </button>
+                      ))}
+                    </div>
+                  </SettingRow>
+                </div>
+                <div className="settings-section">
+                  <h3>快捷键</h3>
+                  <div className="shortcut-list" aria-label="键盘快捷键">
+                    <div><span>播放 / 暂停</span><kbd>Space</kbd></div>
+                    <div><span>快进 / 快退 5 秒</span><span><kbd>→</kbd> <kbd>←</kbd></span></div>
+                    <div><span>音量增减</span><span><kbd>↑</kbd> <kbd>↓</kbd></span></div>
                   </div>
-                </SettingRow>
-              </div>
+                </div>
+              </>
             )}
 
             {category === "account" && (

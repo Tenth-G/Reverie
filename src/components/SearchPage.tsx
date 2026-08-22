@@ -57,19 +57,13 @@ export default function SearchPage() {
   const result = useSearchStore((state) => state.result);
   const loading = useSearchStore((state) => state.loading);
   const loadingMore = useSearchStore((state) => state.loadingMore);
-  const hotTerms = useSearchStore((state) => state.hotTerms);
   const defaultKeyword = useSearchStore((state) => state.defaultKeyword);
-  const suggestions = useSearchStore((state) => state.suggestions);
-  const suggestionsLoading = useSearchStore((state) => state.suggestionsLoading);
   const mediaItem = useSearchStore((state) => state.mediaItem);
   const mediaUrl = useSearchStore((state) => state.mediaUrl);
   const mediaLoading = useSearchStore((state) => state.mediaLoading);
   const openSearch = useSearchStore((state) => state.openSearch);
   const setCategory = useSearchStore((state) => state.setCategory);
   const loadMore = useSearchStore((state) => state.loadMore);
-  const loadHotTerms = useSearchStore((state) => state.loadHotTerms);
-  const loadDefaultKeyword = useSearchStore((state) => state.loadDefaultKeyword);
-  const loadSuggestions = useSearchStore((state) => state.loadSuggestions);
   const closeMedia = useSearchStore((state) => state.closeMedia);
   const openMediaDetail = useMediaStore((state) => state.open);
   const toggleFollow = useSearchStore((state) => state.toggleFollow);
@@ -80,16 +74,6 @@ export default function SearchPage() {
   const [input, setInput] = useState(keyword);
 
   useEffect(() => setInput(keyword), [keyword]);
-  useEffect(() => {
-    if (!keyword) {
-      void loadHotTerms();
-      void loadDefaultKeyword();
-    }
-  }, [keyword, loadHotTerms, loadDefaultKeyword]);
-  useEffect(() => {
-    const timer = window.setTimeout(() => void loadSuggestions(input), 180);
-    return () => window.clearTimeout(timer);
-  }, [input, loadSuggestions]);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -140,50 +124,8 @@ export default function SearchPage() {
         </button>
       </form>
 
-      {!keyword && input.trim() && (suggestionsLoading || suggestions.length > 0) && (
-        <div className="search-suggestions" role="listbox" aria-label="搜索建议">
-          {suggestionsLoading ? (
-            <span className="search-suggestions-loading">正在获取建议…</span>
-          ) : (
-            suggestions.slice(0, 8).map((suggestion) => (
-              <button
-                key={`${suggestion.keyword}-${suggestion.type}`}
-                role="option"
-                onClick={() => {
-                  setInput(suggestion.keyword);
-                  void openSearch(suggestion.keyword, category);
-                }}
-              >
-                <strong>{suggestion.keyword}</strong>
-                <small>{suggestion.type}{suggestion.source ? ` · ${suggestion.source}` : ""}</small>
-              </button>
-            ))
-          )}
-        </div>
-      )}
+      {(
 
-      {!keyword ? (
-        <section className="content-section">
-          <div className="list-header">
-            <h3>热搜</h3>
-          </div>
-          {hotTerms.length ? (
-            <div className="hot-search-list">
-              {hotTerms.map((term, index) => (
-                <button
-                  key={term}
-                  onClick={() => void openSearch(term, "songs")}
-                >
-                  <span>{String(index + 1).padStart(2, "0")}</span>
-                  {term}
-                </button>
-              ))}
-            </div>
-          ) : (
-            <LoadingState label="正在加载热搜…" />
-          )}
-        </section>
-      ) : (
         <>
           <div className="search-category-tabs" role="tablist">
             {CATEGORIES.map(({ key, label, icon: Icon }) => (
