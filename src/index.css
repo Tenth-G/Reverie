@@ -6112,3 +6112,13 @@ input {
 .artist-fan strong, .artist-fan small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .artist-fan strong { font-size: 12px; }
 .artist-fan small { color: var(--text-dim); font-size: 10px; }
+
+/* Sign-in progress */
+.yunbei-progress-section { margin: 0 0 16px; padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); }
+.yunbei-progress { display: grid; gap: 10px; }
+.yunbei-progress-copy { display: grid; gap: 4px; }
+.yunbei-progress-copy strong { font-size: 13px; }
+.yunbei-progress-copy span, .yunbei-progress-copy small { color: var(--text-dim); font-size: 11px; }
+.yunbei-progress-copy small { color: var(--accent-2); }
+.yunbei-progress-track { height: 8px; overflow: hidden; border-radius: 999px; background: var(--bg-3); }
+.yunbei-progress-track i { display: block; height: 100%; border-radius: inherit; background: var(--accent); transition: width .25s ease; }

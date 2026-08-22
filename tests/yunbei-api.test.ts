@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   dailySignIn,
   finishYunbeiTask,
+  getSigninProgress,
   getYunbeiLedger,
   getYunbeiOverview,
   getYunbeiTasks,
@@ -58,6 +59,33 @@ test("yunbei tasks, sign-in and ledger use their dedicated routes", async () => 
     assert.match(urls[1]!, /\/daily_signin/);
     assert.match(urls[2]!, /\/yunbei\/task\/finish/);
     assert.match(urls[3]!, /\/yunbei\/receipt/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("sign-in progress normalizes completion and reward fields", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    assert.equal(url.pathname, "/signin/progress");
+    assert.equal(url.searchParams.get("moduleId"), "module-test");
+    return Response.json({
+      data: {
+        title: "连续签到",
+        description: "完成本阶段签到",
+        current: 3,
+        total: 7,
+        rewardText: "云贝 20",
+      },
+    });
+  };
+  try {
+    const progress = await getSigninProgress("module-test");
+    assert.equal(progress.current, 3);
+    assert.equal(progress.total, 7);
+    assert.equal(progress.completed, false);
+    assert.equal(progress.reward, "云贝 20");
   } finally {
     globalThis.fetch = originalFetch;
   }
