@@ -221,6 +221,32 @@ export interface YunbeiOverview {
   signDays: number;
 }
 
+export type RecentCategory = "songs" | "albums" | "playlists" | "radios" | "videos" | "voices";
+
+export interface RecentAlbum {
+  id: number;
+  name: string;
+  coverUrl: string;
+  artistName: string;
+  time: number;
+}
+
+export interface RecentPlaylist {
+  id: number;
+  name: string;
+  coverUrl: string;
+  creatorName: string;
+  time: number;
+}
+
+export interface RecentRadio {
+  id: number;
+  name: string;
+  coverUrl: string;
+  creatorName: string;
+  time: number;
+}
+
 export interface SearchResultPage {
   songs: Song[];
   albums: AlbumInfo[];
