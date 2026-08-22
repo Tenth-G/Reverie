@@ -53,3 +53,27 @@ test("callApi forwards the generated route and query parameters", async () => {
     globalThis.fetch = originalFetch;
   }
 });
+
+test("callApi supports POST bodies for upload and mutation endpoints", async () => {
+  const originalFetch = globalThis.fetch;
+  let method = "";
+  let body: BodyInit | null | undefined;
+  try {
+    globalThis.fetch = (async (_input, init) => {
+      method = String(init?.method);
+      body = init?.body;
+      return new Response(JSON.stringify({ code: 200 }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    }) as typeof fetch;
+    await callApi("voice_upload", {}, true, {
+      method: "POST",
+      body: new URLSearchParams({ name: "demo" }),
+    });
+    assert.equal(method, "POST");
+    assert.ok(body instanceof URLSearchParams);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
