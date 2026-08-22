@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { getListeningRecords, getProfileCenter, getUserMedals, getUserCreatedRadios } from "../src/api/profile.ts";
+import { getListeningRecords, getProfileCenter, getUserMedals, getUserCreatedRadios, getUserDjPrograms } from "../src/api/profile.ts";
 
 function json(body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -144,6 +144,24 @@ test("getListeningRecords selects weekly and all-time response fields", async ()
     assert.equal((await getListeningRecords(1, "week"))[0].playCount, 2);
     assert.equal((await getListeningRecords(1, "all"))[0].playCount, 9);
     assert.deepEqual(requestedTypes, ["1", "0"]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("getUserDjPrograms normalizes published radio programs", async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (input) => {
+      const url = new URL(String(input));
+      assert.equal(url.pathname, "/user/dj");
+      assert.equal(url.searchParams.get("uid"), "42");
+      assert.equal(url.searchParams.get("limit"), "5");
+      return Response.json({ data: { programs: [{ id: 7, name: "我的节目", coverUrl: "cover", mainSong: { id: 8, name: "节目音频", ar: [{ name: "我" }], al: { name: "电台" } } }] } });
+    };
+    const programs = await getUserDjPrograms(42, 5);
+    assert.equal(programs[0]?.programId, 7);
+    assert.equal(programs[0]?.name, "我的节目");
   } finally {
     globalThis.fetch = originalFetch;
   }

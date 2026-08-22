@@ -16,6 +16,7 @@ import { useProfileStore } from "../store/profileStore";
 import { useCollectionStore } from "../store/collectionStore";
 import { sizedImage } from "../utils/image";
 import BackButton from "./BackButton";
+import SongList from "./SongList";
 import { LoadingState, Page } from "./Page";
 
 function formatDate(timestamp: number) {
@@ -34,6 +35,7 @@ export default function ProfilePage() {
   const subcount = useProfileStore((state) => state.subcount);
   const medals = useProfileStore((state) => state.medals);
   const createdRadios = useProfileStore((state) => state.createdRadios);
+  const createdPrograms = useProfileStore((state) => state.createdPrograms);
   const records = useProfileStore((state) => state.records);
   const period = useProfileStore((state) => state.period);
   const loading = useProfileStore((state) => state.loading);
@@ -222,6 +224,16 @@ export default function ProfilePage() {
               </button>
             ))}
           </div>
+        </section>
+      )}
+
+      {createdPrograms.length > 0 && (
+        <section className="content-section">
+          <div className="list-header">
+            <h3>我发布的电台节目</h3>
+            <span className="count">{createdPrograms.length} 期</span>
+          </div>
+          <SongList songs={createdPrograms} emptyText="暂无电台节目" />
         </section>
       )}
 

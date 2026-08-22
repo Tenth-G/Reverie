@@ -4,6 +4,7 @@ import {
   getProfileCenter,
   getUserMedals,
   getUserCreatedRadios,
+  getUserDjPrograms,
   type ListeningRecord,
   type ProfileDetail,
   type UserLevelInfo,
@@ -21,6 +22,7 @@ interface ProfileState {
   subcount: UserSubcount | null;
   medals: UserMedal[];
   createdRadios: RadioInfo[];
+  createdPrograms: import("../api/types").Song[];
   records: ListeningRecord[];
   period: RecordPeriod;
   loading: boolean;
@@ -46,6 +48,7 @@ export const useProfileStore = create<ProfileState>()((set, get) => ({
   subcount: null,
   medals: [],
   createdRadios: [],
+  createdPrograms: [],
   records: [],
   period: "week",
   loading: false,
@@ -60,10 +63,11 @@ export const useProfileStore = create<ProfileState>()((set, get) => ({
     showProfileView();
     set({ loading: true, period: "week" });
     try {
-      const [data, medals, createdRadios] = await Promise.all([
+      const [data, medals, createdRadios, createdPrograms] = await Promise.all([
         getProfileCenter(uid),
         getUserMedals(uid).catch(() => []),
         getUserCreatedRadios(uid).catch(() => []),
+        getUserDjPrograms(uid).catch(() => []),
       ]);
       set({
         detail: data.detail,
@@ -72,6 +76,7 @@ export const useProfileStore = create<ProfileState>()((set, get) => ({
         records: data.records,
         medals,
         createdRadios,
+        createdPrograms,
       });
     } catch {
       usePlayerStore.getState().toast("加载个人中心失败", "error");

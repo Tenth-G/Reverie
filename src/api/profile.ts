@@ -181,3 +181,33 @@ export async function getUserCreatedRadios(uid: number): Promise<RadioInfo[]> {
     })
     .filter((item) => item.id > 0);
 }
+
+export async function getUserDjPrograms(
+  uid: number,
+  limit = 30,
+  offset = 0,
+): Promise<Song[]> {
+  if (!uid) return [];
+  const response = await request<Obj>(
+    "/user/dj",
+    { uid, limit, offset },
+    false,
+  );
+  const value = obj(response.data ?? response.result ?? response);
+  return arr(value.programs ?? value.list ?? response.programs ?? response.data)
+    .map((raw): Song | null => {
+      const item = obj(raw);
+      const source = obj(item.mainSong ?? item.song ?? item);
+      const song = normalizeSong(source);
+      if (!song) return null;
+      const program: Song = {
+        ...song,
+        programId: Number(item.id ?? item.programId ?? 0) || undefined,
+        name: String(item.name ?? song.name),
+        album: String(item.radioName ?? obj(item.djRadio).name ?? song.album),
+        picUrl: String(item.coverUrl ?? item.picUrl ?? song.picUrl),
+      };
+      return program;
+    })
+    .filter((song): song is Song => song !== null);
+}
