@@ -4,6 +4,7 @@ import {
   getBroadcastCategories,
   getBroadcastChannels,
   getBroadcastCollected,
+  getPodcastProgramDetail,
   getSportRadio,
   toggleBroadcastSubscription,
 } from "../src/api/broadcast.ts";
@@ -67,6 +68,37 @@ test("podcast toplist normalizes new and hot radio records", async () => {
     const radios = await getPodcastToplist("hot", 10, 0);
     assert.equal(radios[0]?.name, "热门电台");
     assert.equal(radios[0]?.djName, "主播");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("podcast program detail normalizes metadata and main song", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    assert.equal(new URL(String(input)).pathname, "/dj/program/detail");
+    return Response.json({
+      program: {
+        id: 11,
+        name: "节目详情",
+        description: "节目介绍",
+        coverUrl: "cover",
+        radio: { name: "电台" },
+        dj: { nickname: "主播" },
+        createTime: 1700000000000,
+        duration: 180000,
+        commentCount: 4,
+        mainSong: { id: 22, name: "节目歌曲", ar: [{ name: "歌手" }] },
+      },
+    });
+  };
+  try {
+    const detail = await getPodcastProgramDetail(11);
+    assert.equal(detail.name, "节目详情");
+    assert.equal(detail.radioName, "电台");
+    assert.equal(detail.djName, "主播");
+    assert.equal(detail.song?.id, 22);
+    assert.equal(detail.commentCount, 4);
   } finally {
     globalThis.fetch = originalFetch;
   }

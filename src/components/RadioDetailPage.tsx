@@ -1,6 +1,10 @@
-import { Heart, MessageCircle, Radio } from "lucide-react";
+import { CalendarDays, Clock3, Heart, MessageCircle, Radio, X } from "lucide-react";
+import { useState } from "react";
+import { getPodcastProgramDetail } from "../api/broadcast.ts";
+import type { PodcastProgramDetail, Song } from "../api/types.ts";
 import { useExploreStore } from "../store/exploreStore";
 import { useCommentStore } from "../store/commentStore";
+import { usePlayerStore } from "../store/playerStore";
 import { sizedImage } from "../utils/image";
 import { LoadingState, Page } from "./Page";
 import SongList from "./SongList";
@@ -12,6 +16,29 @@ export default function RadioDetailPage() {
   const loading = useExploreStore((s) => s.loading);
   const toggleSubscription = useExploreStore((s) => s.toggleRadioSubscription);
   const openComments = useCommentStore((s) => s.openResourceComments);
+  const [program, setProgram] = useState<PodcastProgramDetail | null>(null);
+  const [programLoading, setProgramLoading] = useState(false);
+  const [programError, setProgramError] = useState("");
+
+  const openProgram = async (song: Song) => {
+    if (!song.programId) return;
+    setProgram(null);
+    setProgramLoading(true);
+    setProgramError("");
+    try {
+      setProgram(await getPodcastProgramDetail(song.programId));
+    } catch (cause) {
+      setProgramError(cause instanceof Error ? cause.message : "节目详情加载失败");
+    } finally {
+      setProgramLoading(false);
+    }
+  };
+
+  const closeProgram = () => {
+    if (programLoading) return;
+    setProgram(null);
+    setProgramError("");
+  };
 
   return (
     <Page>
@@ -76,8 +103,52 @@ export default function RadioDetailPage() {
               </div>
             </div>
           </section>
-          <SongList songs={programs} title="节目列表" emptyText="暂无节目" />
+          <SongList
+            songs={programs}
+            title="节目列表"
+            emptyText="暂无节目"
+            onOpenProgram={(song) => void openProgram(song)}
+          />
         </>
+      )}
+      {(programLoading || program || programError) && (
+        <div className="modal-backdrop podcast-program-backdrop" onClick={closeProgram}>
+          <section className="podcast-program-dialog" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label="节目详情">
+            <header className="podcast-program-head">
+              <div>
+                <span className="detail-kind"><Radio size={13} /> 节目详情</span>
+                <h2>{program?.name ?? (programLoading ? "正在加载节目…" : "节目详情")}</h2>
+              </div>
+              <button className="icon-button" title="关闭" onClick={closeProgram} disabled={programLoading}><X size={17} /></button>
+            </header>
+            {programLoading ? (
+              <LoadingState label="正在加载节目详情…" />
+            ) : program ? (
+              <div className="podcast-program-content">
+                {program.coverUrl && <img src={sizedImage(program.coverUrl, 480)} alt="" />}
+                <div className="podcast-program-copy">
+                  <div className="podcast-program-meta">
+                    {program.radioName && <span><Radio size={13} /> {program.radioName}</span>}
+                    {program.djName && <span>{program.djName}</span>}
+                    {program.publishTime > 0 && <span><CalendarDays size={13} /> {new Date(program.publishTime).toLocaleDateString("zh-CN")}</span>}
+                    {program.duration > 0 && <span><Clock3 size={13} /> {Math.round(program.duration / 60000)} 分钟</span>}
+                  </div>
+                  <p>{program.description || "暂无节目介绍"}</p>
+                  <div className="podcast-program-actions">
+                    <button className="btn" onClick={() => program.song && usePlayerStore.getState().playSong(program.song, [program.song])} disabled={!program.song}>
+                      播放节目
+                    </button>
+                    <button className="btn" onClick={() => void openComments({ type: "program", id: String(program.id), title: program.name, subtitle: program.radioName, coverUrl: program.coverUrl }, true)}>
+                      <MessageCircle size={15} /> 评论{program.commentCount ? ` · ${program.commentCount}` : ""}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="podcast-program-error">{programError || "节目详情暂时不可用"}</div>
+            )}
+          </section>
+        </div>
       )}
     </Page>
   );

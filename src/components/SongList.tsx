@@ -3,6 +3,7 @@ import {
   ArrowUp,
   Disc3,
   Download,
+  FileText,
   MessageCircle,
   Play,
   Trash2,
@@ -27,6 +28,7 @@ interface Props {
   loading?: boolean;
   onRemove?: (song: Song, index: number) => void;
   onMove?: (song: Song, index: number, direction: -1 | 1) => void;
+  onOpenProgram?: (song: Song) => void;
 }
 
 export default function SongList({
@@ -38,6 +40,7 @@ export default function SongList({
   loading = false,
   onRemove,
   onMove,
+  onOpenProgram,
 }: Props) {
   const currentSong = usePlayerStore((s) => s.currentSong);
   const playSong = usePlayerStore((s) => s.playSong);
@@ -143,6 +146,15 @@ export default function SongList({
                       onClick={() => void openAlbum(song.albumId)}
                     >
                       <Disc3 size={15} />
+                    </button>
+                  ) : null}
+                  {song.programId && onOpenProgram ? (
+                    <button
+                      className="icon-action"
+                      title="节目详情"
+                      onClick={() => onOpenProgram(song)}
+                    >
+                      <FileText size={15} />
                     </button>
                   ) : null}
                   {onMove && (

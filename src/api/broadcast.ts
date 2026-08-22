@@ -1,5 +1,11 @@
 import { request } from "./client.ts";
-import type { BroadcastChannel, BroadcastCategory, RadioInfo, Song } from "./types.ts";
+import type {
+  BroadcastChannel,
+  BroadcastCategory,
+  PodcastProgramDetail,
+  RadioInfo,
+  Song,
+} from "./types.ts";
 import { normalizeSong } from "./client.ts";
 
 type Obj = Record<string, unknown>;
@@ -142,6 +148,27 @@ export async function getPodcastBanners(): Promise<Array<{ imageUrl: string; tit
       url: String(item.url ?? item.targetUrl ?? ""),
     };
   }).filter((item) => item.imageUrl);
+}
+
+export async function getPodcastProgramDetail(
+  id: number,
+): Promise<PodcastProgramDetail> {
+  const response = await request<Obj>("/dj/program/detail", { id }, false);
+  const value = obj(response.program ?? response.data ?? response);
+  const radio = obj(value.radio);
+  const dj = obj(value.dj);
+  return {
+    id: Number(value.id ?? id),
+    name: String(value.name ?? value.programName ?? "播客节目"),
+    description: String(value.description ?? value.desc ?? value.reason ?? ""),
+    coverUrl: String(value.coverUrl ?? value.picUrl ?? value.cover ?? ""),
+    radioName: String(value.radioName ?? radio.name ?? ""),
+    djName: String(value.djName ?? dj.nickname ?? ""),
+    publishTime: Number(value.createTime ?? value.publishTime ?? value.pubTime ?? 0),
+    duration: Number(value.duration ?? value.durationms ?? 0),
+    commentCount: Number(value.commentCount ?? value.commentCountAll ?? 0),
+    song: normalizeSong(value.mainSong ?? value.song),
+  };
 }
 export async function getBroadcastCurrentInfo(
   id: number,
