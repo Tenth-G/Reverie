@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   getHotSearchTerms,
+  getDefaultSearchKeyword,
+  getSearchSuggestions,
   getSearchMediaUrl,
   searchContent,
 } from "../src/api/search.ts";
@@ -159,6 +161,26 @@ test("hot search and media URL helpers parse API responses", async () => {
       }),
       "https://video",
     );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("search defaults and suggestions normalize web search responses", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    if (url.pathname === "/search/default") return json({ data: { showKeyword: "默认歌曲" } });
+    assert.equal(url.pathname, "/search/suggest");
+    assert.equal(url.searchParams.get("keywords"), "周杰伦");
+    assert.equal(url.searchParams.get("type"), "web");
+    return json({ result: { allMatch: [{ keyword: "周杰伦", type: "歌手", source: "华语" }] } });
+  };
+  try {
+    assert.equal(await getDefaultSearchKeyword(), "默认歌曲");
+    assert.deepEqual(await getSearchSuggestions("周杰伦"), [
+      { keyword: "周杰伦", type: "歌手", source: "华语" },
+    ]);
   } finally {
     globalThis.fetch = originalFetch;
   }

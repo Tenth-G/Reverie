@@ -5135,6 +5135,11 @@ input {
 .profile-radio-list strong { font-size: 12px; }
 .profile-radio-list small { color: var(--text-faint); font-size: 10px; }
 .playlist-dynamic-stats { display: flex; flex-wrap: wrap; gap: 12px; margin: -2px 0 12px; color: var(--text-faint); font-size: 11px; }
+.search-suggestions { display: grid; gap: 2px; max-width: 760px; margin: -8px auto 14px; padding: 5px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); box-shadow: 0 12px 30px var(--shadow); }
+.search-suggestions button { display: flex; align-items: baseline; gap: 8px; min-width: 0; padding: 8px 10px; border-radius: 6px; color: var(--text); text-align: left; }
+.search-suggestions button:hover { background: var(--hover); }
+.search-suggestions strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.search-suggestions small, .search-suggestions-loading { color: var(--text-faint); font-size: 11px; }
 .cloud-load-more { display: block; margin: 14px auto 0; }
 .cloud-empty { display: grid; justify-items: center; gap: 8px; padding: 72px 20px; color: var(--text-faint); }
 .cloud-empty strong { color: var(--text-2); }
