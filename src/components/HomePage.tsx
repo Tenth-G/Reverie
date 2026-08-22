@@ -4,6 +4,7 @@ import { Page } from "./Page";
 import PlaylistGrid from "./PlaylistGrid";
 import SongList from "./SongList";
 import SongCards from "./SongCards";
+import { dislikeRecommendSong } from "../api/client";
 
 const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
 
@@ -86,6 +87,16 @@ export default function HomePage() {
   const homeQuote = usePlayerStore((s) => s.homeQuote);
   const openPlaylist = usePlayerStore((s) => s.openPlaylist);
   const loadTopSongs = usePlayerStore((s) => s.loadTopSongs);
+  const dismissRecommend = (song: import("../api/types").Song) => {
+    usePlayerStore.setState((state) => ({
+      recommendSongs: state.recommendSongs.filter(
+        (item) => item.id !== song.id,
+      ),
+    }));
+    void dislikeRecommendSong(song.id).catch(() =>
+      usePlayerStore.getState().toast("暂时无法调整推荐", "error"),
+    );
+  };
 
   const [now, setNow] = useState(() => new Date());
   const [location, setLocation] = useState(readCachedLocation);
@@ -160,6 +171,7 @@ export default function HomePage() {
         <SongCards
           songs={recommendSongs.slice(0, 12)}
           loading={recommendSongsLoading}
+          onDislike={dismissRecommend}
         />
       </section>
 

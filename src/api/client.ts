@@ -346,6 +346,10 @@ export async function getRecommendSongs(): Promise<Song[]> {
   return raws.map((r) => normalizeSong(r)).filter((s): s is Song => s !== null);
 }
 
+export async function dislikeRecommendSong(id: number): Promise<void> {
+  await request("/recommend/songs/dislike", { id }, false, { method: "POST" });
+}
+
 export async function fmTrash(id: number): Promise<void> {
   await request("/fm_trash", { id });
 }
