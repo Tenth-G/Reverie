@@ -122,6 +122,7 @@ export type PlayMode = "sequence" | "one" | "shuffle";
 export type View =
   | "home"
   | "search"
+  | "profile"
   | "chart"
   | "fm"
   | "userlist"

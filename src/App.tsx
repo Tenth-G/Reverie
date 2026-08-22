@@ -11,6 +11,7 @@ import SettingsModal from "./components/SettingsModal";
 
 const ChartPage = lazy(() => import("./components/ChartPage"));
 const SearchPage = lazy(() => import("./components/SearchPage"));
+const ProfilePage = lazy(() => import("./components/ProfilePage"));
 const PlaylistPage = lazy(() => import("./components/PlaylistPage"));
 const UserListPage = lazy(() => import("./components/UserListPage"));
 const LikesPage = lazy(() => import("./components/LikesPage"));
@@ -256,6 +257,8 @@ export default function App() {
         return <ChartPage />;
       case "search":
         return <SearchPage />;
+      case "profile":
+        return <ProfilePage />;
       case "playlist":
         return <PlaylistPage />;
       case "userlist":

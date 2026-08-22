@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../store/playerStore";
 import { sizedImage } from "../utils/image";
 import { CircleUserRound } from "lucide-react";
+import { useProfileStore } from "../store/profileStore";
 
 function vipLabel(vipType?: number): string {
   if (!vipType || vipType === 0) return "普通用户";
@@ -31,6 +32,7 @@ export default function UserMenu() {
   const logout = usePlayerStore((s) => s.logout);
   const loadVipInfo = usePlayerStore((s) => s.loadVipInfo);
   const setShowLogin = usePlayerStore((s) => s.setShowLogin);
+  const openProfile = useProfileStore((s) => s.openProfile);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -113,6 +115,15 @@ export default function UserMenu() {
             <span>会员到期</span>
             <span>{isVip ? formatExpire(expireTime) : "—"}</span>
           </div>
+          <button
+            className="user-dropdown-item"
+            onClick={() => {
+              setOpen(false);
+              void openProfile();
+            }}
+          >
+            个人中心
+          </button>
           <button className="user-dropdown-item" onClick={switchAccount}>
             切换账号
           </button>
