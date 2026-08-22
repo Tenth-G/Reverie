@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   dailySignIn,
   finishYunbeiTask,
+  getHappySignInfo,
   getSigninProgress,
   getYunbeiLedger,
   getYunbeiOverview,
@@ -86,6 +87,21 @@ test("sign-in progress normalizes completion and reward fields", async () => {
     assert.equal(progress.total, 7);
     assert.equal(progress.completed, false);
     assert.equal(progress.reward, "云贝 20");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("happy sign info normalizes quote metadata", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    assert.equal(url.pathname, "/sign/happy/info");
+    return Response.json({ data: { text: "保持热爱，奔赴山海", source: "乐签", date: "2026-08-22", picUrl: "cover" } });
+  };
+  try {
+    const info = await getHappySignInfo();
+    assert.deepEqual(info, { content: "保持热爱，奔赴山海", author: "乐签", imageUrl: "cover", date: "2026-08-22" });
   } finally {
     globalThis.fetch = originalFetch;
   }

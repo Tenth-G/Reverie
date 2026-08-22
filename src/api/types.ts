@@ -588,6 +588,13 @@ export interface SigninProgress {
   completed: boolean;
   reward: string;
 }
+
+export interface HappySignInfo {
+  content: string;
+  author: string;
+  imageUrl: string;
+  date: string;
+}
 export interface DifmChannel {
   id: number;
   name: string;

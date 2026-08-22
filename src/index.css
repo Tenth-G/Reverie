@@ -5905,6 +5905,12 @@ input {
 .digital-album-empty, .digital-album-error { color: var(--text-faint); font-size: 12px; }
 .digital-album-error { max-width: 960px; margin: 0 auto 18px; color: #ff8585; }
 .digital-album-more { display: flex; justify-content: center; margin-top: 14px; }
+.yunbei-happy-sign { display: flex; align-items: center; gap: 10px; margin: 0 0 16px; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); }
+.yunbei-happy-sign-icon { display: grid; place-items: center; width: 32px; height: 32px; flex: 0 0 32px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+.yunbei-happy-sign > div:nth-child(2) { display: grid; min-width: 0; gap: 3px; flex: 1; }
+.yunbei-happy-sign strong { color: var(--text); font-size: 13px; line-height: 1.5; }
+.yunbei-happy-sign span, .yunbei-happy-sign small { color: var(--text-faint); font-size: 11px; }
+.yunbei-happy-sign img { width: 52px; height: 52px; flex: 0 0 52px; border-radius: 6px; object-fit: cover; }
 
 /* Musician center */
 .musician-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; gap: 9px; max-width: 1100px; margin: 10px auto 16px; }

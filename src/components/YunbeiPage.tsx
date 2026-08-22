@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Check, Coins, Gift, RefreshCw, Send, ShieldCheck } from "lucide-react";
-import { getSigninProgress } from "../api/yunbei.ts";
+import { Check, Coins, Gift, RefreshCw, Send, ShieldCheck, Sparkles } from "lucide-react";
+import { getHappySignInfo, getSigninProgress } from "../api/yunbei.ts";
 import { useYunbeiStore } from "../store/yunbeiStore.ts";
-import type { SigninProgress } from "../api/types.ts";
+import type { HappySignInfo, SigninProgress } from "../api/types.ts";
 import { LoadingState, Page, PageHeader } from "./Page";
 
 function formatTime(value: number) {
@@ -32,6 +32,8 @@ export default function YunbeiPage() {
   );
   const [progress, setProgress] = useState<SigninProgress | null>(null);
   const [progressLoading, setProgressLoading] = useState(false);
+  const [happySign, setHappySign] = useState<HappySignInfo | null>(null);
+  const [happySignLoading, setHappySignLoading] = useState(false);
 
   const loadProgress = async () => {
     setProgressLoading(true);
@@ -44,13 +46,26 @@ export default function YunbeiPage() {
     }
   };
 
+  const loadHappySign = async () => {
+    setHappySignLoading(true);
+    try {
+      const info = await getHappySignInfo();
+      setHappySign(info.content ? info : null);
+    } catch {
+      setHappySign(null);
+    } finally {
+      setHappySignLoading(false);
+    }
+  };
+
   useEffect(() => {
     void load();
     void loadProgress();
+    void loadHappySign();
   }, [load]);
 
   const refreshAll = async () => {
-    await Promise.all([load(), loadProgress()]);
+    await Promise.all([load(), loadProgress(), loadHappySign()]);
   };
 
   return (
@@ -131,6 +146,17 @@ export default function YunbeiPage() {
               </div>
             </div>
           ) : null}
+        </section>
+      )}
+      {(happySignLoading || happySign) && (
+        <section className="yunbei-happy-sign">
+          <div className="yunbei-happy-sign-icon"><Sparkles size={18} /></div>
+          <div>
+            <strong>{happySign?.content || "正在加载乐签…"}</strong>
+            {happySign?.author && <span>{happySign.author}</span>}
+            {happySign?.date && <small>{happySign.date}</small>}
+          </div>
+          {happySign?.imageUrl && <img src={happySign.imageUrl} alt="" loading="lazy" />}
         </section>
       )}
       <section className="yunbei-section">
