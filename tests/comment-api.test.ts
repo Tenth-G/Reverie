@@ -2,10 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   deleteResourceComment,
+  getCommentHugList,
+  getHotResourceComments,
   getCommentReplies,
   getResourceComments,
   likeResourceComment,
   normalizeResourceComment,
+  hugComment,
   sendResourceComment,
 } from "../src/api/comment.ts";
 
@@ -132,6 +135,34 @@ test("comment floor and mutations use the resource thread", async () => {
     assert.equal(new URL(urls[2]!).searchParams.get("t"), "2");
     assert.equal(new URL(urls[3]!).searchParams.get("t"), "1");
     assert.equal(new URL(urls[4]!).searchParams.get("t"), "0");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("legacy comment fallback and hug endpoints remain available", async () => {
+  const originalFetch = globalThis.fetch;
+  const paths: string[] = [];
+  try {
+    globalThis.fetch = async (input) => {
+      const url = new URL(String(input));
+      paths.push(url.pathname);
+      if (url.pathname === "/comment/new") return Response.json({ code: 500 });
+      if (url.pathname === "/comment/music") return Response.json({ comments: [{ commentId: 1, content: "旧接口", user: { userId: 2, nickname: "用户" } }] });
+      if (url.pathname === "/comment/hot") return Response.json({ hotComments: [{ commentId: 2, content: "热门", user: { userId: 3, nickname: "热评" } }] });
+      if (url.pathname === "/comment/hug/list") return Response.json({ data: [{ commentId: 4, content: "抱一抱", user: { userId: 4, nickname: "拥抱者" } }] });
+      return Response.json({ code: 200 });
+    };
+    const resource = { type: "song" as const, id: "7", title: "歌曲" };
+    const fallback = await getResourceComments(resource);
+    const hot = await getHotResourceComments(resource);
+    await hugComment(resource, fallback.comments[0]!);
+    const hugs = await getCommentHugList(resource, fallback.comments[0]!);
+    assert.equal(fallback.comments[0]?.content, "旧接口");
+    assert.equal(hot[0]?.content, "热门");
+    assert.equal(hugs[0]?.nickname, "拥抱者");
+    assert.deepEqual(paths.slice(0, 2), ["/comment/new", "/comment/music"]);
+    assert.ok(paths.includes("/hug/comment"));
   } finally {
     globalThis.fetch = originalFetch;
   }

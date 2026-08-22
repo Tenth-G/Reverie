@@ -7,12 +7,14 @@ import {
   MessageCircle,
   Send,
   Trash2,
+  HandHeart,
   X,
 } from "lucide-react";
 import type { CommentInfo, CommentSort } from "../api/types";
 import { useCommentStore } from "../store/commentStore";
 import { usePlayerStore } from "../store/playerStore";
 import { sizedImage } from "../utils/image";
+import { hugComment } from "../api/comment";
 import { LoadingState } from "./Page";
 
 const SORTS: Array<{ id: CommentSort; label: string }> = [
@@ -123,6 +125,17 @@ export default function CommentPanel({
             </blockquote>
           )}
           <div className="comment-item-actions">
+            <button
+              title="抱一抱"
+              onClick={() => {
+                if (!requireLogin() || !resource) return;
+                void hugComment(resource, comment)
+                  .then(() => usePlayerStore.getState().toast("已抱一抱评论", "success"))
+                  .catch(() => usePlayerStore.getState().toast("抱一抱失败", "error"));
+              }}
+            >
+              <HandHeart size={14} /> 抱一抱
+            </button>
             <button
               className={comment.liked ? "active" : ""}
               title={comment.liked ? "取消点赞" : "点赞"}
