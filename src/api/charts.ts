@@ -59,7 +59,8 @@ export async function getChartSongs(id: number): Promise<Song[]> {
 
 export async function getArtistToplist(type = 1): Promise<ArtistInfo[]> {
   const response = await request<Obj>("/toplist/artist", { type }, false);
-  const value = obj(response.data ?? response.result ?? response);
+  // 该接口实际形状为 {list: {artists: [...]}}，artists 嵌套在 list 下。
+  const value = obj(response.data ?? response.result ?? response.list ?? response);
   return firstArray(value, "artists", "list", "data", "records")
     .map((raw) => {
       const item = obj(raw);

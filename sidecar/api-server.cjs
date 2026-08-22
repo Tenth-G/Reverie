@@ -18,6 +18,19 @@ if (Number.isInteger(parentPid) && parentPid > 0) {
 
 serveNcmApi({ port, host, checkVersion: false })
   .then((app) => {
+    // 浏览器直连 myip.ipip.net 会被 CORS 拦截，由 sidecar 服务端代理首页位置查询。
+    if (app && typeof app.get === "function") {
+      app.get("/reverie/location", async (_req, res) => {
+        try {
+          const upstream = await fetch("https://myip.ipip.net", {
+            signal: AbortSignal.timeout(3500),
+          });
+          res.type("text/plain").send(await upstream.text());
+        } catch {
+          res.status(502).type("text/plain").send("");
+        }
+      });
+    }
     // listen 绑定失败（如 EADDRINUSE）在 promise resolve 之后异步抛出，
     // 不监听 error 事件会变成未捕获异常。
     if (app && app.server && typeof app.server.on === "function") {

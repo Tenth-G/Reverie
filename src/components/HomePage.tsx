@@ -51,23 +51,30 @@ function cacheLocation(value: string) {
 
 async function fetchLocation(): Promise<string> {
   // ipip.net returns Chinese location text: "来自于：中国 江苏 连云港  移动"
+  // The webview cannot fetch it directly (CORS), so the local sidecar proxies it.
   try {
-    const res = await fetch("https://myip.ipip.net", {
-      signal: AbortSignal.timeout(3500),
+    const res = await fetch("http://127.0.0.1:3939/reverie/location", {
+      signal: AbortSignal.timeout(4000),
     });
-    const text = await res.text();
-    const m = text.match(/来自于：(\S+)\s+(\S+)\s+(\S+)/);
-    if (m) {
-      const country = m[1];
-      const province = m[2];
-      const city = m[3];
-      if (country === "中国") {
-        if (MUNICIPALITIES.includes(province)) return `${province}市`;
-        return city.endsWith("市")
-          ? `${province}省${city}`
-          : `${province}省${city}市`;
+    if (res.ok) {
+      const text = await res.text();
+      const m = text.match(/来自于：(.+)/);
+      if (m) {
+        // 形如 "中国 江苏 连云港 移动"，城市可能缺省（"中国 江苏 移动"）。
+        const tokens = m[1].trim().split(/\s+/);
+        const carriers = ["移动", "联通", "电信", "铁通"];
+        const [country, province, maybeCity] = tokens;
+        const city = maybeCity && !carriers.includes(maybeCity) ? maybeCity : "";
+        if (country === "中国") {
+          if (MUNICIPALITIES.includes(province)) return `${province}市`;
+          return city
+            ? city.endsWith("市")
+              ? `${province}省${city}`
+              : `${province}省${city}市`
+            : `${province}省`;
+        }
+        return [country, province, city].filter(Boolean).join(" ");
       }
-      return [country, province, city].filter(Boolean).join(" ");
     }
   } catch {
     /* fall through */
