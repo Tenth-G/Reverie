@@ -250,6 +250,7 @@ function readRecentSongs(): Song[] {
 
 const SESSION_KEY = "reverie_session";
 const LEGACY_KEYS = ["ncm_theme"];
+const MAX_RESTORED_QUEUE_ENTRIES = 200;
 
 interface SessionData {
   queue: Song[];
@@ -270,7 +271,20 @@ function readSession(): SessionData {
     ) {
       return { queue: [], index: -1, currentSong: null };
     }
-    return { queue: d.queue, index: d.index, currentSong: d.currentSong };
+    if (d.queue.length <= MAX_RESTORED_QUEUE_ENTRIES) {
+      return { queue: d.queue, index: d.index, currentSong: d.currentSong };
+    }
+
+    // Older versions could persist an ever-growing FM queue. Compact that
+    // snapshot before it enters the store so a stale session cannot recreate a
+    // large object graph on startup.
+    const maxStart = d.queue.length - MAX_RESTORED_QUEUE_ENTRIES;
+    const start = Math.min(Math.max(0, d.index - 1), maxStart);
+    return {
+      queue: d.queue.slice(start, start + MAX_RESTORED_QUEUE_ENTRIES),
+      index: Math.max(0, d.index - start),
+      currentSong: d.currentSong,
+    };
   } catch {
     return { queue: [], index: -1, currentSong: null };
   }
@@ -323,6 +337,26 @@ let fmRetryStreak = 0;
 let searchToken = 0;
 const searchCache = new Map<string, { at: number; songs: Song[] }>();
 const SEARCH_CACHE_TTL = 5 * 60 * 1000;
+const MAX_SEARCH_CACHE_ENTRIES = 24;
+/** FM is an endless stream; retain only a small playback window in memory. */
+const MAX_FM_QUEUE_ENTRIES = 60;
+
+function trimFmQueue(
+  queue: Song[],
+  index: number,
+): { queue: Song[]; index: number } {
+  if (queue.length <= MAX_FM_QUEUE_ENTRIES) return { queue, index };
+
+  // Keep the current item plus a bounded amount of history/upcoming tracks.
+  // Old FM entries are not needed for navigation and otherwise accumulate for
+  // the lifetime of the app.
+  const maxStart = queue.length - MAX_FM_QUEUE_ENTRIES;
+  const start = Math.min(Math.max(0, index - 1), maxStart);
+  return {
+    queue: queue.slice(start, start + MAX_FM_QUEUE_ENTRIES),
+    index: Math.max(0, index - start),
+  };
+}
 
 function requestPersonalFmBatch(): Promise<Song[]> {
   if (!fmBatchPromise) {
@@ -1012,6 +1046,11 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       const results = await searchSongs(key, 40);
       if (token !== searchToken || !get().searchOpen) return;
       searchCache.set(cacheKey, { at: Date.now(), songs: results });
+      while (searchCache.size > MAX_SEARCH_CACHE_ENTRIES) {
+        const oldest = searchCache.keys().next().value;
+        if (oldest === undefined) break;
+        searchCache.delete(oldest);
+      }
       set({ searchResults: results, searching: false });
       if (!results.length) get().toast("没有找到相关歌曲", "info");
     } catch {
@@ -1106,6 +1145,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   // --- core play ---
   playSong: async (song, queue, source) => {
     const st = get();
+    const activeSource = source ?? (queue ? "list" : st.queueSource);
     let targetQueue = queue;
     let targetIndex = queue
       ? queue.findIndex((s) => s.id === song.id)
@@ -1115,6 +1155,11 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       targetIndex = 0;
     }
     if (targetIndex < 0) targetIndex = 0;
+    if (activeSource === "fm") {
+      const trimmed = trimFmQueue(targetQueue, targetIndex);
+      targetQueue = trimmed.queue;
+      targetIndex = trimmed.index;
+    }
 
     const token = ++playToken;
 
@@ -1128,7 +1173,6 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
       progress: 0,
       duration: song.duration || 0,
     });
-    const activeSource = source ?? (queue ? "list" : st.queueSource);
     if (
       activeSource === "fm" &&
       targetQueue &&
@@ -1141,8 +1185,12 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
           const known = new Set(state.queue.map((item) => item.id));
           const fresh = incoming.filter((item) => !known.has(item.id));
           if (!fresh.length) return;
-          const extendedQueue = [...state.queue, ...fresh];
-          set({ queue: extendedQueue, fmSongs: extendedQueue });
+          const extended = trimFmQueue([...state.queue, ...fresh], state.index);
+          set({
+            queue: extended.queue,
+            fmSongs: extended.queue,
+            index: extended.index,
+          });
         })
         .catch(() => {});
     }
@@ -1220,9 +1268,13 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
         return;
       }
       fmRetryStreak = 0;
-      const extendedQueue = [...latest.queue, ...songs];
-      set({ fmSongs: extendedQueue });
-      await get().playSong(songs[0], extendedQueue, "fm");
+      const extended = trimFmQueue([...latest.queue, ...songs], latest.index);
+      set({
+        queue: extended.queue,
+        fmSongs: extended.queue,
+        index: extended.index,
+      });
+      await get().playSong(songs[0], extended.queue, "fm");
     } catch {
       fmRetryStreak++;
       if (fmRetryStreak === 1)
@@ -1435,6 +1487,7 @@ export const usePlayerStore = create<PlayerState>()((set, get) => ({
   },
   logout: () => {
     clearCookie();
+    searchCache.clear();
     // stop playback and clear the current session
     const el = get().audioEl;
     if (el) {
