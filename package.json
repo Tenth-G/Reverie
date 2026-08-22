@@ -34,6 +34,7 @@
     "test": "npm run test:unit && npm run test:sidecar",
     "test:unit": "node --experimental-strip-types --test tests/*.test.ts",
     "test:api": "node scripts/test-api.cjs",
+    "test:api-coverage": "node scripts/test-api-coverage.mjs",
     "test:extended-api": "node scripts/test-extended-api.cjs",
     "test:sidecar": "node scripts/test-sidecar.mjs"
   },

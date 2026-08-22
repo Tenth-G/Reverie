@@ -22,6 +22,9 @@ test("routes follow the NeteaseCloudMusicApi underscore-to-slash convention", ()
   assert.equal(API_ENDPOINTS.song_url_v1, "/song/url/v1");
   assert.equal(API_ENDPOINTS.djRadio_top, "/djRadio/top");
   assert.equal(API_ENDPOINTS.user_playlist, "/user/playlist");
+  assert.equal(API_ENDPOINTS.daily_signin, "/daily_signin");
+  assert.equal(API_ENDPOINTS.fm_trash, "/fm_trash");
+  assert.equal(API_ENDPOINTS.personal_fm, "/personal_fm");
   assert.equal("login_cellphone" in API_ENDPOINTS, false);
   assert.equal("register_cellphone" in API_ENDPOINTS, false);
   assert.equal("user_replacephone" in API_ENDPOINTS, false);
