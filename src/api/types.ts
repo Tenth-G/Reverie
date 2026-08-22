@@ -124,6 +124,7 @@ export type View =
   | "search"
   | "profile"
   | "collection"
+  | "notifications"
   | "chart"
   | "fm"
   | "userlist"
@@ -179,6 +180,50 @@ export interface CollectionResultPage {
   radios: RadioInfo[];
   total: number;
   hasMore: boolean;
+}
+
+export type NotificationCategory =
+  "private" | "comments" | "mentions" | "notices";
+
+export interface MessageUser {
+  userId: number;
+  nickname: string;
+  avatarUrl: string;
+}
+
+export interface PrivateConversation {
+  user: MessageUser;
+  preview: string;
+  time: number;
+  unreadCount: number;
+}
+
+export type PrivateAttachmentType = "song" | "playlist" | "album";
+
+export interface PrivateAttachment {
+  type: PrivateAttachmentType;
+  id: number;
+  title: string;
+}
+
+export interface PrivateMessage {
+  id: string;
+  fromUserId: number;
+  toUserId: number;
+  content: string;
+  time: number;
+  resourceTitle?: string;
+  resourceType?: PrivateAttachmentType;
+  resourceId?: number;
+}
+
+export interface NotificationItem {
+  id: string;
+  user: MessageUser | null;
+  title: string;
+  content: string;
+  time: number;
+  resourceTitle?: string;
 }
 
 export interface SearchResponse {

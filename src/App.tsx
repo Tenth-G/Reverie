@@ -13,6 +13,7 @@ const ChartPage = lazy(() => import("./components/ChartPage"));
 const SearchPage = lazy(() => import("./components/SearchPage"));
 const ProfilePage = lazy(() => import("./components/ProfilePage"));
 const CollectionPage = lazy(() => import("./components/CollectionPage"));
+const NotificationPage = lazy(() => import("./components/NotificationPage"));
 const PlaylistPage = lazy(() => import("./components/PlaylistPage"));
 const UserListPage = lazy(() => import("./components/UserListPage"));
 const LikesPage = lazy(() => import("./components/LikesPage"));
@@ -262,6 +263,8 @@ export default function App() {
         return <ProfilePage />;
       case "collection":
         return <CollectionPage />;
+      case "notifications":
+        return <NotificationPage />;
       case "playlist":
         return <PlaylistPage />;
       case "userlist":
