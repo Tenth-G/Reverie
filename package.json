@@ -45,6 +45,7 @@
     "test:yunbei-api": "node scripts/test-yunbei-api.cjs",
     "test:listen-together-api": "node scripts/test-listen-together-api.cjs",
     "test:voice-api": "node scripts/test-voice-api.cjs",
+    "test:playlist-import-api": "node scripts/test-playlist-import-api.cjs",
     "test:sidecar": "node scripts/test-sidecar.mjs"
   },
   "dependencies": {

@@ -1,8 +1,13 @@
+import { useState } from "react";
+import { Download, Heart, Pencil, Plus, Trash2 } from "lucide-react";
+import type { PlaylistInfo } from "../api/types";
+import { useExploreStore } from "../store/exploreStore";
 import { usePlayerStore } from "../store/playerStore";
 import { Page, PageHeader } from "./Page";
 import PlaylistGrid from "./PlaylistGrid";
 import PlaylistEditorModal from "./PlaylistEditorModal";
 import ConfirmModal from "./ConfirmModal";
+import PlaylistImportModal from "./PlaylistImportModal";
 
 export default function UserListPage() {
   const userPlaylists = usePlayerStore((s) => s.userPlaylists);
@@ -16,6 +21,7 @@ export default function UserListPage() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<PlaylistInfo | null>(null);
   const [pendingDelete, setPendingDelete] = useState<PlaylistInfo | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   return (
     <Page>
@@ -23,15 +29,20 @@ export default function UserListPage() {
         title="我的歌单"
         subtitle="管理我创建和收藏的歌单"
         actions={
-          <button
-            className="btn primary"
-            onClick={() => {
-              setEditing(null);
-              setEditorOpen(true);
-            }}
-          >
-            <Plus size={15} /> 创建歌单
-          </button>
+          <div className="page-action-row">
+            <button className="btn" onClick={() => setImportOpen(true)}>
+              <Download size={15} /> 导入歌单
+            </button>
+            <button
+              className="btn primary"
+              onClick={() => {
+                setEditing(null);
+                setEditorOpen(true);
+              }}
+            >
+              <Plus size={15} /> 创建歌单
+            </button>
+          </div>
         }
       />
       <PlaylistGrid
@@ -88,10 +99,14 @@ export default function UserListPage() {
           pendingDelete ? deletePlaylist(pendingDelete) : false
         }
       />
+      <PlaylistImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onCompleted={() => {
+          setImportOpen(false);
+          void usePlayerStore.getState().loadUserPlaylists();
+        }}
+      />
     </Page>
   );
 }
-import { useState } from "react";
-import { Pencil, Plus, Trash2, Heart } from "lucide-react";
-import type { PlaylistInfo } from "../api/types";
-import { useExploreStore } from "../store/exploreStore";
