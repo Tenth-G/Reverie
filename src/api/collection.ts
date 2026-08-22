@@ -1,6 +1,6 @@
 import { request } from "./client.ts";
+import { getSubscribedAlbums } from "./extended.ts";
 import type {
-  AlbumInfo,
   ArtistInfo,
   CollectionCategory,
   CollectionResultPage,
@@ -13,27 +13,6 @@ type Obj = Record<string, unknown>;
 const obj = (value: unknown): Obj =>
   value && typeof value === "object" ? (value as Obj) : {};
 const arr = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
-
-function normalizeAlbum(raw: unknown): AlbumInfo {
-  const value = obj(raw);
-  const artist = obj(value.artist);
-  const artists = arr(value.artists).map(obj);
-  const list = artists.length ? artists : artist.id ? [artist] : [];
-  return {
-    id: Number(value.id ?? 0),
-    name: String(value.name ?? "未知专辑"),
-    picUrl: String(value.picUrl ?? value.blurPicUrl ?? ""),
-    artistNames: list
-      .map((item) => String(item.name ?? ""))
-      .filter(Boolean)
-      .join(" / "),
-    artistIds: list.map((item) => Number(item.id ?? 0)).filter((id) => id > 0),
-    description: String(value.description ?? value.briefDesc ?? ""),
-    publishTime: Number(value.publishTime ?? 0),
-    size: Number(value.size ?? value.trackCount ?? 0),
-    subscribed: true,
-  };
-}
 
 function normalizeArtist(raw: unknown): ArtistInfo {
   const value = obj(raw);
@@ -102,21 +81,14 @@ export async function getCollection(
   offset = 0,
 ): Promise<CollectionResultPage> {
   if (category === "albums") {
-    const response = await request<Obj>("/album/sublist", {
-      limit,
-      offset,
-    });
-    const albums = arr(response.data)
-      .map(normalizeAlbum)
-      .filter((item) => item.id > 0);
-    const total = Number(response.count ?? albums.length);
+    const result = await getSubscribedAlbums(limit, offset);
     return {
-      albums,
+      albums: result.albums,
       artists: [],
       media: [],
       radios: [],
-      total,
-      hasMore: Boolean(response.hasMore) || offset + albums.length < total,
+      total: result.total,
+      hasMore: result.hasMore,
     };
   }
   if (category === "artists") {

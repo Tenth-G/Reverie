@@ -182,9 +182,20 @@ export async function subscribeAlbum(
   await request("/album/sub", { id, t: subscribe ? 1 : 0 }, false);
 }
 
-export async function getSubscribedAlbums(limit = 100): Promise<AlbumInfo[]> {
-  const res = await request<Obj>("/album/sublist", { limit }, false);
-  return arr(res.data).map((item) => normalizeAlbum(item, true));
+export async function getSubscribedAlbums(
+  limit = 30,
+  offset = 0,
+): Promise<{ albums: AlbumInfo[]; total: number; hasMore: boolean }> {
+  const res = await request<Obj>("/album/sublist", { limit, offset }, false);
+  const albums = arr(res.data)
+    .map((item) => normalizeAlbum(item, true))
+    .filter((album) => album.id > 0);
+  const total = Number(res.count ?? res.total ?? albums.length);
+  return {
+    albums,
+    total,
+    hasMore: Boolean(res.hasMore) || offset + albums.length < total,
+  };
 }
 
 export async function getArtist(id: number): Promise<{
