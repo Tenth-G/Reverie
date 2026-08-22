@@ -8,6 +8,7 @@ import type { ReactElement } from "react";
 import {
   BarChart3,
   Bell,
+  CalendarDays,
   Clapperboard,
   Cloud,
   Disc3,
@@ -42,6 +43,7 @@ const NAV: NavItem[] = [
   { view: "style", label: "风格", icon: <Palette size={17} /> },
   { view: "topics", label: "话题", icon: <MessageSquareText size={17} /> },
   { view: "library", label: "音乐馆", icon: <LibraryBig size={17} /> },
+  { view: "calendar", label: "音乐日历", icon: <CalendarDays size={17} />, auth: true },
   { view: "videos", label: "视频", icon: <Clapperboard size={17} /> },
   {
     view: "userlist",
@@ -115,6 +117,8 @@ const preloadView = (view: View) => {
       return import("./TopicPage");
     case "library":
       return import("./LibraryPage");
+    case "calendar":
+      return import("./CalendarPage");
     case "likes":
       return import("./LikesPage");
     case "recent":
