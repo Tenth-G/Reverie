@@ -54,3 +54,4 @@ export * from "./artistFans";
 export * from "./artist";
 export * from "./privateDj";
 export * from "./playbackReport";
+export * from "./userDiscovery";
