@@ -1,10 +1,36 @@
 import { normalizeSong, request } from "./client.ts";
-import type { SearchMediaInfo, Song } from "./types.ts";
+import type { PlaylistInfo, SearchMediaInfo, Song } from "./types.ts";
 
 type Obj = Record<string, unknown>;
 const obj = (value: unknown): Obj =>
   value && typeof value === "object" ? (value as Obj) : {};
 const arr = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
+
+function normalizePlaylist(raw: unknown): PlaylistInfo | null {
+  const value = obj(raw);
+  const creator = obj(value.creator);
+  const id = Number(value.id ?? 0);
+  if (!id) return null;
+  return {
+    id,
+    name: String(value.name ?? "推荐歌单"),
+    coverImgUrl: String(value.picUrl ?? value.coverImgUrl ?? value.cover ?? ""),
+    trackCount: Number(value.trackCount ?? 0),
+    description: String(value.copywriter ?? value.description ?? ""),
+    creatorId: Number(creator.userId ?? creator.id ?? 0),
+    creatorName: String(creator.nickname ?? creator.name ?? ""),
+    subscribed: Boolean(value.subscribed ?? false),
+    privacy: Number(value.privacy ?? 0),
+  };
+}
+
+export async function getRecommendResources(): Promise<PlaylistInfo[]> {
+  const response = await request<Obj>("/recommend/resource", {}, true);
+  const data = obj(response.data ?? response.result);
+  return arr(response.recommend ?? data.recommend ?? response.data ?? response)
+    .map(normalizePlaylist)
+    .filter((item): item is PlaylistInfo => item !== null);
+}
 
 export async function getPersonalizedNewSongs(limit = 12): Promise<Song[]> {
   const response = await request<Obj>(

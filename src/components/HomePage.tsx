@@ -109,6 +109,7 @@ export default function HomePage() {
   const discoverySongs = useDiscoveryStore((s) => s.newSongs);
   const discoveryMvs = useDiscoveryStore((s) => s.mvs);
   const privateContent = useDiscoveryStore((s) => s.privateContent);
+  const recommendResources = useDiscoveryStore((s) => s.recommendResources);
   const discoveryLoading = useDiscoveryStore((s) => s.loading);
   const loadDiscovery = useDiscoveryStore((s) => s.load);
   const openMedia = useMediaStore((s) => s.open);
@@ -206,6 +207,18 @@ export default function HomePage() {
           loading={hotPlaylistsLoading}
         />
       </section>
+
+      {recommendResources.length > 0 && (
+        <section className="home-section">
+          <div className="section-title">
+            <h2>每日推荐歌单</h2>
+          </div>
+          <PlaylistGrid
+            playlists={recommendResources.slice(0, 12)}
+            onOpen={openPlaylist}
+          />
+        </section>
+      )}
 
       <section className="home-section">
         <div className="section-title">

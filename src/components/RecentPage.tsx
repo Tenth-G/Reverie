@@ -10,6 +10,7 @@ import SongList from "./SongList";
 
 const TABS = [
   ["songs", "歌曲"],
+  ["listen", "最近收听"],
   ["albums", "专辑"],
   ["playlists", "歌单"],
   ["radios", "播客"],
@@ -29,6 +30,7 @@ export default function RecentPage() {
   const recentSongs = usePlayerStore((s) => s.recentSongs);
   const category = useRecentStore((s) => s.category);
   const songs = useRecentStore((s) => s.songs);
+  const listenSongs = useRecentStore((s) => s.listenSongs);
   const albums = useRecentStore((s) => s.albums);
   const playlists = useRecentStore((s) => s.playlists);
   const radios = useRecentStore((s) => s.radios);
@@ -63,6 +65,8 @@ export default function RecentPage() {
         <LoadingState label="正在加载最近记录…" />
       ) : category === "songs" ? (
         <SongList songs={displaySongs} emptyText="暂无播放记录" />
+      ) : category === "listen" ? (
+        <SongList songs={listenSongs} emptyText="暂无最近收听记录" />
       ) : category === "albums" ? (
         <div className="recent-card-grid">
           {albums.map((item) => (

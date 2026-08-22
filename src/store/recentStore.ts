@@ -13,6 +13,7 @@ import { usePlayerStore } from "./playerStore.ts";
 interface RecentState {
   category: RecentCategory;
   songs: Song[];
+  listenSongs: Song[];
   albums: RecentAlbum[];
   playlists: RecentPlaylist[];
   radios: RecentRadio[];
@@ -26,6 +27,7 @@ interface RecentState {
 export const useRecentStore = create<RecentState>()((set, get) => ({
   category: "songs",
   songs: [],
+  listenSongs: [],
   albums: [],
   playlists: [],
   radios: [],

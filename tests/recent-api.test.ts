@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   getRecentAlbums,
   getRecentCategory,
+  getRecentListenSongs,
   getRecentSongs,
 } from "../src/api/recent.ts";
 
@@ -43,6 +44,22 @@ test("recent categories map endpoint-specific routes", async () => {
     const result = await getRecentCategory("albums");
     assert.equal(result.albums[0]?.name, "专辑");
     assert.match(urls[0]!, /record\/recent\/album/);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("recent listen list normalizes the dedicated listen endpoint", async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (input) => {
+      const url = new URL(String(input));
+      assert.equal(url.pathname, "/recent/listen/list");
+      assert.equal(url.searchParams.get("limit"), "20");
+      return Response.json({ data: [{ resource: { id: 9, name: "最近收听", ar: [{ name: "歌手" }], al: { name: "专辑" } } }] });
+    };
+    const songs = await getRecentListenSongs(20);
+    assert.equal(songs[0]?.name, "最近收听");
   } finally {
     globalThis.fetch = originalFetch;
   }
