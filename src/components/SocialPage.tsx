@@ -40,6 +40,7 @@ function UserList({ users }: { users: SocialUser[] }) {
 export default function SocialPage() {
   const tab = useExploreStore((s) => s.socialTab);
   const events = useExploreStore((s) => s.events);
+  const myEvents = useExploreStore((s) => s.myEvents);
   const follows = useExploreStore((s) => s.follows);
   const followers = useExploreStore((s) => s.followers);
   const loading = useExploreStore((s) => s.loading);
@@ -49,6 +50,7 @@ export default function SocialPage() {
   const openComments = useCommentStore((s) => s.openResourceComments);
   const toggleEventLike = useExploreStore((s) => s.toggleEventLike);
   const forwardEvent = useExploreStore((s) => s.forwardEvent);
+  const displayEvents = tab === "myEvents" ? myEvents : events;
 
   useEffect(() => {
     void loadSocial();
@@ -66,6 +68,12 @@ export default function SocialPage() {
           onClick={() => setTab("events")}
         >
           动态
+        </button>
+        <button
+          className={tab === "myEvents" ? "active" : ""}
+          onClick={() => setTab("myEvents")}
+        >
+          我的动态 {myEvents.length}
         </button>
         <button
           className={tab === "follows" ? "active" : ""}
@@ -86,7 +94,7 @@ export default function SocialPage() {
         <UserList users={followers} />
       ) : (
         <div className="event-list">
-          {events.map((event) => (
+          {displayEvents.map((event) => (
             <article className="event-row" key={event.id}>
               <img src={sizedImage(event.user.avatarUrl, 100)} alt="" />
               <div className="event-body">
@@ -149,7 +157,7 @@ export default function SocialPage() {
               </div>
             </article>
           ))}
-          {!events.length &&
+          {!displayEvents.length &&
             (loading ? (
               <LoadingState label="正在加载动态…" />
             ) : (

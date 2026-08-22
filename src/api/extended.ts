@@ -436,29 +436,39 @@ export async function getEvents(): Promise<SocialEvent[]> {
     { pagesize: 40, lasttime: -1 },
     true,
   );
-  return arr(res.event).map((raw) => {
-    const event = obj(raw);
-    const resource = parseEventResource(event.json);
-    return {
-      id: Number(event.id ?? event.eventId ?? 0),
-      type: Number(event.type ?? 0),
-      time: Number(event.eventTime ?? event.showTime ?? 0),
-      user: normalizeUser(event.user),
-      commentCount: Number(
-        event.info
-          ? (obj(event.info).commentCount ?? 0)
-          : (event.commentCount ?? 0),
-      ),
-      forwardCount: Number(event.forwardCount ?? 0),
-      likedCount: Number(
-        event.info
-          ? (obj(event.info).likedCount ?? 0)
-          : (event.likedCount ?? 0),
-      ),
-      liked: Boolean(event.info ? obj(event.info).liked : event.liked),
-      threadId:
-        String(event.threadId ?? obj(event.info).threadId ?? "") || undefined,
-      ...resource,
-    };
-  });
+  return arr(res.event ?? res.events ?? res.data).map(normalizeSocialEvent);
+}
+
+function normalizeSocialEvent(raw: unknown): SocialEvent {
+  const event = obj(raw);
+  const info = obj(event.info);
+  const resource = parseEventResource(event.json);
+  return {
+    id: Number(event.id ?? event.eventId ?? 0),
+    type: Number(event.type ?? 0),
+    time: Number(event.eventTime ?? event.showTime ?? event.time ?? 0),
+    user: normalizeUser(event.user ?? event.profile),
+    commentCount: Number(info.commentCount ?? event.commentCount ?? 0),
+    forwardCount: Number(event.forwardCount ?? 0),
+    likedCount: Number(info.likedCount ?? event.likedCount ?? 0),
+    liked: Boolean(info.liked ?? event.liked),
+    threadId:
+      String(event.threadId ?? info.threadId ?? "") || undefined,
+    ...resource,
+  };
+}
+
+/** Load one user's public activity feed. */
+export async function getUserEvents(
+  uid: number,
+  lasttime = -1,
+  limit = 30,
+): Promise<SocialEvent[]> {
+  if (!uid) return [];
+  const res = await request<Obj>(
+    "/user/event",
+    { uid, lasttime, limit },
+    true,
+  );
+  return arr(res.events ?? res.event ?? res.data).map(normalizeSocialEvent);
 }
