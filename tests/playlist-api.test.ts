@@ -4,6 +4,7 @@ import {
   addPlaylistTracks,
   deletePlaylistTracks,
   getPlaylistDynamicStats,
+  getPlaylistSubscribers,
   manipulatePlaylistTracks,
   updatePlaylistOrder,
 } from "../src/api/playlist.ts";
@@ -64,6 +65,25 @@ test("playlist dynamic stats normalize count fields", async () => {
       shareCount: 2,
       followed: true,
     });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("playlist subscribers normalize user records and pagination", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    assert.equal(url.pathname, "/playlist/subscribers");
+    assert.equal(url.searchParams.get("id"), "10");
+    assert.equal(url.searchParams.get("limit"), "5");
+    assert.equal(url.searchParams.get("offset"), "5");
+    return Response.json({ subscribers: [{ userId: 3, nickname: "收藏者", avatarUrl: "avatar" }] });
+  };
+  try {
+    const users = await getPlaylistSubscribers(10, 5, 5);
+    assert.equal(users[0]?.userId, 3);
+    assert.equal(users[0]?.nickname, "收藏者");
   } finally {
     globalThis.fetch = originalFetch;
   }

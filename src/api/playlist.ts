@@ -1,9 +1,10 @@
 import { request } from "./client.ts";
-import type { PlaylistDynamicStats } from "./types.ts";
+import type { PlaylistDynamicStats, SocialUser } from "./types.ts";
 
 type Obj = Record<string, unknown>;
 const obj = (value: unknown): Obj =>
   value && typeof value === "object" ? (value as Obj) : {};
+const arr = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
 
 export async function addPlaylistTracks(
   playlistId: number,
@@ -76,4 +77,28 @@ export async function getPlaylistDynamicStats(
     shareCount: Number(value.shareCount ?? 0),
     followed: Boolean(value.followed ?? value.subscribed ?? value.isSub),
   };
+}
+
+export async function getPlaylistSubscribers(
+  playlistId: number,
+  limit = 20,
+  offset = 0,
+): Promise<SocialUser[]> {
+  if (!playlistId) return [];
+  const response = await request<Obj>("/playlist/subscribers", { id: playlistId, limit, offset }, false);
+  const value = obj(response.data ?? response.result ?? response);
+  return arr(value.subscribers ?? value.users ?? value.list ?? response.data ?? response)
+    .map((raw) => {
+      const item = obj(raw);
+      return {
+        userId: Number(item.userId ?? item.id ?? 0),
+        nickname: String(item.nickname ?? item.name ?? "网易云用户"),
+        avatarUrl: String(item.avatarUrl ?? item.avatar ?? ""),
+        signature: String(item.signature ?? ""),
+        followed: Boolean(item.followed ?? item.mutual ?? false),
+        follows: Number(item.follows ?? 0),
+        followeds: Number(item.followeds ?? 0),
+      } satisfies SocialUser;
+    })
+    .filter((item) => item.userId > 0);
 }
