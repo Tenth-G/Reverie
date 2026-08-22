@@ -58,7 +58,7 @@ export async function getDigitalAlbumSalesBoard(
   albumType: 0 | 1 = 0,
 ): Promise<DigitalAlbumRank[]> {
   const response = await request<Obj>(
-    "/album_songsaleboard",
+    "/album/songsaleboard",
     { type: period, year: period === "year" ? year : undefined, albumType },
     false,
   );
