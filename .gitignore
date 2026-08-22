@@ -12,3 +12,4 @@ output/
 src-tauri/binaries/*
 !src-tauri/binaries/.gitkeep
 src-tauri/target/
+.mimosa/
