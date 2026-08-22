@@ -1,4 +1,7 @@
+import { useEffect, useState } from "react";
 import { Heart } from "lucide-react";
+import { getSimilarArtists } from "../api/related";
+import type { ArtistInfo } from "../api/types";
 import { useExploreStore } from "../store/exploreStore";
 import { useMediaStore } from "../store/mediaStore.ts";
 import { sizedImage } from "../utils/image";
@@ -15,6 +18,26 @@ export default function ArtistPage() {
   const toggleSubscription = useExploreStore((s) => s.toggleArtistSubscription);
   const openAlbum = useExploreStore((s) => s.openAlbum);
   const openMedia = useMediaStore((s) => s.open);
+  const openArtist = useExploreStore((s) => s.openArtist);
+  const [similarArtists, setSimilarArtists] = useState<ArtistInfo[]>([]);
+
+  useEffect(() => {
+    let alive = true;
+    if (!artist?.id) {
+      setSimilarArtists([]);
+      return;
+    }
+    void getSimilarArtists(artist.id)
+      .then((items) => {
+        if (alive) setSimilarArtists(items.slice(0, 12));
+      })
+      .catch(() => {
+        if (alive) setSimilarArtists([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [artist?.id]);
 
   return (
     <Page>
@@ -104,6 +127,29 @@ export default function ArtistPage() {
                     </div>
                     <strong>{video.name}</strong>
                     <span>{video.creatorName || "视频"}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+          {similarArtists.length > 0 && (
+            <>
+              <div className="list-header">
+                <h3>相似歌手</h3>
+                <span className="count">{similarArtists.length} 位</span>
+              </div>
+              <div className="media-grid compact">
+                {similarArtists.map((item) => (
+                  <button
+                    className="media-card"
+                    key={item.id}
+                    onClick={() => void openArtist(item.id)}
+                  >
+                    <div className="card-cover">
+                      <img src={sizedImage(item.picUrl, 320)} alt="" loading="lazy" />
+                    </div>
+                    <strong>{item.name}</strong>
+                    <span>{item.musicSize ? `${item.musicSize} 首歌曲` : "歌手"}</span>
                   </button>
                 ))}
               </div>
