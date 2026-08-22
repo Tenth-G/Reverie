@@ -7,12 +7,14 @@ import {
   getVideoGroups,
   getVideoTimeline,
   getVideosByGroup,
+  getVideoCategories,
   getPlaylistRecentVideos,
   getLikedVideos,
   type MvArea,
   type MvOrder,
   type MvType,
   type VideoGroup,
+  type VideoCategory,
 } from "../api/videos.ts";
 import type { SearchMediaInfo } from "../api/types.ts";
 import { usePlayerStore } from "./playerStore.ts";
@@ -22,6 +24,7 @@ export type VideoMode = "recommend" | "all" | "group" | "mv-top" | "mv-first" | 
 interface VideoState {
   mode: VideoMode;
   groups: VideoGroup[];
+  categories: VideoCategory[];
   selectedGroup: number;
   videos: SearchMediaInfo[];
   loading: boolean;
@@ -44,6 +47,7 @@ async function loadMv(mode: VideoMode, area: MvArea, type: MvType, order: MvOrde
 export const useVideoStore = create<VideoState>()((set) => ({
   mode: "recommend",
   groups: [],
+  categories: [],
   selectedGroup: 0,
   videos: [],
   loading: false,
@@ -52,9 +56,21 @@ export const useVideoStore = create<VideoState>()((set) => ({
   mvOrder: "上升最快",
   load: async () => {
     set({ loading: true });
-    const [groups, videos] = await Promise.allSettled([getVideoGroups(), getVideoTimeline("recommend")]);
+    const [groups, categories, videos] = await Promise.allSettled([
+      getVideoGroups(),
+      getVideoCategories(),
+      getVideoTimeline("recommend"),
+    ]);
+    const groupRows = groups.status === "fulfilled" ? groups.value : [];
+    const categoryRows = categories.status === "fulfilled" ? categories.value : [];
+    const seen = new Set<number>();
     set({
-      groups: groups.status === "fulfilled" ? groups.value : [],
+      groups: [...groupRows, ...categoryRows].filter((item) => {
+        if (seen.has(item.id)) return false;
+        seen.add(item.id);
+        return true;
+      }),
+      categories: categoryRows,
       videos: videos.status === "fulfilled" ? videos.value : [],
       loading: false,
     });

@@ -7,6 +7,7 @@ import {
   getMvToplist,
   getPlaylistRecentVideos,
   getLikedVideos,
+  getVideoCategories,
   getVideoGroups,
   getVideoTimeline,
   getVideosByGroup,
@@ -84,6 +85,23 @@ test("playlist video history APIs normalize video records", async () => {
     };
     assert.equal((await getPlaylistRecentVideos())[0]?.id, "v2");
     assert.equal((await getLikedVideos())[0]?.name, "历史视频");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("video category API forwards paging and normalizes categories", async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (input) => {
+      const url = new URL(String(input));
+      assert.equal(url.pathname, "/video/category/list");
+      assert.equal(url.searchParams.get("offset"), "10");
+      assert.equal(url.searchParams.get("limit"), "2");
+      return Response.json({ data: { data: [{ id: 4, name: "音乐现场" }, { categoryId: 5, categoryName: "舞蹈" }] } });
+    };
+    const categories = await getVideoCategories(10, 2);
+    assert.deepEqual(categories.map((item) => item.name), ["音乐现场", "舞蹈"]);
   } finally {
     globalThis.fetch = originalFetch;
   }
