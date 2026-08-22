@@ -5,6 +5,7 @@ import {
   deleteSongComment,
   followUser,
   likeEvent,
+  forwardEvent,
   getAlbum,
   getArtist,
   getEvents,
@@ -75,6 +76,7 @@ interface ExploreState {
   loadSocial: () => Promise<void>;
   toggleFollow: (user: SocialUser) => Promise<void>;
   toggleEventLike: (event: SocialEvent) => Promise<void>;
+  forwardEvent: (event: SocialEvent, forwards: string) => Promise<boolean>;
   createPlaylist: (name: string, privacy: number) => Promise<boolean>;
   updatePlaylist: (
     playlist: PlaylistInfo,
@@ -428,6 +430,18 @@ export const useExploreStore = create<ExploreState>()((set, get) => ({
       }));
     } catch {
       toastError("动态点赞操作失败");
+    }
+  },
+  forwardEvent: async (event, forwards) => {
+    const uid = usePlayerStore.getState().profile?.userId ?? 0;
+    if (!uid || !event.id) return false;
+    try {
+      await forwardEvent(event.id, uid, forwards);
+      toastError("动态已转发");
+      return true;
+    } catch {
+      toastError("动态转发失败");
+      return false;
     }
   },
   createPlaylist: async (name, privacy) => {

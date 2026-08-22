@@ -381,6 +381,19 @@ export async function likeEvent(
   );
 }
 
+export async function forwardEvent(
+  eventId: number,
+  userId: number,
+  forwards = "",
+): Promise<void> {
+  await request(
+    "/event/forward",
+    { evId: eventId, uid: userId, forwards },
+    false,
+    { method: "POST" },
+  );
+}
+
 export async function getEvents(): Promise<SocialEvent[]> {
   const res = await request<Obj>(
     "/event",

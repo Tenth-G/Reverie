@@ -1,5 +1,11 @@
 import { useEffect } from "react";
-import { Heart, MessageCircle, UserMinus, UserPlus } from "lucide-react";
+import {
+  Heart,
+  MessageCircle,
+  Repeat2,
+  UserMinus,
+  UserPlus,
+} from "lucide-react";
 import type { SocialUser } from "../api/types";
 import { useCommentStore } from "../store/commentStore";
 import { useExploreStore } from "../store/exploreStore";
@@ -42,6 +48,7 @@ export default function SocialPage() {
   const openAlbum = useExploreStore((s) => s.openAlbum);
   const openComments = useCommentStore((s) => s.openResourceComments);
   const toggleEventLike = useExploreStore((s) => s.toggleEventLike);
+  const forwardEvent = useExploreStore((s) => s.forwardEvent);
 
   useEffect(() => {
     void loadSocial();
@@ -129,7 +136,15 @@ export default function SocialPage() {
                   >
                     <MessageCircle size={13} /> 评论 {event.commentCount}
                   </button>
-                  <span>转发 {event.forwardCount}</span>
+                  <button
+                    className="event-forward-button"
+                    onClick={() => {
+                      const forwards = window.prompt("转发说明（可选）", "");
+                      if (forwards !== null) void forwardEvent(event, forwards);
+                    }}
+                  >
+                    <Repeat2 size={13} /> 转发 {event.forwardCount}
+                  </button>
                 </div>
               </div>
             </article>
