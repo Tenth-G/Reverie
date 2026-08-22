@@ -8,11 +8,37 @@ import {
 } from "lucide-react";
 import { useListenReportsStore } from "../store/listenReportsStore.ts";
 import { LoadingState, Page, PageHeader } from "./Page";
+
+type Period = "week" | "month" | "year";
+
+const PERIODS: Array<{ id: Period; label: string }> = [
+  { id: "week", label: "本周" },
+  { id: "month", label: "本月" },
+  { id: "year", label: "本年" },
+];
+
+function annualEntries(value: unknown): Array<[string, string]> {
+  const source =
+    value && typeof value === "object" && !Array.isArray(value)
+      ? (value as Record<string, unknown>)
+      : {};
+  const nested =
+    source.data && typeof source.data === "object" && !Array.isArray(source.data)
+      ? (source.data as Record<string, unknown>)
+      : source;
+  return Object.entries(nested)
+    .filter(([, item]) => ["string", "number", "boolean"].includes(typeof item))
+    .slice(0, 8)
+    .map(([key, item]) => [key, String(item)]);
+}
+
 export default function ListenReportsPage() {
+  const period = useListenReportsStore((s) => s.period);
   const total = useListenReportsStore((s) => s.total);
   const report = useListenReportsStore((s) => s.report);
   const today = useListenReportsStore((s) => s.today);
   const timeMachine = useListenReportsStore((s) => s.timeMachine);
+  const annual = useListenReportsStore((s) => s.annual);
   const loading = useListenReportsStore((s) => s.loading);
   const error = useListenReportsStore((s) => s.error);
   const load = useListenReportsStore((s) => s.load);
@@ -28,13 +54,30 @@ export default function ListenReportsPage() {
         title="听歌报告"
         subtitle="今日、近期与年度听歌数据"
         actions={
-          <button
-            className="icon-button"
-            title="刷新"
-            onClick={() => void load()}
-          >
-            <RefreshCw size={17} />
-          </button>
+          <div className="page-action-row">
+            <div className="segmented-control" role="tablist" aria-label="报告周期">
+              {PERIODS.map((item) => (
+                <button
+                  key={item.id}
+                  role="tab"
+                  aria-selected={period === item.id}
+                  className={period === item.id ? "active" : ""}
+                  onClick={() => void load(item.id)}
+                  disabled={loading}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            <button
+              className="icon-button"
+              title="刷新"
+              onClick={() => void load()}
+              disabled={loading}
+            >
+              <RefreshCw size={17} className={loading ? "spin" : ""} />
+            </button>
+          </div>
         }
       />
       {loading && !total ? (
@@ -77,6 +120,25 @@ export default function ListenReportsPage() {
               </div>
             ))}
           </section>
+          {period === "year" && annual && (
+            <section className="listen-report-section">
+              <div className="listen-report-head">
+                <h2>年度报告详情</h2>
+                <span>{new Date().getFullYear()} 年</span>
+              </div>
+              {annualEntries(annual).length ? (
+                annualEntries(annual).map(([key, value]) => (
+                  <div className="listen-report-row" key={key}>
+                    <strong>{key}</strong>
+                    <span />
+                    <b>{value}</b>
+                  </div>
+                ))
+              ) : (
+                <div className="empty">年度报告暂无可展示的摘要</div>
+              )}
+            </section>
+          )}
           <section className="listen-report-section">
             <div className="listen-report-head">
               <h2>

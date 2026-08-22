@@ -2,6 +2,7 @@ import { create } from "zustand";
 import {
   getAnnualSummary,
   getListenRealtime,
+  getListenReport,
   getListenTodaySongs,
   getListenTotal,
   getListenYearReport,
@@ -14,6 +15,7 @@ import type {
   VipTimeMachineEntry,
 } from "../api/types.ts";
 interface State {
+  period: "week" | "month" | "year";
   total: ListenTotal | null;
   report: ListenReport | null;
   today: ListenTodaySong[];
@@ -21,9 +23,10 @@ interface State {
   timeMachine: VipTimeMachineEntry[];
   loading: boolean;
   error: string;
-  load: () => Promise<void>;
+  load: (period?: State["period"]) => Promise<void>;
 }
 export const useListenReportsStore = create<State>((set) => ({
+  period: "week",
   total: null,
   report: null,
   today: [],
@@ -31,18 +34,21 @@ export const useListenReportsStore = create<State>((set) => ({
   timeMachine: [],
   loading: false,
   error: "",
-  load: async () => {
-    set({ loading: true, error: "" });
+  load: async (nextPeriod) => {
+    const period = nextPeriod ?? useListenReportsStore.getState().period;
+    set({ period, loading: true, error: "" });
     const [total, report, today, annual, timeMachine] =
       await Promise.allSettled([
         getListenTotal(),
-        getListenRealtime(),
+        period === "week" ? getListenRealtime("week") : getListenReport(period),
         getListenTodaySongs(),
-        getAnnualSummary(new Date().getFullYear()),
+        period === "year"
+          ? getListenYearReport()
+          : getAnnualSummary(new Date().getFullYear()),
         getListenTimeMachine(),
       ]);
-    void getListenYearReport().catch(() => undefined);
     set({
+      period,
       total: total.status === "fulfilled" ? total.value : null,
       report: report.status === "fulfilled" ? report.value : null,
       today: today.status === "fulfilled" ? today.value : [],
