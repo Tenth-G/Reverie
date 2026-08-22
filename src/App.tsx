@@ -8,6 +8,7 @@ import LoginGate from "./components/LoginGate";
 import HomePage from "./components/HomePage";
 import Toasts from "./components/Toasts";
 import SettingsModal from "./components/SettingsModal";
+import MediaDetailDialog from "./components/MediaDetailDialog";
 
 const ChartPage = lazy(() => import("./components/ChartPage"));
 const SearchPage = lazy(() => import("./components/SearchPage"));
@@ -332,6 +333,7 @@ export default function App() {
         </Suspense>
       )}
       <Toasts />
+      <MediaDetailDialog />
 
       <audio
         ref={audioRef}

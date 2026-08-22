@@ -186,6 +186,15 @@ export interface SearchMediaInfo {
   kind: "mv" | "video";
 }
 
+export interface MediaDetail extends SearchMediaInfo {
+  description: string;
+  publishTime: number;
+  tags: string[];
+  artistIds: number[];
+  commentCount: number;
+  subCount: number;
+}
+
 export interface SearchResultPage {
   songs: Song[];
   albums: AlbumInfo[];
