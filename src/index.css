@@ -6100,3 +6100,15 @@ input {
 .podcast-program-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .podcast-program-error { padding: 22px 20px; color: #ff8585; font-size: 12px; }
 @media (max-width: 560px) { .podcast-program-content { display: grid; } .podcast-program-content > img { width: 96px; height: 96px; } }
+
+/* Artist fans */
+.artist-fans-section { margin: 16px 0; padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-2); }
+.artist-fans-section .list-header h3 { display: inline-flex; align-items: center; gap: 6px; }
+.artist-fans-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 7px; }
+.artist-fan { display: flex; align-items: center; gap: 9px; min-width: 0; padding: 8px; border-radius: 6px; background: var(--bg-3); }
+.artist-fan > img, .artist-fan-placeholder { width: 38px; height: 38px; flex: 0 0 38px; border-radius: 50%; object-fit: cover; }
+.artist-fan-placeholder { display: grid; place-items: center; background: var(--bg-4); color: var(--text-faint); }
+.artist-fan > div { display: grid; min-width: 0; gap: 3px; }
+.artist-fan strong, .artist-fan small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.artist-fan strong { font-size: 12px; }
+.artist-fan small { color: var(--text-dim); font-size: 10px; }

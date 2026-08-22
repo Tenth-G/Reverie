@@ -550,6 +550,13 @@ export interface PodcastProgramDetail {
   commentCount: number;
   song: Song | null;
 }
+export interface ArtistFan {
+  userId: number;
+  nickname: string;
+  avatarUrl: string;
+  followed: boolean;
+  signature: string;
+}
 
 export interface SearchResultPage {
   songs: Song[];

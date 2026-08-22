@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Heart } from "lucide-react";
+import { Heart, Users } from "lucide-react";
+import { getArtistFans } from "../api/artistFans.ts";
 import { getSimilarArtists } from "../api/related";
-import type { ArtistInfo } from "../api/types";
+import type { ArtistFan, ArtistInfo } from "../api/types";
 import { useExploreStore } from "../store/exploreStore";
 import { useMediaStore } from "../store/mediaStore.ts";
 import { sizedImage } from "../utils/image";
@@ -20,6 +21,9 @@ export default function ArtistPage() {
   const openMedia = useMediaStore((s) => s.open);
   const openArtist = useExploreStore((s) => s.openArtist);
   const [similarArtists, setSimilarArtists] = useState<ArtistInfo[]>([]);
+  const [fans, setFans] = useState<ArtistFan[]>([]);
+  const [fansTotal, setFansTotal] = useState(0);
+  const [fansLoading, setFansLoading] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -33,6 +37,33 @@ export default function ArtistPage() {
       })
       .catch(() => {
         if (alive) setSimilarArtists([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [artist?.id]);
+
+  useEffect(() => {
+    let alive = true;
+    if (!artist?.id) {
+      setFans([]);
+      setFansTotal(0);
+      return;
+    }
+    setFansLoading(true);
+    void getArtistFans(artist.id)
+      .then((result) => {
+        if (!alive) return;
+        setFans(result.fans);
+        setFansTotal(result.total);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setFans([]);
+        setFansTotal(0);
+      })
+      .finally(() => {
+        if (alive) setFansLoading(false);
       });
     return () => {
       alive = false;
@@ -81,6 +112,34 @@ export default function ArtistPage() {
               </div>
             </div>
           </section>
+          {(fansLoading || fans.length > 0 || fansTotal > 0) && (
+            <section className="artist-fans-section">
+              <div className="list-header">
+                <h3><Users size={16} /> 粉丝</h3>
+                <span className="count">{fansTotal || fans.length} 位</span>
+              </div>
+              {fansLoading ? (
+                <LoadingState label="正在加载歌手粉丝…" />
+              ) : (
+                <div className="artist-fans-grid">
+                  {fans.map((fan) => (
+                    <div className="artist-fan" key={fan.userId}>
+                      {fan.avatarUrl ? (
+                        <img src={sizedImage(fan.avatarUrl, 120)} alt="" loading="lazy" />
+                      ) : (
+                        <span className="artist-fan-placeholder"><Users size={16} /></span>
+                      )}
+                      <div>
+                        <strong>{fan.nickname}</strong>
+                        {fan.signature && <small>{fan.signature}</small>}
+                      </div>
+                    </div>
+                  ))}
+                  {!fans.length && <div className="empty">暂无粉丝列表</div>}
+                </div>
+              )}
+            </section>
+          )}
           <SongList songs={songs} title="热门歌曲" />
           <div className="list-header">
             <h3>专辑</h3>
