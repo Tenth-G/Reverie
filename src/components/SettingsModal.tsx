@@ -10,6 +10,7 @@ import { usePlayerStore } from "../store/playerStore";
 import type { ThemePreference } from "../store/playerStore";
 import { getAccountOverview } from "../api/account";
 import type { AccountOverview } from "../api/account";
+import { getNeteaseApiVersion, getNeteaseSettings } from "../api/appMeta";
 
 const APP_THEMES: Array<{ id: ThemePreference; name: string }> = [
   { id: "system", name: "跟随系统" },
@@ -74,6 +75,8 @@ export default function SettingsModal() {
   const updatePhase = usePlayerStore((s) => s.updatePhase);
   const [accountOverview, setAccountOverview] = useState<AccountOverview | null>(null);
   const [accountLoading, setAccountLoading] = useState(false);
+  const [neteaseVersion, setNeteaseVersion] = useState("");
+  const [neteaseSettings, setNeteaseSettings] = useState<Record<string, unknown> | null>(null);
 
   useEffect(() => {
     if (!showSettings || category !== "account" || !loggedIn) return;
@@ -93,6 +96,21 @@ export default function SettingsModal() {
       alive = false;
     };
   }, [category, loggedIn, showSettings]);
+
+  useEffect(() => {
+    if (!showSettings || category !== "about") return;
+    let alive = true;
+    void Promise.allSettled([getNeteaseApiVersion(), getNeteaseSettings()]).then(
+      ([version, settings]) => {
+        if (!alive) return;
+        if (version.status === "fulfilled") setNeteaseVersion(version.value);
+        if (settings.status === "fulfilled") setNeteaseSettings(settings.value);
+      },
+    );
+    return () => {
+      alive = false;
+    };
+  }, [category, showSettings]);
 
   if (!showSettings) return null;
 
@@ -214,6 +232,14 @@ export default function SettingsModal() {
                   >
                     {checking ? "检查中…" : "检查更新"}
                   </button>
+                </SettingRow>
+                <SettingRow
+                  title={neteaseVersion ? `接口服务 v${neteaseVersion}` : "接口服务版本"}
+                  hint={neteaseSettings ? "已读取网易云设置" : "正在读取网易云设置"}
+                >
+                  <span className="setting-status">
+                    {neteaseVersion || (neteaseSettings ? "可用" : "读取中…")}
+                  </span>
                 </SettingRow>
                 <SettingRow title="隐私说明">
                   <button
