@@ -49,6 +49,7 @@
     "test:lyrics-mark-api": "node scripts/test-lyrics-mark-api.cjs",
     "test:digital-album-api": "node scripts/test-digital-album-api.cjs",
     "test:musician-api": "node scripts/test-musician-api.cjs",
+    "test:sati-api": "node scripts/test-sati-api.cjs",
     "test:sidecar": "node scripts/test-sidecar.mjs"
   },
   "dependencies": {

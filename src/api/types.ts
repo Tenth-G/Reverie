@@ -173,7 +173,8 @@ export type View =
   | "voiceWorkbench"
   | "lyricsMark"
   | "digitalAlbum"
-  | "musician";
+  | "musician"
+  | "sati";
 
 export type SearchCategory =
   | "songs"
@@ -411,6 +412,9 @@ export interface MusicianTask {
   userMissionId?: number;
   period?: string;
 }
+
+export interface SatiTag { id: string; name: string; }
+export interface SatiResource { id: number; name: string; description: string; coverUrl: string; duration: number; subscribed: boolean; playCount: number; audioUrl: string; }
 
 export interface SearchResultPage {
   songs: Song[];
