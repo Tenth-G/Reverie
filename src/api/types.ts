@@ -339,6 +339,7 @@ export interface ListenTogetherRoom {
 
 export interface ListenTogetherState {
   room: ListenTogetherRoom | null;
+  inRoom?: boolean;
   currentSongId: number;
   playing: boolean;
   progress: number;

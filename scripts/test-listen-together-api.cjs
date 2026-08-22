@@ -13,6 +13,10 @@ const routes = [
     "/listentogether/play/command?roomId=1&commandType=play&progress=0&playStatus=false&clientSeq=1",
     "POST",
   ],
+  [
+    "/listentogether/sync/list/command?roomId=1&commandType=REPLACE&userId=1&version=1&playMode=ORDER_LOOP&displayList=1&randomList=1",
+    "POST",
+  ],
 ];
 
 const base = process.env.NCM_API_BASE || "http://127.0.0.1:3939";

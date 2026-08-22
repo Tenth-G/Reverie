@@ -9,6 +9,7 @@ import {
   getListenTogetherStatus,
   sendListenTogetherCommand,
   sendListenTogetherHeartbeat,
+  syncListenTogetherPlaylist,
 } from "../src/api/listenTogether.ts";
 
 test("listen together wrappers normalize room, status and playlist responses", async () => {
@@ -108,6 +109,66 @@ test("listen together mutations use expected routes, methods and parameters", as
     );
     assert.equal(new URL(calls[4]!.url).searchParams.get("clientSeq"), "3");
     assert.equal(calls[4]!.method, "POST");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("listen together playlist sync posts a replace command with both lists", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input, init) => {
+    assert.equal(
+      new URL(String(input)).pathname,
+      "/listentogether/sync/list/command",
+    );
+    assert.equal(init?.method, "POST");
+    const url = new URL(String(input));
+    assert.equal(url.searchParams.get("commandType"), "REPLACE");
+    assert.equal(url.searchParams.get("displayList"), "12,13");
+    assert.equal(url.searchParams.get("randomList"), "12,13");
+    return Response.json({ code: 200 });
+  };
+  try {
+    await syncListenTogetherPlaylist({
+      roomId: "r-2",
+      userId: 7,
+      version: 4,
+      songIds: [12, 13],
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("listen together normalizes the service display list and remote playback state", async () => {
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (input) => {
+    const url = String(input);
+    if (url.includes("/listentogether/status")) {
+      return Response.json({
+        data: {
+          inRoom: true,
+          roomInfo: { roomId: "r-3", roomUsers: [{ userId: 1 }] },
+          playingInfo: { trackId: 12, status: "PLAY", progress: 3210 },
+          playlist: { displayList: { result: ["12"] } },
+        },
+      });
+    }
+    if (url.includes("/song/detail")) {
+      return Response.json({
+        songs: [{ id: 12, name: "远端歌曲", ar: [{ name: "歌手" }] }],
+      });
+    }
+    return Response.json({ code: 200, data: {} });
+  };
+  try {
+    const status = await getListenTogetherStatus();
+    assert.equal(status.inRoom, true);
+    assert.equal(status.room?.roomId, "r-3");
+    assert.equal(status.currentSongId, 12);
+    assert.equal(status.playing, true);
+    assert.equal(status.progress, 3210);
+    assert.equal(status.playlist[0]?.name, "远端歌曲");
   } finally {
     globalThis.fetch = originalFetch;
   }
