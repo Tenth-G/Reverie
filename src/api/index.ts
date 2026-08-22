@@ -24,3 +24,4 @@ export * from "./vip";
 export * from "./commentHistory";
 export * from "./playlistMetadata";
 export * from "./songMetadata";
+export * from "./downloadHistory";

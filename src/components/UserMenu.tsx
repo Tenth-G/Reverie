@@ -146,6 +146,18 @@ export default function UserMenu() {
           >
             会员中心
           </button>
+          <button
+            className="user-dropdown-item"
+            onClick={() => {
+              setOpen(false);
+              usePlayerStore.setState({
+                activeView: "downloadHistory",
+                prevView: "home",
+              });
+            }}
+          >
+            下载与购买
+          </button>
           <button className="user-dropdown-item" onClick={switchAccount}>
             切换账号
           </button>

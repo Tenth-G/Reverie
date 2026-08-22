@@ -167,7 +167,9 @@ export type View =
   | "yunbei"
   | "recommendHistory"
   | "vip"
-  | "commentHistory";
+  | "commentHistory"
+  | "downloadHistory";
+  
   
   
   
@@ -309,6 +311,8 @@ export interface SongMetadata {
   creators: SongCreatorInfo[];
   chorus: SongChorusInfo[];
 }
+
+export type DownloadHistoryCategory = "all" | "month" | "purchased";
 
 export interface SearchResultPage {
   songs: Song[];
