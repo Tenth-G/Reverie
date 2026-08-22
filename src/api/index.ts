@@ -8,3 +8,4 @@
 export * from "./client";
 export * from "./extended";
 export * from "./generated";
+export * from "./search";

@@ -10,6 +10,7 @@ import Toasts from "./components/Toasts";
 import SettingsModal from "./components/SettingsModal";
 
 const ChartPage = lazy(() => import("./components/ChartPage"));
+const SearchPage = lazy(() => import("./components/SearchPage"));
 const PlaylistPage = lazy(() => import("./components/PlaylistPage"));
 const UserListPage = lazy(() => import("./components/UserListPage"));
 const LikesPage = lazy(() => import("./components/LikesPage"));
@@ -253,6 +254,8 @@ export default function App() {
         return <HomePage />;
       case "chart":
         return <ChartPage />;
+      case "search":
+        return <SearchPage />;
       case "playlist":
         return <PlaylistPage />;
       case "userlist":
