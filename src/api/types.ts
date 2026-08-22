@@ -162,7 +162,9 @@ export type View =
   | "radioDetail"
   | "social"
   | "cloud"
-  | "yunbei";
+  | "yunbei"
+  | "recommendHistory";
+  
 
 export type SearchCategory =
   | "songs"
@@ -245,6 +247,12 @@ export interface RecentRadio {
   coverUrl: string;
   creatorName: string;
   time: number;
+}
+
+export interface RecommendHistoryDay {
+  date: string;
+  displayDate: string;
+  songCount: number;
 }
 
 export interface SearchResultPage {

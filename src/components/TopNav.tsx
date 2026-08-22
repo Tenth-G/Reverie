@@ -71,6 +71,8 @@ const preloadView = (view: View) => {
       return import("./CloudPage");
     case "yunbei":
       return import("./YunbeiPage");
+    case "recommendHistory":
+      return import("./RecommendHistoryPage");
     case "likes":
       return import("./LikesPage");
     case "recent":

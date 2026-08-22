@@ -18,3 +18,4 @@ export * from "./playlist";
 export * from "./media";
 export * from "./yunbei";
 export * from "./recent";
+export * from "./recommendHistory";

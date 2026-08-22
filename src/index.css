@@ -5207,6 +5207,12 @@ input {
 .song-card { position: relative; }
 .song-card-dislike { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: rgba(0,0,0,.52); color: #fff; opacity: 0; cursor: pointer; transition: opacity .15s ease; }
 .song-card:hover .song-card-dislike, .song-card-dislike:focus-visible { opacity: 1; }
+.recommend-history-days { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 16px; padding-bottom: 3px; }
+.recommend-history-days button { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 6px; min-width: 112px; padding: 9px 10px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-1); color: var(--text-2); text-align: left; cursor: pointer; }
+.recommend-history-days button.active { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--bg-1)); color: var(--text); }
+.recommend-history-days button svg { grid-row: span 2; color: var(--accent); }
+.recommend-history-days span { font-size: 11px; white-space: nowrap; }
+.recommend-history-days small { color: var(--text-faint); font-size: 10px; }
 @media (max-width: 700px) { .recent-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 700px) {
   .comment-page-heading {
