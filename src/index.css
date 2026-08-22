@@ -5117,6 +5117,7 @@ input {
 .cloud-detail-list > div { display: flex; justify-content: space-between; gap: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border-light); font-size: 12px; }
 .cloud-detail-list span { color: var(--text-faint); }
 .cloud-detail-list strong { min-width: 0; overflow: hidden; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.chart-tabs { overflow-x: auto; }
 .cloud-load-more { display: block; margin: 14px auto 0; }
 .cloud-empty { display: grid; justify-items: center; gap: 8px; padding: 72px 20px; color: var(--text-faint); }
 .cloud-empty strong { color: var(--text-2); }
