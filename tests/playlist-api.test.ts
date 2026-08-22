@@ -10,7 +10,7 @@ import {
   manipulatePlaylistTracks,
   updatePlaylistOrder,
 } from "../src/api/playlist.ts";
-import { publishPlaylist } from "../src/api/extended.ts";
+import { publishPlaylist, updatePlaylistBatch } from "../src/api/extended.ts";
 
 test("playlist track mutations forward ids and operation parameters", async () => {
   const originalFetch = globalThis.fetch;
@@ -140,6 +140,24 @@ test("markPlaylistPlayed posts the playlist check-in id", async () => {
       return Response.json({ code: 200 });
     };
     await markPlaylistPlayed(10);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("updatePlaylistBatch sends the complete playlist edit payload", async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (input) => {
+      const url = new URL(String(input));
+      assert.equal(url.pathname, "/playlist/update");
+      assert.equal(url.searchParams.get("id"), "10");
+      assert.equal(url.searchParams.get("name"), "新名称");
+      assert.equal(url.searchParams.get("desc"), "新描述");
+      assert.equal(url.searchParams.get("tags"), "华语,流行");
+      return Response.json({ code: 200 });
+    };
+    await updatePlaylistBatch(10, "新名称", "新描述", "华语,流行");
   } finally {
     globalThis.fetch = originalFetch;
   }

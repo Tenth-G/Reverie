@@ -313,6 +313,21 @@ export async function updatePlaylist(
   ]);
 }
 
+/** Update playlist name, description and tags through the upstream batch route. */
+export async function updatePlaylistBatch(
+  id: number,
+  name: string,
+  description: string,
+  tags = "",
+): Promise<void> {
+  if (!id) return;
+  await request(
+    "/playlist/update",
+    { id, name, desc: description, tags },
+    false,
+  );
+}
+
 /** Publish a private playlist. The upstream endpoint only supports privacy=0. */
 export async function publishPlaylist(id: number): Promise<void> {
   if (!id) return;
