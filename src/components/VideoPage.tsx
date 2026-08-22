@@ -40,6 +40,8 @@ export default function VideoPage() {
         <button className={mode === "mv-first" ? "active" : ""} onClick={() => void setMode("mv-first")}><Film size={14} /> 最新MV</button>
         <button className={mode === "mv-exclusive" ? "active" : ""} onClick={() => void setMode("mv-exclusive")}><Film size={14} /> 网易出品</button>
         <button className={mode === "mv-all" ? "active" : ""} onClick={() => void setMode("mv-all")}><Film size={14} /> 全部MV</button>
+        <button className={mode === "playlist-recent" ? "active" : ""} onClick={() => void setMode("playlist-recent")}>歌单视频</button>
+        <button className={mode === "my-like" ? "active" : ""} onClick={() => void setMode("my-like")}>我赞过</button>
         {groups.map((group) => (
           <button key={group.id} className={mode === "group" && selectedGroup === group.id ? "active" : ""} onClick={() => void selectGroup(group.id)}>{group.name}</button>
         ))}

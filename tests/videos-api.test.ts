@@ -5,6 +5,8 @@ import {
   getMvAll,
   getMvFirst,
   getMvToplist,
+  getPlaylistRecentVideos,
+  getLikedVideos,
   getVideoGroups,
   getVideoTimeline,
   getVideosByGroup,
@@ -63,6 +65,25 @@ test("MV list APIs forward filters and normalize MV records", async () => {
       assert.equal(list[0]?.id, "21");
       assert.equal(list[0]?.creatorName, "歌手");
     }
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("playlist video history APIs normalize video records", async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (input) => {
+      const url = new URL(String(input));
+      const row = { vid: "v2", title: "历史视频", coverUrl: "cover", creator: { nickname: "作者" } };
+      if (url.pathname === "/playlist/video/recent") return Response.json({ data: { datas: [row] } });
+      assert.equal(url.pathname, "/playlist/mylike");
+      assert.equal(url.searchParams.get("time"), "-1");
+      assert.equal(url.searchParams.get("limit"), "12");
+      return Response.json({ data: [row] });
+    };
+    assert.equal((await getPlaylistRecentVideos())[0]?.id, "v2");
+    assert.equal((await getLikedVideos())[0]?.name, "历史视频");
   } finally {
     globalThis.fetch = originalFetch;
   }

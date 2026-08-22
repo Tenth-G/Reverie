@@ -97,3 +97,16 @@ export async function getVideosByGroup(groupId: number, offset = 0): Promise<Sea
   if (!groupId) return [];
   return extractVideos(await request<Obj>("/video/group", { id: groupId, offset }, false));
 }
+
+export async function getPlaylistRecentVideos(): Promise<SearchMediaInfo[]> {
+  return extractVideos(await request<Obj>("/playlist/video/recent", {}, true));
+}
+
+export async function getLikedVideos(
+  time = "-1",
+  limit = 12,
+): Promise<SearchMediaInfo[]> {
+  return extractVideos(
+    await request<Obj>("/playlist/mylike", { time, limit }, true),
+  );
+}

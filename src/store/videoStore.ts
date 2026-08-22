@@ -7,6 +7,8 @@ import {
   getVideoGroups,
   getVideoTimeline,
   getVideosByGroup,
+  getPlaylistRecentVideos,
+  getLikedVideos,
   type MvArea,
   type MvOrder,
   type MvType,
@@ -15,7 +17,7 @@ import {
 import type { SearchMediaInfo } from "../api/types.ts";
 import { usePlayerStore } from "./playerStore.ts";
 
-export type VideoMode = "recommend" | "all" | "group" | "mv-top" | "mv-first" | "mv-all" | "mv-exclusive";
+export type VideoMode = "recommend" | "all" | "group" | "mv-top" | "mv-first" | "mv-all" | "mv-exclusive" | "playlist-recent" | "my-like";
 
 interface VideoState {
   mode: VideoMode;
@@ -63,7 +65,11 @@ export const useVideoStore = create<VideoState>()((set) => ({
       const state = useVideoStore.getState();
       const videos = mode === "recommend" || mode === "all"
         ? await getVideoTimeline(mode)
-        : await loadMv(mode, state.mvArea, state.mvType, state.mvOrder);
+        : mode === "playlist-recent"
+          ? await getPlaylistRecentVideos()
+          : mode === "my-like"
+            ? await getLikedVideos()
+            : await loadMv(mode, state.mvArea, state.mvType, state.mvOrder);
       set({ videos, loading: false });
     } catch {
       set({ videos: [], loading: false });
