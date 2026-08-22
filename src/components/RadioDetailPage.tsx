@@ -1,7 +1,7 @@
-import { CalendarDays, Clock3, Heart, MessageCircle, Radio, X } from "lucide-react";
-import { useState } from "react";
-import { getPodcastProgramDetail } from "../api/broadcast.ts";
-import type { PodcastProgramDetail, Song } from "../api/types.ts";
+import { CalendarDays, Clock3, Heart, MessageCircle, Radio, Users, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { getPodcastProgramDetail, getPodcastSubscribers } from "../api/broadcast.ts";
+import type { PodcastProgramDetail, PodcastSubscriber, Song } from "../api/types.ts";
 import { useExploreStore } from "../store/exploreStore";
 import { useCommentStore } from "../store/commentStore";
 import { usePlayerStore } from "../store/playerStore";
@@ -19,6 +19,36 @@ export default function RadioDetailPage() {
   const [program, setProgram] = useState<PodcastProgramDetail | null>(null);
   const [programLoading, setProgramLoading] = useState(false);
   const [programError, setProgramError] = useState("");
+  const [subscribers, setSubscribers] = useState<PodcastSubscriber[]>([]);
+  const [subscriberTotal, setSubscriberTotal] = useState(0);
+  const [subscribersLoading, setSubscribersLoading] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    if (!radio?.id) {
+      setSubscribers([]);
+      setSubscriberTotal(0);
+      return;
+    }
+    setSubscribersLoading(true);
+    void getPodcastSubscribers(radio.id, -1, 20)
+      .then((result) => {
+        if (!alive) return;
+        setSubscribers(result.subscribers);
+        setSubscriberTotal(result.total);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setSubscribers([]);
+        setSubscriberTotal(0);
+      })
+      .finally(() => {
+        if (alive) setSubscribersLoading(false);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [radio?.id]);
 
   const openProgram = async (song: Song) => {
     if (!song.programId) return;
@@ -102,6 +132,29 @@ export default function RadioDetailPage() {
                 </button>
               </div>
             </div>
+          </section>
+          <section className="podcast-subscribers-section">
+            <div className="list-header">
+              <h3><Users size={16} /> 订阅者</h3>
+              <span className="count">{subscriberTotal || subscribers.length} 人</span>
+            </div>
+            {subscribersLoading ? (
+              <LoadingState label="正在加载订阅者…" />
+            ) : subscribers.length ? (
+              <div className="podcast-subscribers-grid">
+                {subscribers.map((subscriber) => (
+                  <div className="podcast-subscriber" key={subscriber.userId}>
+                    {subscriber.avatarUrl ? <img src={sizedImage(subscriber.avatarUrl, 100)} alt="" loading="lazy" /> : <span><Users size={15} /></span>}
+                    <div>
+                      <strong>{subscriber.nickname}</strong>
+                      {subscriber.signature && <small>{subscriber.signature}</small>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty">暂无订阅者数据</div>
+            )}
           </section>
           <SongList
             songs={programs}

@@ -16,6 +16,7 @@ import {
   getPodcastHotRadios,
   getPodcastProgramHoursToplist,
   getPodcastProgramToplist,
+  getPodcastPaidRadios,
   getPodcastTodayPreferred,
   getPodcastToplist,
   toggleDifmChannel,
@@ -206,6 +207,8 @@ export default function RadioPage() {
   const [programRanking, setProgramRanking] = useState<"top" | "hours" | "today" | "">("");
   const [programRanks, setProgramRanks] = useState<PodcastProgramRank[]>([]);
   const [programRankingLoading, setProgramRankingLoading] = useState(false);
+  const [paidRadios, setPaidRadios] = useState<RadioInfo[]>([]);
+  const [paidLoading, setPaidLoading] = useState(false);
 
   useEffect(() => {
     void loadRadios();
@@ -268,6 +271,17 @@ export default function RadioPage() {
     }
   };
 
+  const loadPaidRadios = async () => {
+    setPaidLoading(true);
+    try {
+      setPaidRadios(await getPodcastPaidRadios(30, 0));
+    } catch {
+      setPaidRadios([]);
+    } finally {
+      setPaidLoading(false);
+    }
+  };
+
   return (
     <Page>
       <PageHeader
@@ -314,6 +328,13 @@ export default function RadioPage() {
           <ProgramRankGrid items={programRanks} loading={programRankingLoading} />
         </section>
       )}
+      <section className="content-section podcast-paid-section">
+        <div className="list-header">
+          <h3>付费精品电台</h3>
+          <button className="btn" onClick={() => void loadPaidRadios()} disabled={paidLoading}><RefreshCw size={15} className={paidLoading ? "spin" : ""} /> {paidRadios.length ? "刷新" : "查看"}</button>
+        </div>
+        {paidLoading ? <LoadingState label="正在加载付费电台…" /> : paidRadios.length ? <RadioGrid radios={paidRadios} /> : <div className="empty">点击查看付费精品电台</div>}
+      </section>
       {subscribed.length > 0 && (
         <section className="content-section">
           <div className="list-header">
