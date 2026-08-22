@@ -4,6 +4,7 @@ import {
   getVipGrowthDetails,
   getVipTasks,
   getVipTimeMachine,
+  claimVipTaskRewards,
 } from "../api/vip.ts";
 import type { VipGrowthEntry, VipGrowthInfo, VipTask } from "../api/types.ts";
 import { usePlayerStore } from "./playerStore.ts";
@@ -14,15 +15,18 @@ interface VipState {
   details: VipGrowthEntry[];
   timeMachine: Record<string, unknown> | null;
   loading: boolean;
+  claiming: boolean;
   load: () => Promise<void>;
+  claimRewards: (taskIds: string[]) => Promise<void>;
 }
 
-export const useVipStore = create<VipState>()((set) => ({
+export const useVipStore = create<VipState>()((set, get) => ({
   growth: null,
   tasks: [],
   details: [],
   timeMachine: null,
   loading: false,
+  claiming: false,
   load: async () => {
     set({ loading: true });
     const [growth, tasks, details, timeMachine] = await Promise.allSettled([
@@ -43,5 +47,24 @@ export const useVipStore = create<VipState>()((set) => ({
       usePlayerStore
         .getState()
         .toast("加载会员中心失败，请确认登录状态", "error");
+  },
+  claimRewards: async (taskIds) => {
+    const ids = taskIds.filter(Boolean);
+    if (!ids.length || get().claiming) return;
+    set({ claiming: true });
+    try {
+      await claimVipTaskRewards(ids);
+      usePlayerStore.getState().toast("成长值奖励已领取", "success");
+      await get().load();
+    } catch (error) {
+      usePlayerStore
+        .getState()
+        .toast(
+          error instanceof Error ? error.message : "领取成长值失败",
+          "error",
+        );
+    } finally {
+      set({ claiming: false });
+    }
   },
 }));

@@ -284,6 +284,7 @@ export interface VipTask {
   description: string;
   reward: number;
   completed: boolean;
+  claimed?: boolean;
 }
 
 export interface VipGrowthInfo {
