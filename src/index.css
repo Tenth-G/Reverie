@@ -5561,6 +5561,12 @@ input {
 .video-mv-filters label { display: grid; gap: 5px; color: var(--text-faint); font-size: 11px; }
 .video-mv-filters select { min-height: 32px; min-width: 112px; padding: 0 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-3); color: var(--text); font-size: 12px; }
 .album-quality-summary { display: inline-flex; align-items: center; gap: 4px; color: var(--accent-2); }
+.playlist-subscribers { margin: 0 0 16px; padding: 12px 14px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-2); }
+.playlist-subscriber-list { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 2px; }
+.playlist-subscriber { display: grid; justify-items: center; gap: 5px; width: 58px; flex: 0 0 58px; min-width: 0; }
+.playlist-subscriber img, .playlist-subscriber > span { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+.playlist-subscriber > span { display: grid; place-items: center; background: var(--bg-4); color: var(--text-faint); font-size: 14px; }
+.playlist-subscriber strong { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); font-size: 10px; text-align: center; }
 .profile-medal-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
 .profile-medal { display: grid; justify-items: center; gap: 5px; min-width: 0; padding: 10px 8px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--bg-1); text-align: center; }
 .profile-medal img, .profile-medal-placeholder { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
