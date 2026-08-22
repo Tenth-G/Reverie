@@ -4,6 +4,8 @@ import {
   getArtistDynamic,
   getArtistIntroduction,
   getArtistNewMvs,
+  getArtistMvs,
+  getArtistNewSongs,
   getArtistTopSongs,
 } from "../src/api/artist.ts";
 
@@ -36,6 +38,28 @@ test("artist content APIs normalize description, stats, songs and new MVs", asyn
     const mvs = await getArtistNewMvs();
     assert.equal(mvs[0]?.kind, "mv");
     assert.equal(mvs[0]?.id, "11");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("artist MV and new-song endpoints normalize artist content", async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/artist/mv") {
+        assert.equal(url.searchParams.get("id"), "7");
+        return Response.json({ data: [{ id: 12, name: "歌手 MV", cover: "cover", artistName: "歌手" }] });
+      }
+      assert.equal(url.pathname, "/artist/new/song");
+      assert.equal(url.searchParams.get("limit"), "5");
+      return Response.json({ data: [{ id: 13, name: "新作品", ar: [{ name: "歌手" }], al: { name: "专辑" } }] });
+    };
+    const mvs = await getArtistMvs(7);
+    const songs = await getArtistNewSongs(5);
+    assert.equal(mvs[0]?.id, "12");
+    assert.equal(songs[0]?.name, "新作品");
   } finally {
     globalThis.fetch = originalFetch;
   }
