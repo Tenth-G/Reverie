@@ -8,6 +8,7 @@ import type { ReactElement } from "react";
 import {
   BarChart3,
   Bell,
+  Clapperboard,
   Cloud,
   Disc3,
   Gift,
@@ -35,6 +36,7 @@ interface NavItem {
 const NAV: NavItem[] = [
   { view: "home", label: "首页", icon: <House size={17} /> },
   { view: "chart", label: "排行榜", icon: <BarChart3 size={17} /> },
+  { view: "videos", label: "视频", icon: <Clapperboard size={17} /> },
   {
     view: "userlist",
     label: "我的歌单",
@@ -59,6 +61,8 @@ const preloadView = (view: View) => {
   switch (view) {
     case "chart":
       return import("./ChartPage");
+    case "videos":
+      return import("./VideoPage");
     case "search":
       return import("./SearchPage");
     case "userlist":

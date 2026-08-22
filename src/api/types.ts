@@ -178,6 +178,7 @@ export type View =
   | "broadcast"
   | "ugc"
   | "listenReports"
+  | "videos"
   | "fans";
 
 export type SearchCategory =
