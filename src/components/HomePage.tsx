@@ -4,6 +4,10 @@ import { Page } from "./Page";
 import PlaylistGrid from "./PlaylistGrid";
 import SongList from "./SongList";
 import SongCards from "./SongCards";
+import { useDiscoveryStore } from "../store/discoveryStore.ts";
+import { useMediaStore } from "../store/mediaStore.ts";
+import { Clapperboard, Play } from "lucide-react";
+import { sizedImage } from "../utils/image";
 import { dislikeRecommendSong } from "../api/client";
 
 const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
@@ -97,7 +101,20 @@ export default function HomePage() {
       usePlayerStore.getState().toast("暂时无法调整推荐", "error"),
     );
   };
-  const openRecommendHistory = () => usePlayerStore.setState({ activeView: "recommendHistory", prevView: "home" });
+  const openRecommendHistory = () =>
+    usePlayerStore.setState({
+      activeView: "recommendHistory",
+      prevView: "home",
+    });
+  const discoverySongs = useDiscoveryStore((s) => s.newSongs);
+  const discoveryMvs = useDiscoveryStore((s) => s.mvs);
+  const privateContent = useDiscoveryStore((s) => s.privateContent);
+  const discoveryLoading = useDiscoveryStore((s) => s.loading);
+  const loadDiscovery = useDiscoveryStore((s) => s.load);
+  const openMedia = useMediaStore((s) => s.open);
+  useEffect(() => {
+    void loadDiscovery();
+  }, [loadDiscovery]);
 
   const [now, setNow] = useState(() => new Date());
   const [location, setLocation] = useState(readCachedLocation);
@@ -167,7 +184,10 @@ export default function HomePage() {
 
       <section className="home-section">
         <div className="section-title">
-          <h2>每日推荐</h2><button className="link-btn" onClick={openRecommendHistory}>历史 →</button>
+          <h2>每日推荐</h2>
+          <button className="link-btn" onClick={openRecommendHistory}>
+            历史 →
+          </button>
         </div>
         <SongCards
           songs={recommendSongs.slice(0, 12)}
@@ -185,6 +205,41 @@ export default function HomePage() {
           onOpen={openPlaylist}
           loading={hotPlaylistsLoading}
         />
+      </section>
+
+      <section className="home-section">
+        <div className="section-title">
+          <h2>更多发现</h2>
+        </div>
+        {discoveryLoading && !discoverySongs.length && !discoveryMvs.length ? (
+          <div className="loading-hint">正在加载发现内容…</div>
+        ) : (
+          <>
+            <SongCards
+              songs={discoverySongs.slice(0, 6)}
+              loading={discoveryLoading}
+            />
+            <div className="discovery-media-grid">
+              {[...discoveryMvs, ...privateContent].slice(0, 8).map((item) => (
+                <button
+                  key={`${item.kind}-${item.id}`}
+                  onClick={() => void openMedia(item)}
+                >
+                  <span className="discovery-media-cover">
+                    {item.coverUrl ? (
+                      <img src={sizedImage(item.coverUrl, 260)} alt="" />
+                    ) : (
+                      <Clapperboard size={22} />
+                    )}
+                    <Play size={14} fill="currentColor" />
+                  </span>
+                  <strong>{item.name}</strong>
+                  <small>{item.creatorName || "网易云推荐"}</small>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </section>
 
       <section className="home-section">
