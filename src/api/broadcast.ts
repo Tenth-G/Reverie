@@ -88,6 +88,61 @@ export async function getPodcastToplist(
     })
     .filter((item) => item.id > 0);
 }
+
+function normalizeRadioList(response: Obj): RadioInfo[] {
+  const value = obj(response.data ?? response.result ?? response);
+  return arr(value.list ?? value.djRadios ?? response.data ?? response)
+    .map((raw) => {
+      const item = obj(raw);
+      const dj = obj(item.dj);
+      return {
+        id: Number(item.id ?? item.rid ?? 0),
+        name: String(item.name ?? item.radioName ?? "播客电台"),
+        picUrl: String(item.picUrl ?? item.intervenePicUrl ?? item.coverUrl ?? ""),
+        description: String(item.desc ?? item.description ?? ""),
+        programCount: Number(item.programCount ?? 0),
+        subscriberCount: Number(item.subCount ?? item.subscriberCount ?? 0),
+        subscribed: Boolean(item.subscribed ?? false),
+        category: String(item.category ?? item.categoryName ?? ""),
+        djName: String(dj.nickname ?? item.djName ?? ""),
+      } satisfies RadioInfo;
+    })
+    .filter((item) => item.id > 0);
+}
+
+export async function getPodcastCategories(): Promise<BroadcastCategory[]> {
+  const response = await request<Obj>("/dj/catelist", {}, false);
+  const value = obj(response.data ?? response.result ?? response);
+  return arr(value.categories ?? value.list ?? response.categories ?? response.data)
+    .map((raw) => {
+      const item = obj(raw);
+      return { id: Number(item.id ?? item.categoryId ?? 0), name: String(item.name ?? item.categoryName ?? "") };
+    })
+    .filter((item) => item.id > 0 && item.name);
+}
+
+export async function getPodcastCategoryRecommendations(categoryId: number): Promise<RadioInfo[]> {
+  const response = await request<Obj>("/dj/recommend/type", { type: categoryId }, false);
+  return normalizeRadioList(response);
+}
+
+export async function getPodcastHotRadios(categoryId?: number, limit = 30, offset = 0): Promise<RadioInfo[]> {
+  const response = await request<Obj>("/dj/radio/hot", { cateId: categoryId, limit, offset }, false);
+  return normalizeRadioList(response);
+}
+
+export async function getPodcastBanners(): Promise<Array<{ imageUrl: string; title: string; url: string }>> {
+  const response = await request<Obj>("/dj/banner", {}, false);
+  const value = obj(response.data ?? response.result ?? response);
+  return arr(value.banners ?? value.list ?? response.data ?? response).map((raw) => {
+    const item = obj(raw);
+    return {
+      imageUrl: String(item.pic ?? item.picUrl ?? item.imageUrl ?? ""),
+      title: String(item.typeTitle ?? item.title ?? "播客"),
+      url: String(item.url ?? item.targetUrl ?? ""),
+    };
+  }).filter((item) => item.imageUrl);
+}
 export async function getBroadcastCurrentInfo(
   id: number,
 ): Promise<BroadcastChannel | null> {
