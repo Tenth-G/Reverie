@@ -1,0 +1,41 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {
+  addPlaylistTracks,
+  deletePlaylistTracks,
+  manipulatePlaylistTracks,
+  updatePlaylistOrder,
+} from "../src/api/playlist.ts";
+
+test("playlist track mutations forward ids and operation parameters", async () => {
+  const originalFetch = globalThis.fetch;
+  const calls: Array<{ url: string; method?: string }> = [];
+  globalThis.fetch = async (input, init) => {
+    calls.push({ url: String(input), method: init?.method });
+    return Response.json({ code: 200 });
+  };
+  try {
+    await addPlaylistTracks(10, [1, 2]);
+    await deletePlaylistTracks(10, [3]);
+    await manipulatePlaylistTracks(10, "del", [4, 5]);
+    await updatePlaylistOrder(10, [5, 4, 3]);
+    const first = new URL(calls[0]!.url);
+    assert.equal(first.pathname, "/playlist/track/add");
+    assert.equal(first.searchParams.get("pid"), "10");
+    assert.equal(first.searchParams.get("ids"), "1,2");
+    assert.equal(calls[0]!.method, "POST");
+    const second = new URL(calls[1]!.url);
+    assert.equal(second.pathname, "/playlist/track/delete");
+    assert.equal(second.searchParams.get("id"), "10");
+    assert.equal(second.searchParams.get("ids"), "3");
+    const third = new URL(calls[2]!.url);
+    assert.equal(third.pathname, "/playlist/tracks");
+    assert.equal(third.searchParams.get("op"), "del");
+    assert.equal(third.searchParams.get("tracks"), "4,5");
+    const fourth = new URL(calls[3]!.url);
+    assert.equal(fourth.pathname, "/playlist/order/update");
+    assert.equal(fourth.searchParams.get("ids"), "5,4,3");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
