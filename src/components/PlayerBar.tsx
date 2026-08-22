@@ -7,6 +7,7 @@ import { sizedImage } from "../utils/image";
 import { captureCoverOrigin } from "../utils/sharedCoverTransition";
 import type { PlayMode } from "../api/types";
 import SongSheetDialog from "./SongSheetDialog";
+import ShareResourceDialog from "./ShareResourceDialog";
 import {
   Disc3,
   Heart,
@@ -20,6 +21,7 @@ import {
   Sparkles,
   Music2,
   BadgeCheck,
+  Share2,
   SkipBack,
   SkipForward,
   Volume2,
@@ -42,6 +44,7 @@ export default function PlayerBar() {
   const [failedCover, setFailedCover] = useState("");
   const [smartLoading, setSmartLoading] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const [dynamicCover, setDynamicCover] = useState("");
   const [remoteLiked, setRemoteLiked] = useState<boolean | null>(null);
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
@@ -263,6 +266,16 @@ export default function PlayerBar() {
             <Music2 size={17} />
           </button>
           <button
+            className={`icon-btn ${shareOpen ? "active" : ""}`}
+            onClick={() => {
+              if (!currentSong) { toast("请先播放一首歌曲", "info"); return; }
+              setShareOpen(true);
+            }}
+            title="分享歌曲"
+          >
+            <Share2 size={17} />
+          </button>
+          <button
             className={`icon-btn ${liked ? "active" : ""}`}
             onClick={() => {
               setRemoteLiked(!liked);
@@ -328,6 +341,11 @@ export default function PlayerBar() {
         song={currentSong}
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
+      />
+      <ShareResourceDialog
+        song={currentSong}
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
       />
     </footer>
   );
