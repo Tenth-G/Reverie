@@ -1,0 +1,424 @@
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import {
+  AtSign,
+  Bell,
+  CircleUserRound,
+  Mail,
+  MessageCircle,
+  Send,
+} from "lucide-react";
+import type {
+  MessageUser,
+  NotificationCategory,
+  PrivateAttachment,
+  PrivateAttachmentType,
+} from "../api/types";
+import { useNotificationStore } from "../store/notificationStore";
+import { usePlayerStore } from "../store/playerStore";
+import { sizedImage } from "../utils/image";
+import BackButton from "./BackButton";
+import { LoadingState, Page, PageHeader } from "./Page";
+
+const TABS: Array<{
+  id: NotificationCategory;
+  label: string;
+  icon: ReactNode;
+}> = [
+  { id: "private", label: "私信", icon: <Mail size={15} /> },
+  { id: "comments", label: "评论", icon: <MessageCircle size={15} /> },
+  { id: "mentions", label: "@我", icon: <AtSign size={15} /> },
+  { id: "notices", label: "通知", icon: <Bell size={15} /> },
+];
+
+function formatTime(timestamp: number) {
+  if (!timestamp) return "";
+  return new Date(timestamp).toLocaleString("zh-CN", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function Avatar({
+  user,
+  large = false,
+}: {
+  user: MessageUser;
+  large?: boolean;
+}) {
+  const [failed, setFailed] = useState(false);
+  return user.avatarUrl && !failed ? (
+    <img
+      className={large ? "message-avatar large" : "message-avatar"}
+      src={sizedImage(user.avatarUrl, large ? 120 : 80)}
+      alt=""
+      onError={() => setFailed(true)}
+    />
+  ) : (
+    <span
+      className={
+        large
+          ? "message-avatar large placeholder"
+          : "message-avatar placeholder"
+      }
+    >
+      <CircleUserRound size={large ? 24 : 18} />
+    </span>
+  );
+}
+
+function PrivateMessages() {
+  const conversations = useNotificationStore((state) => state.conversations);
+  const active = useNotificationStore((state) => state.activeConversation);
+  const messages = useNotificationStore((state) => state.messages);
+  const loading = useNotificationStore((state) => state.loading);
+  const loadingMore = useNotificationStore((state) => state.loadingMore);
+  const conversationHasMore = useNotificationStore(
+    (state) => state.conversationHasMore,
+  );
+  const historyLoading = useNotificationStore((state) => state.historyLoading);
+  const historyLoadingMore = useNotificationStore(
+    (state) => state.historyLoadingMore,
+  );
+  const historyHasMore = useNotificationStore((state) => state.historyHasMore);
+  const openConversation = useNotificationStore(
+    (state) => state.openConversation,
+  );
+  const loadMore = useNotificationStore((state) => state.loadMore);
+  const loadMoreHistory = useNotificationStore(
+    (state) => state.loadMoreHistory,
+  );
+  const sendMessage = useNotificationStore((state) => state.sendMessage);
+  const currentUid = usePlayerStore((state) => state.profile?.userId ?? 0);
+  const currentSong = usePlayerStore((state) => state.currentSong);
+  const playlistId = usePlayerStore((state) => state.playlistId);
+  const playlistName = usePlayerStore((state) => state.playlistName);
+  const [draft, setDraft] = useState("");
+  const [attachmentType, setAttachmentType] = useState<
+    "" | PrivateAttachmentType
+  >("");
+  const [sending, setSending] = useState(false);
+  const messageListRef = useRef<HTMLDivElement>(null);
+  const historyScrollRef = useRef<{ height: number; top: number } | null>(null);
+
+  useEffect(() => {
+    setDraft("");
+    setAttachmentType("");
+  }, [active?.user.userId]);
+
+  useLayoutEffect(() => {
+    const node = messageListRef.current;
+    if (!node) return;
+    const saved = historyScrollRef.current;
+    if (saved) {
+      node.scrollTop = saved.top + node.scrollHeight - saved.height;
+      historyScrollRef.current = null;
+      return;
+    }
+    node.scrollTop = node.scrollHeight;
+  }, [messages.length, active?.user.userId]);
+
+  const loadEarlier = async () => {
+    const node = messageListRef.current;
+    const state = useNotificationStore.getState();
+    const conversationId = state.activeConversation?.user.userId;
+    const messageCount = state.messages.length;
+    if (node) {
+      historyScrollRef.current = {
+        height: node.scrollHeight,
+        top: node.scrollTop,
+      };
+    }
+    await loadMoreHistory();
+    const nextState = useNotificationStore.getState();
+    if (
+      nextState.activeConversation?.user.userId !== conversationId ||
+      nextState.messages.length <= messageCount
+    ) {
+      historyScrollRef.current = null;
+    }
+  };
+
+  const attachments = useMemo(() => {
+    const result: PrivateAttachment[] = [];
+    if (currentSong) {
+      result.push({
+        type: "song",
+        id: currentSong.id,
+        title: currentSong.name,
+      });
+      if (currentSong.albumId) {
+        result.push({
+          type: "album",
+          id: currentSong.albumId,
+          title: currentSong.album,
+        });
+      }
+    }
+    if (playlistId) {
+      result.push({
+        type: "playlist",
+        id: playlistId,
+        title: playlistName || "当前歌单",
+      });
+    }
+    return result;
+  }, [currentSong, playlistId, playlistName]);
+  const attachment = attachments.find((item) => item.type === attachmentType);
+
+  const submit = async () => {
+    if (sending || (!draft.trim() && !attachment)) return;
+    setSending(true);
+    const sent = await sendMessage(draft, attachment);
+    setSending(false);
+    if (sent) {
+      setDraft("");
+      setAttachmentType("");
+    }
+  };
+
+  return (
+    <div className="message-layout">
+      <aside className="conversation-panel">
+        <div className="conversation-heading">
+          <strong>会话</strong>
+          <span>{conversations.length}</span>
+        </div>
+        <div className="conversation-list">
+          {conversations.map((conversation) => (
+            <button
+              key={conversation.user.userId}
+              className={
+                active?.user.userId === conversation.user.userId ? "active" : ""
+              }
+              onClick={() => void openConversation(conversation)}
+            >
+              <Avatar user={conversation.user} />
+              <span className="conversation-copy">
+                <strong>{conversation.user.nickname}</strong>
+                <small>{conversation.preview}</small>
+              </span>
+              <span className="conversation-meta">
+                <time>{formatTime(conversation.time)}</time>
+                {conversation.unreadCount > 0 && (
+                  <b>{Math.min(99, conversation.unreadCount)}</b>
+                )}
+              </span>
+            </button>
+          ))}
+          {!conversations.length &&
+            (loading ? (
+              <LoadingState label="正在加载私信…" />
+            ) : (
+              <div className="empty">暂无私信会话</div>
+            ))}
+        </div>
+        {conversationHasMore && (
+          <button
+            className="message-more"
+            onClick={() => void loadMore()}
+            disabled={loadingMore}
+          >
+            {loadingMore ? "加载中…" : "更多会话"}
+          </button>
+        )}
+      </aside>
+
+      <section className="message-thread">
+        {active ? (
+          <>
+            <header className="message-thread-header">
+              <Avatar user={active.user} />
+              <div>
+                <strong>{active.user.nickname}</strong>
+                <span>网易云私信</span>
+              </div>
+            </header>
+            <div className="message-thread-list" ref={messageListRef}>
+              {historyHasMore && (
+                <button
+                  className="message-more"
+                  onClick={() => void loadEarlier()}
+                  disabled={historyLoadingMore}
+                >
+                  {historyLoadingMore ? "加载中…" : "查看更早消息"}
+                </button>
+              )}
+              {historyLoading ? (
+                <LoadingState label="正在加载会话…" />
+              ) : messages.length ? (
+                messages.map((message) => {
+                  const mine = message.fromUserId === currentUid;
+                  return (
+                    <div
+                      className={`message-bubble-row ${mine ? "mine" : ""}`}
+                      key={message.id}
+                    >
+                      <div className="message-bubble">
+                        <p>{message.content}</p>
+                        {message.resourceTitle && (
+                          <span>{message.resourceTitle}</span>
+                        )}
+                        <time>{formatTime(message.time)}</time>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="empty">暂无历史消息</div>
+              )}
+            </div>
+            <div className="message-composer">
+              <div className="message-composer-tools">
+                <select
+                  value={attachmentType}
+                  onChange={(event) =>
+                    setAttachmentType(
+                      event.target.value as "" | PrivateAttachmentType,
+                    )
+                  }
+                  title="附加当前播放内容"
+                >
+                  <option value="">纯文字</option>
+                  {attachments.map((item) => (
+                    <option key={`${item.type}-${item.id}`} value={item.type}>
+                      {item.type === "song"
+                        ? "分享当前歌曲"
+                        : item.type === "playlist"
+                          ? "分享当前歌单"
+                          : "分享当前专辑"}
+                    </option>
+                  ))}
+                </select>
+                {attachment && <span>{attachment.title}</span>}
+              </div>
+              <div className="message-composer-input">
+                <textarea
+                  value={draft}
+                  maxLength={500}
+                  placeholder="输入私信内容"
+                  onChange={(event) => setDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      void submit();
+                    }
+                  }}
+                />
+                <button
+                  className="btn primary"
+                  title="发送"
+                  disabled={sending || (!draft.trim() && !attachment)}
+                  onClick={() => void submit()}
+                >
+                  <Send size={16} />
+                </button>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="message-thread-empty">
+            <Mail size={30} />
+            <span>选择一个会话查看私信</span>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function NotificationFeed() {
+  const items = useNotificationStore((state) => state.items);
+  const loading = useNotificationStore((state) => state.loading);
+  const loadingMore = useNotificationStore((state) => state.loadingMore);
+  const hasMore = useNotificationStore((state) => state.hasMore);
+  const loadMore = useNotificationStore((state) => state.loadMore);
+  if (!items.length) {
+    return loading ? (
+      <LoadingState label="正在加载通知…" />
+    ) : (
+      <div className="empty">暂无通知</div>
+    );
+  }
+  return (
+    <div className="notification-feed">
+      {items.map((item) => (
+        <article key={item.id}>
+          {item.user ? (
+            <Avatar user={item.user} large />
+          ) : (
+            <span className="message-avatar large placeholder">
+              <Bell size={22} />
+            </span>
+          )}
+          <div>
+            <div className="notification-heading">
+              <strong>{item.title}</strong>
+              <time>{formatTime(item.time)}</time>
+            </div>
+            <p>{item.content}</p>
+            {item.resourceTitle && (
+              <span className="notification-resource">
+                {item.resourceTitle}
+              </span>
+            )}
+          </div>
+        </article>
+      ))}
+      {hasMore && (
+        <button
+          className="btn notification-load-more"
+          onClick={() => void loadMore()}
+          disabled={loadingMore}
+        >
+          {loadingMore ? "加载中…" : "加载更多"}
+        </button>
+      )}
+    </div>
+  );
+}
+
+export default function NotificationPage() {
+  const category = useNotificationStore((state) => state.category);
+  const total = useNotificationStore((state) => state.total);
+  const conversationTotal = useNotificationStore(
+    (state) => state.conversationTotal,
+  );
+  const setCategory = useNotificationStore((state) => state.setCategory);
+  return (
+    <Page>
+      <BackButton />
+      <PageHeader
+        title="消息中心"
+        subtitle={
+          category === "private"
+            ? `${conversationTotal} 个私信会话`
+            : `${total} 条消息`
+        }
+      />
+      <div className="notification-tabs" role="tablist">
+        {TABS.map((tab) => (
+          <button
+            key={tab.id}
+            role="tab"
+            aria-selected={category === tab.id}
+            className={category === tab.id ? "active" : ""}
+            onClick={() => void setCategory(tab.id)}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      {category === "private" ? <PrivateMessages /> : <NotificationFeed />}
+    </Page>
+  );
+}

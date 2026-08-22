@@ -11,3 +11,4 @@ export * from "./generated";
 export * from "./search";
 export * from "./profile";
 export * from "./collection";
+export * from "./notification";

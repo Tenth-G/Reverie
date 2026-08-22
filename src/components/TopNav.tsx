@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlayerStore } from "../store/playerStore";
 import { useSearchStore } from "../store/searchStore";
+import { useNotificationStore } from "../store/notificationStore";
 import type { ThemePreference } from "../store/playerStore";
 import type { View } from "../api/types";
 import type { ReactElement } from "react";
 import {
   BarChart3,
+  Bell,
   Disc3,
   Heart,
   History,
@@ -65,6 +67,8 @@ const preloadView = (view: View) => {
       return import("./LikesPage");
     case "recent":
       return import("./RecentPage");
+    case "notifications":
+      return import("./NotificationPage");
     default:
       return Promise.resolve();
   }
@@ -90,6 +94,7 @@ export default function TopNav() {
   const loadHome = usePlayerStore((s) => s.loadHome);
   const playSong = usePlayerStore((s) => s.playSong);
   const openSearch = useSearchStore((s) => s.openSearch);
+  const openNotifications = useNotificationStore((s) => s.openNotifications);
 
   const searchRef = useRef<HTMLInputElement>(null);
   const navRef = useRef<HTMLElement>(null);
@@ -307,6 +312,21 @@ export default function TopNav() {
           title="最近播放"
         >
           <History size={17} />
+        </button>
+
+        <button
+          className="topnav-icon-btn"
+          onPointerEnter={() => void preloadView("notifications")}
+          onClick={() => {
+            if (!loggedIn) {
+              setShowLogin(true);
+              return;
+            }
+            void openNotifications();
+          }}
+          title="消息中心"
+        >
+          <Bell size={17} />
         </button>
 
         {loggedIn ? (
