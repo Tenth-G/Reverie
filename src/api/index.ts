@@ -12,3 +12,4 @@ export * from "./search";
 export * from "./profile";
 export * from "./collection";
 export * from "./notification";
+export * from "./comment";

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
-import { Heart, UserMinus, UserPlus } from "lucide-react";
+import { Heart, MessageCircle, UserMinus, UserPlus } from "lucide-react";
 import type { SocialUser } from "../api/types";
+import { useCommentStore } from "../store/commentStore";
 import { useExploreStore } from "../store/exploreStore";
 import { sizedImage } from "../utils/image";
 import { LoadingState, Page, PageHeader } from "./Page";
@@ -39,6 +40,7 @@ export default function SocialPage() {
   const setTab = useExploreStore((s) => s.setSocialTab);
   const loadSocial = useExploreStore((s) => s.loadSocial);
   const openAlbum = useExploreStore((s) => s.openAlbum);
+  const openComments = useCommentStore((s) => s.openResourceComments);
 
   useEffect(() => {
     void loadSocial();
@@ -104,7 +106,25 @@ export default function SocialPage() {
                   <span>
                     <Heart size={13} /> {event.likedCount}
                   </span>
-                  <span>评论 {event.commentCount}</span>
+                  <button
+                    className="event-comment-button"
+                    disabled={!event.threadId}
+                    onClick={() =>
+                      event.threadId &&
+                      void openComments(
+                        {
+                          type: "event",
+                          id: String(event.id),
+                          threadId: event.threadId,
+                          title: `${event.user.nickname} 的动态`,
+                          subtitle: event.resourceTitle,
+                        },
+                        true,
+                      )
+                    }
+                  >
+                    <MessageCircle size={13} /> 评论 {event.commentCount}
+                  </button>
                   <span>转发 {event.forwardCount}</span>
                 </div>
               </div>

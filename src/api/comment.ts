@@ -1,0 +1,206 @@
+import { request } from "./client.ts";
+import type {
+  CommentInfo,
+  CommentResource,
+  CommentResourceType,
+  CommentSort,
+} from "./types.ts";
+
+type Obj = Record<string, unknown>;
+
+const obj = (value: unknown): Obj =>
+  value && typeof value === "object" ? (value as Obj) : {};
+const arr = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
+
+const RESOURCE_TYPES: Record<CommentResourceType, number> = {
+  song: 0,
+  mv: 1,
+  playlist: 2,
+  album: 3,
+  program: 4,
+  video: 5,
+  event: 6,
+};
+
+const SORT_TYPES: Record<CommentSort, 99 | 2 | 3> = {
+  recommended: 99,
+  hot: 2,
+  new: 3,
+};
+
+function ensureSuccess(response: Obj, path: string): Obj {
+  const code = Number(response.code ?? 200);
+  if (code !== 200) throw new Error(`${path} 返回业务码 ${code}`);
+  return response;
+}
+
+export function normalizeResourceComment(raw: unknown): CommentInfo {
+  const value = obj(raw);
+  const user = obj(value.user);
+  const replied = obj(arr(value.beReplied)[0]);
+  const repliedUser = obj(replied.user);
+  const replyCount = Number(
+    value.replyCount ?? obj(value.showFloorComment).replyCount ?? 0,
+  );
+  return {
+    id: Number(value.commentId ?? value.id ?? 0),
+    content: String(value.content ?? ""),
+    time: Number(value.time ?? 0),
+    liked: Boolean(value.liked),
+    likedCount: Number(value.likedCount ?? 0),
+    replyCount,
+    owner: Boolean(value.owner),
+    userId: Number(user.userId ?? 0),
+    nickname: String(user.nickname ?? "网易云用户"),
+    avatarUrl: String(user.avatarUrl ?? ""),
+    repliedTo: replied.content
+      ? {
+          userId: Number(repliedUser.userId ?? 0),
+          nickname: String(repliedUser.nickname ?? "网易云用户"),
+          content: String(replied.content ?? ""),
+        }
+      : undefined,
+  };
+}
+
+function resourceParams(resource: CommentResource) {
+  return {
+    id: resource.id,
+    type: RESOURCE_TYPES[resource.type],
+    threadId: resource.threadId,
+  };
+}
+
+export interface CommentResultPage {
+  comments: CommentInfo[];
+  total: number;
+  hasMore: boolean;
+  cursor: string;
+}
+
+export async function getResourceComments(
+  resource: CommentResource,
+  pageNo = 1,
+  sort: CommentSort = "recommended",
+  cursor = "",
+  pageSize = 30,
+): Promise<CommentResultPage> {
+  if (resource.type === "event" && resource.threadId) {
+    const response = ensureSuccess(
+      await request<Obj>("/comment/event", {
+        threadId: resource.threadId,
+        limit: pageSize,
+        offset: (pageNo - 1) * pageSize,
+      }),
+      "/comment/event",
+    );
+    return {
+      comments: arr(response.comments).map(normalizeResourceComment),
+      total: Number(response.total ?? response.count ?? 0),
+      hasMore: Boolean(response.more ?? response.hasMore),
+      cursor: "",
+    };
+  }
+
+  const response = ensureSuccess(
+    await request<Obj>("/comment/new", {
+      ...resourceParams(resource),
+      pageNo,
+      pageSize,
+      sortType: SORT_TYPES[sort],
+      cursor: sort === "new" ? cursor || "0" : undefined,
+    }),
+    "/comment/new",
+  );
+  const data = obj(response.data);
+  return {
+    comments: arr(data.comments).map(normalizeResourceComment),
+    total: Number(data.totalCount ?? data.total ?? 0),
+    hasMore: Boolean(data.hasMore),
+    cursor: String(data.cursor ?? ""),
+  };
+}
+
+export async function getCommentReplies(
+  resource: CommentResource,
+  parentCommentId: string | number,
+  time = -1,
+  limit = 20,
+): Promise<{
+  comments: CommentInfo[];
+  hasMore: boolean;
+  time: number;
+}> {
+  const response = ensureSuccess(
+    await request<Obj>("/comment/floor", {
+      ...resourceParams(resource),
+      parentCommentId,
+      time,
+      limit,
+    }),
+    "/comment/floor",
+  );
+  const data = obj(response.data);
+  return {
+    comments: arr(data.comments).map(normalizeResourceComment),
+    hasMore: Boolean(data.hasMore),
+    time: Number(data.time ?? -1),
+  };
+}
+
+export async function sendResourceComment(
+  resource: CommentResource,
+  content: string,
+  replyTo?: string | number,
+): Promise<void> {
+  ensureSuccess(
+    await request<Obj>(
+      "/comment",
+      {
+        ...resourceParams(resource),
+        t: replyTo ? 2 : 1,
+        content,
+        commentId: replyTo,
+      },
+      false,
+    ),
+    "/comment",
+  );
+}
+
+export async function deleteResourceComment(
+  resource: CommentResource,
+  commentId: string | number,
+): Promise<void> {
+  ensureSuccess(
+    await request<Obj>(
+      "/comment",
+      {
+        ...resourceParams(resource),
+        t: 0,
+        commentId,
+      },
+      false,
+    ),
+    "/comment",
+  );
+}
+
+export async function likeResourceComment(
+  resource: CommentResource,
+  commentId: string | number,
+  like: boolean,
+): Promise<void> {
+  ensureSuccess(
+    await request<Obj>(
+      "/comment/like",
+      {
+        ...resourceParams(resource),
+        cid: commentId,
+        t: like ? 1 : 0,
+      },
+      false,
+    ),
+    "/comment/like",
+  );
+}
