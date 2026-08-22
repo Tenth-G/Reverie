@@ -58,6 +58,9 @@ export default function SearchPage() {
   const loading = useSearchStore((state) => state.loading);
   const loadingMore = useSearchStore((state) => state.loadingMore);
   const hotTerms = useSearchStore((state) => state.hotTerms);
+  const defaultKeyword = useSearchStore((state) => state.defaultKeyword);
+  const suggestions = useSearchStore((state) => state.suggestions);
+  const suggestionsLoading = useSearchStore((state) => state.suggestionsLoading);
   const mediaItem = useSearchStore((state) => state.mediaItem);
   const mediaUrl = useSearchStore((state) => state.mediaUrl);
   const mediaLoading = useSearchStore((state) => state.mediaLoading);
@@ -65,6 +68,8 @@ export default function SearchPage() {
   const setCategory = useSearchStore((state) => state.setCategory);
   const loadMore = useSearchStore((state) => state.loadMore);
   const loadHotTerms = useSearchStore((state) => state.loadHotTerms);
+  const loadDefaultKeyword = useSearchStore((state) => state.loadDefaultKeyword);
+  const loadSuggestions = useSearchStore((state) => state.loadSuggestions);
   const closeMedia = useSearchStore((state) => state.closeMedia);
   const openMediaDetail = useMediaStore((state) => state.open);
   const toggleFollow = useSearchStore((state) => state.toggleFollow);
@@ -76,8 +81,15 @@ export default function SearchPage() {
 
   useEffect(() => setInput(keyword), [keyword]);
   useEffect(() => {
-    if (!keyword) void loadHotTerms();
-  }, [keyword, loadHotTerms]);
+    if (!keyword) {
+      void loadHotTerms();
+      void loadDefaultKeyword();
+    }
+  }, [keyword, loadHotTerms, loadDefaultKeyword]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadSuggestions(input), 180);
+    return () => window.clearTimeout(timer);
+  }, [input, loadSuggestions]);
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
@@ -110,7 +122,7 @@ export default function SearchPage() {
         <input
           value={input}
           onChange={(event) => setInput(event.target.value)}
-          placeholder="输入歌曲、歌手、专辑或歌词"
+          placeholder={defaultKeyword || "输入歌曲、歌手、专辑或歌词"}
           aria-label="搜索关键词"
         />
         {input && (
@@ -127,6 +139,28 @@ export default function SearchPage() {
           搜索
         </button>
       </form>
+
+      {!keyword && input.trim() && (suggestionsLoading || suggestions.length > 0) && (
+        <div className="search-suggestions" role="listbox" aria-label="搜索建议">
+          {suggestionsLoading ? (
+            <span className="search-suggestions-loading">正在获取建议…</span>
+          ) : (
+            suggestions.slice(0, 8).map((suggestion) => (
+              <button
+                key={`${suggestion.keyword}-${suggestion.type}`}
+                role="option"
+                onClick={() => {
+                  setInput(suggestion.keyword);
+                  void openSearch(suggestion.keyword, category);
+                }}
+              >
+                <strong>{suggestion.keyword}</strong>
+                <small>{suggestion.type}{suggestion.source ? ` · ${suggestion.source}` : ""}</small>
+              </button>
+            ))
+          )}
+        </div>
+      )}
 
       {!keyword ? (
         <section className="content-section">

@@ -212,6 +212,12 @@ export interface SearchMediaInfo {
   kind: "mv" | "video";
 }
 
+export interface SearchSuggestion {
+  keyword: string;
+  type: string;
+  source: string;
+}
+
 export interface MediaDetail extends SearchMediaInfo {
   description: string;
   publishTime: number;

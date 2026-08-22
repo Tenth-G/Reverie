@@ -2,6 +2,8 @@ import { create } from "zustand";
 import {
   getSearchMediaUrl,
   getHotSearchTerms,
+  getDefaultSearchKeyword,
+  getSearchSuggestions,
   searchContent,
 } from "../api/search";
 import { followUser } from "../api/extended";
@@ -9,6 +11,7 @@ import type {
   SearchCategory,
   SearchMediaInfo,
   SearchResultPage,
+  SearchSuggestion,
 } from "../api/types";
 import { usePlayerStore } from "./playerStore";
 
@@ -31,6 +34,9 @@ interface SearchState {
   loading: boolean;
   loadingMore: boolean;
   hotTerms: string[];
+  defaultKeyword: string;
+  suggestions: SearchSuggestion[];
+  suggestionsLoading: boolean;
   mediaItem: SearchMediaInfo | null;
   mediaUrl: string;
   mediaLoading: boolean;
@@ -38,6 +44,8 @@ interface SearchState {
   setCategory: (category: SearchCategory) => Promise<void>;
   loadMore: () => Promise<void>;
   loadHotTerms: () => Promise<void>;
+  loadDefaultKeyword: () => Promise<void>;
+  loadSuggestions: (keyword: string) => Promise<void>;
   playMedia: (item: SearchMediaInfo) => Promise<void>;
   closeMedia: () => void;
   toggleFollow: (userId: number) => Promise<void>;
@@ -80,6 +88,9 @@ export const useSearchStore = create<SearchState>()((set, get) => ({
   loading: false,
   loadingMore: false,
   hotTerms: [],
+  defaultKeyword: "",
+  suggestions: [],
+  suggestionsLoading: false,
   mediaItem: null,
   mediaUrl: "",
   mediaLoading: false,
@@ -149,6 +160,29 @@ export const useSearchStore = create<SearchState>()((set, get) => ({
       set({ hotTerms: await getHotSearchTerms() });
     } catch {
       set({ hotTerms: [] });
+    }
+  },
+
+  loadDefaultKeyword: async () => {
+    if (get().defaultKeyword) return;
+    try {
+      set({ defaultKeyword: await getDefaultSearchKeyword() });
+    } catch {
+      set({ defaultKeyword: "" });
+    }
+  },
+
+  loadSuggestions: async (keyword) => {
+    const value = keyword.trim();
+    if (!value) {
+      set({ suggestions: [], suggestionsLoading: false });
+      return;
+    }
+    set({ suggestionsLoading: true });
+    try {
+      set({ suggestions: await getSearchSuggestions(value), suggestionsLoading: false });
+    } catch {
+      set({ suggestions: [], suggestionsLoading: false });
     }
   },
 

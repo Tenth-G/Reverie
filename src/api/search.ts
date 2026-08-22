@@ -7,6 +7,7 @@ import type {
   SearchCategory,
   SearchMediaInfo,
   SearchResultPage,
+  SearchSuggestion,
   SocialUser,
 } from "./types";
 
@@ -197,6 +198,29 @@ export async function getHotSearchTerms(limit = 20): Promise<string[]> {
     .map((item) => String(obj(item).searchWord ?? ""))
     .filter(Boolean)
     .slice(0, limit);
+}
+
+export async function getDefaultSearchKeyword(): Promise<string> {
+  const response = await request<Obj>("/search/default", {}, false);
+  const value = obj(response.data ?? response.result ?? response);
+  return String(value.showKeyword ?? value.realkeyword ?? value.keyword ?? "");
+}
+
+export async function getSearchSuggestions(keyword: string): Promise<SearchSuggestion[]> {
+  const value = keyword.trim();
+  if (!value) return [];
+  const response = await request<Obj>("/search/suggest", { keywords: value, type: "web" }, false);
+  const data = obj(response.result ?? response.data ?? response);
+  return arr(data.allMatch ?? data.songs ?? data.playlists ?? response.result ?? response.data)
+    .map((raw) => {
+      const item = obj(raw);
+      return {
+        keyword: String(item.keyword ?? item.name ?? item.albumName ?? ""),
+        type: String(item.type ?? item.resourceType ?? "歌曲"),
+        source: String(item.source ?? item.albumName ?? item.artistName ?? ""),
+      } satisfies SearchSuggestion;
+    })
+    .filter((item) => item.keyword);
 }
 
 export async function getSearchMediaUrl(
