@@ -5351,3 +5351,21 @@ input {
 .voice-empty-panel strong { color: var(--text-dim); }
 .voice-error { margin-top: 12px; padding: 9px 11px; border: 1px solid color-mix(in srgb, #ff6b6b 35%, transparent); border-radius: 6px; color: #ff8585; font-size: 11px; }
 @media (max-width: 760px) { .voice-workbench-layout { grid-template-columns: 1fr; } .voice-list-sidebar { max-height: 250px; overflow: auto; } .voice-toolbar { flex-wrap: wrap; } .voice-search { flex-basis: 100%; } .voice-name-input { flex: 1; width: auto; } }
+
+/* Playlist import */
+.playlist-import-modal { width: 520px; max-width: 92vw; max-height: 88vh; overflow: auto; padding: 22px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-2); box-shadow: 0 24px 80px var(--shadow); }
+.playlist-import-modal > header, .playlist-import-modal > footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.playlist-import-modal h2 { margin: 0; font-size: 18px; }
+.playlist-import-modal header p { margin: 5px 0 0; color: var(--text-dim); font-size: 12px; }
+.playlist-import-tabs { display: flex; gap: 4px; margin: 20px 0 12px; padding: 3px; border: 1px solid var(--border); border-radius: 7px; background: var(--bg-3); }
+.playlist-import-tabs button { display: inline-flex; align-items: center; gap: 6px; padding: 8px 11px; border-radius: 5px; color: var(--text-dim); font-size: 12px; }
+.playlist-import-tabs button.active { background: var(--bg-2); color: var(--text); }
+.playlist-import-name, .playlist-import-modal textarea { width: 100%; margin-bottom: 10px; padding: 10px; border: 1px solid var(--border); border-radius: 6px; outline: none; background: var(--bg-3); color: var(--text); font: inherit; font-size: 12px; }
+.playlist-import-modal textarea { resize: vertical; line-height: 1.5; }
+.playlist-import-status { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; padding: 10px; border-radius: 6px; background: var(--bg-3); color: var(--accent); }
+.playlist-import-status > div { display: grid; gap: 3px; }
+.playlist-import-status span { color: var(--text-dim); font-size: 11px; }
+.playlist-import-status.success { color: var(--success, #36b37e); }
+.playlist-import-status.failed, .playlist-import-error { color: #ff8585; }
+.playlist-import-error { margin-bottom: 12px; font-size: 12px; }
+.playlist-import-modal footer { justify-content: flex-end; }

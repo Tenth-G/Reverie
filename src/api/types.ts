@@ -354,6 +354,15 @@ export interface VoiceItem {
   createdAt: number;
 }
 
+export interface PlaylistImportTaskStatus {
+  id: string;
+  status: "pending" | "running" | "success" | "failed";
+  progress: number;
+  message: string;
+  playlistId?: number;
+  playlistName?: string;
+}
+
 export interface SearchResultPage {
   songs: Song[];
   albums: AlbumInfo[];
