@@ -1,6 +1,6 @@
 # Reverie
 
-![Reverie 音乐播放器封面](./docs/assets/reverie-readme-cover.png)
+<img src="./docs/assets/reverie-readme-cover.png" alt="Reverie 音乐播放器封面" width="720">
 
 Reverie 是一款音乐播放器，使用 Tauri 2、React、TypeScript 和 Rust 构建。应用通过随包分发的本地 API sidecar 访问音乐服务，播放器本身不依赖 Reverie 自建后端。
 
