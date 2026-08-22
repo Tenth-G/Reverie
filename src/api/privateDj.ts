@@ -48,3 +48,25 @@ export async function getPrivateDjContent(
     .map((item, index) => normalizeItem(item, index))
     .filter((item): item is PrivateDjItem => item !== null);
 }
+
+export type PersonalFmMode =
+  | "aidj"
+  | "DEFAULT"
+  | "FAMILIAR"
+  | "EXPLORE"
+  | "SCENE_RCMD";
+
+export async function getPersonalFmByMode(
+  mode: PersonalFmMode,
+  subMode?: string,
+  limit = 3,
+): Promise<NonNullable<PrivateDjItem["song"]>[]> {
+  const response = await request<Obj>(
+    "/personal/fm/mode",
+    { mode, submode: subMode, limit },
+    false,
+  );
+  return arr(response.data ?? response.result ?? response)
+    .map((raw) => normalizeSong(obj(raw).song ?? obj(raw).mainSong ?? raw))
+    .filter((song): song is NonNullable<PrivateDjItem["song"]> => song !== null);
+}
