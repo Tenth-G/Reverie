@@ -538,6 +538,18 @@ export interface CalendarEvent {
   resourceType: string;
   resourceUrl: string;
 }
+export interface PodcastProgramDetail {
+  id: number;
+  name: string;
+  description: string;
+  coverUrl: string;
+  radioName: string;
+  djName: string;
+  publishTime: number;
+  duration: number;
+  commentCount: number;
+  song: Song | null;
+}
 
 export interface SearchResultPage {
   songs: Song[];

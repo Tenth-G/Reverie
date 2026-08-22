@@ -6085,3 +6085,18 @@ input {
 .calendar-empty strong { color: var(--text-dim); font-size: 13px; }
 .calendar-error { max-width: 1100px; margin: 0 auto 16px; color: #ff8585; font-size: 12px; }
 @media (max-width: 760px) { .calendar-query { align-items: stretch; flex-wrap: wrap; } .calendar-query label { min-width: 0; flex: 1 1 140px; } .calendar-query-separator { display: none; } .calendar-query .primary-button { flex-basis: 100%; } .calendar-event { padding: 10px; } .calendar-event > img, .calendar-event-cover { width: 52px; height: 52px; flex-basis: 52px; } }
+
+/* Podcast program detail */
+.podcast-program-backdrop { z-index: 40; }
+.podcast-program-dialog { width: min(640px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-1); box-shadow: 0 24px 70px rgba(0, 0, 0, .38); }
+.podcast-program-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 18px 20px; border-bottom: 1px solid var(--border-light); }
+.podcast-program-head h2 { margin: 6px 0 0; font-size: 18px; }
+.podcast-program-content { display: flex; gap: 15px; padding: 18px 20px 22px; }
+.podcast-program-content > img { width: 128px; height: 128px; flex: 0 0 128px; border-radius: 8px; object-fit: cover; }
+.podcast-program-copy { display: grid; min-width: 0; flex: 1; gap: 12px; }
+.podcast-program-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: var(--text-dim); font-size: 11px; }
+.podcast-program-meta span { display: inline-flex; align-items: center; gap: 4px; }
+.podcast-program-copy p { margin: 0; color: var(--text-dim); font-size: 12px; line-height: 1.7; white-space: pre-wrap; }
+.podcast-program-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.podcast-program-error { padding: 22px 20px; color: #ff8585; font-size: 12px; }
+@media (max-width: 560px) { .podcast-program-content { display: grid; } .podcast-program-content > img { width: 96px; height: 96px; } }
