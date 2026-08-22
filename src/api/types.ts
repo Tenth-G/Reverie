@@ -252,7 +252,8 @@ export type View =
   | "fans"
   | "style"
   | "topics"
-  | "library";
+  | "library"
+  | "calendar";
 
 export type SearchCategory =
   | "songs"
@@ -524,6 +525,19 @@ export interface FansTrendPoint { date: string; count: number; }
 export interface ListenReport extends ListenTotal { startDate: string; endDate: string; }
 export interface ListenTodaySong { id: number; name: string; artists: string; count: number; coverUrl: string; }
 export interface VipTimeMachineEntry { date: string; songName: string; artistName: string; count: number; }
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  description: string;
+  startTime: number;
+  endTime: number;
+  eventType: string;
+  category: string;
+  coverUrl: string;
+  resourceId: number;
+  resourceType: string;
+  resourceUrl: string;
+}
 
 export interface SearchResultPage {
   songs: Song[];
