@@ -9,6 +9,11 @@ import { useMediaStore } from "../store/mediaStore.ts";
 import { Clapperboard, Play } from "lucide-react";
 import { sizedImage } from "../utils/image";
 import { dislikeRecommendSong } from "../api/client";
+import {
+  getHomepageBlockPage,
+  getHomepageDragonBall,
+  type HomepageEntry,
+} from "../api/homepage";
 
 const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
 
@@ -114,9 +119,42 @@ export default function HomePage() {
   const discoveryLoading = useDiscoveryStore((s) => s.loading);
   const loadDiscovery = useDiscoveryStore((s) => s.load);
   const openMedia = useMediaStore((s) => s.open);
+  const [homepageEntries, setHomepageEntries] = useState<HomepageEntry[]>([]);
   useEffect(() => {
     void loadDiscovery();
   }, [loadDiscovery]);
+
+  useEffect(() => {
+    let alive = true;
+    void Promise.allSettled([getHomepageDragonBall(), getHomepageBlockPage()]).then(
+      ([dragon, blocks]) => {
+        if (!alive) return;
+        const entries = dragon.status === "fulfilled" ? dragon.value : [];
+        const blockEntries =
+          blocks.status === "fulfilled"
+            ? blocks.value.blocks
+                .filter((block) => block.title)
+                .map((block) => ({
+                  id: block.code,
+                  name: block.title,
+                  iconUrl: "",
+                  target: "",
+                }))
+            : [];
+        const seen = new Set<string>();
+        setHomepageEntries(
+          [...entries, ...blockEntries].filter((item) => {
+            if (seen.has(item.id)) return false;
+            seen.add(item.id);
+            return true;
+          }),
+        );
+      },
+    );
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const [now, setNow] = useState(() => new Date());
   const [location, setLocation] = useState(readCachedLocation);
@@ -183,6 +221,30 @@ export default function HomePage() {
           )}
         </div>
       </div>
+
+      {homepageEntries.length > 0 && (
+        <section className="home-section">
+          <div className="section-title">
+            <h2>首页入口</h2>
+          </div>
+          <div className="home-entry-grid">
+            {homepageEntries.slice(0, 12).map((entry) => (
+              <button
+                className="link-btn"
+                key={entry.id}
+                onClick={() => {
+                  if (entry.target) {
+                    window.open(entry.target, "_blank", "noopener,noreferrer");
+                  }
+                }}
+                title={entry.target || entry.name}
+              >
+                {entry.name}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="home-section">
         <div className="section-title">

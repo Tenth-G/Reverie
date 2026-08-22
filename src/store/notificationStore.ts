@@ -4,6 +4,7 @@ import {
   getPrivateConversations,
   getPrivateHistory,
   sendPrivateMessage,
+  getNotificationCounts,
 } from "../api/notification";
 import type {
   NotificationCategory,
@@ -34,6 +35,7 @@ interface NotificationState {
   total: number;
   hasMore: boolean;
   cursor: number;
+  unreadTotal: number;
   openNotifications: (category?: NotificationCategory) => Promise<void>;
   setCategory: (category: NotificationCategory) => Promise<void>;
   loadMore: () => Promise<void>;
@@ -76,12 +78,16 @@ export const useNotificationStore = create<NotificationState>()((set, get) => ({
   total: 0,
   hasMore: false,
   cursor: 0,
+  unreadTotal: 0,
 
   openNotifications: async (category = get().category) => {
     const uid = currentUid();
     if (!uid) return;
     const token = ++listToken;
     historyToken++;
+    void getNotificationCounts()
+      .then((counts) => set({ unreadTotal: counts.total }))
+      .catch(() => {});
     showView();
     set({
       category,
