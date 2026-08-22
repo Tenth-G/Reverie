@@ -1,10 +1,27 @@
-import { request } from "./client.ts";
-import type { PlaylistDynamicStats, SocialUser } from "./types.ts";
+import { normalizeSong, request } from "./client.ts";
+import type { PlaylistDynamicStats, SocialUser, Song } from "./types.ts";
 
 type Obj = Record<string, unknown>;
 const obj = (value: unknown): Obj =>
   value && typeof value === "object" ? (value as Obj) : {};
 const arr = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
+
+/** Fetch the complete song records for a playlist, with optional paging. */
+export async function getPlaylistAllTracks(
+  playlistId: number,
+  limit = 1000,
+  offset = 0,
+): Promise<Song[]> {
+  if (!playlistId) return [];
+  const response = await request<Obj>(
+    "/playlist/track/all",
+    { id: playlistId, limit, offset },
+    false,
+  );
+  return arr(response.songs ?? response.data ?? response.result)
+    .map((raw) => normalizeSong(obj(raw).song ?? raw))
+    .filter((song): song is Song => song !== null);
+}
 
 export async function addPlaylistTracks(
   playlistId: number,
